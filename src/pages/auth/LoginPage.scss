@@ -1,0 +1,306 @@
+.pmart-auth-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: $bg-light;
+
+  .auth-card-container {
+    width: 100%;
+    max-width: 960px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-2xl;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    box-shadow: $shadow-lg;
+
+    @include tablet-down {
+      grid-template-columns: 1fr;
+    }
+
+    // Left Brand Side
+    .auth-brand-side {
+      background: linear-gradient(135deg, #111318 0%, #1E232B 100%);
+      padding: 48px;
+      color: $white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+
+      @include mobile {
+        padding: 28px 24px;
+      }
+
+      .brand-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 32px;
+
+        .auth-logo {
+          height: 48px;
+          width: auto;
+        }
+
+        .brand-tagline {
+          font-size: 13px;
+          color: #9CA3AF;
+          font-weight: $font-weight-medium;
+          border-left: 1px solid rgba(255, 255, 255, 0.2);
+          padding-left: 12px;
+        }
+      }
+
+      .brand-hero-msg {
+        margin-bottom: 32px;
+
+        h2 {
+          font-family: $font-family-display;
+          font-size: 26px;
+          font-weight: $font-weight-extrabold;
+          line-height: 1.25;
+          margin-bottom: 12px;
+          color: $white;
+        }
+
+        p {
+          font-size: 14px;
+          color: #D1D5DB;
+          line-height: 1.6;
+        }
+      }
+
+      .brand-trust-points {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 32px;
+
+        .trust-point {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: #E5E7EB;
+
+          .shield-icon {
+            color: $pmart-red;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      .demo-hint-box {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: $radius-lg;
+        padding: 14px 16px;
+        font-size: 12px;
+
+        strong {
+          color: #FBBF24;
+          display: block;
+          margin-bottom: 4px;
+        }
+
+        p {
+          color: #9CA3AF;
+          margin-bottom: 6px;
+        }
+
+        ul {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          li {
+            color: #D1D5DB;
+
+            code {
+              background: rgba(0, 0, 0, 0.4);
+              padding: 2px 6px;
+              border-radius: $radius-xs;
+              color: #F9FAFB;
+              font-family: monospace;
+            }
+          }
+        }
+      }
+    }
+
+    // Right Form Side
+    .auth-form-side {
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      @include mobile {
+        padding: 28px 24px;
+      }
+
+      .form-wrapper {
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+
+        .back-to-login-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          color: $text-secondary;
+          cursor: pointer;
+          margin-bottom: 20px;
+
+          &:hover {
+            color: $pmart-red;
+          }
+        }
+
+        .form-heading-group {
+          margin-bottom: 24px;
+
+          .form-title {
+            font-family: $font-family-display;
+            font-size: 24px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+            margin-bottom: 6px;
+          }
+
+          .form-subtitle {
+            font-size: 13.5px;
+            color: $text-secondary;
+            line-height: 1.4;
+
+            strong {
+              color: $charcoal-black;
+            }
+          }
+        }
+
+        .auth-error-alert {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background-color: $error-bg;
+          border: 1px solid $error-border;
+          color: $error-text;
+          padding: 10px 14px;
+          border-radius: $radius-md;
+          font-size: 12.5px;
+          margin-bottom: 18px;
+        }
+
+        .auth-success-alert {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background-color: $success-bg;
+          border: 1px solid $success-border;
+          color: $success-text;
+          padding: 10px 14px;
+          border-radius: $radius-md;
+          font-size: 12.5px;
+          margin-bottom: 18px;
+        }
+
+        .input-with-icon {
+          position: relative;
+
+          .field-icon {
+            position: absolute;
+            left: 14px;
+            top: 13px;
+            color: $text-muted;
+          }
+
+          .form-control {
+            padding-left: 42px;
+          }
+        }
+
+        // OTP Form
+        .otp-form {
+          .otp-digits-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+
+            .otp-box-input {
+              width: 58px;
+              height: 58px;
+              text-align: center;
+              font-family: monospace;
+              font-size: 24px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+              background-color: $bg-light;
+              border: 2px solid $border-color;
+              border-radius: $radius-lg;
+              outline: none;
+              transition: all $transition-fast;
+
+              &:focus {
+                border-color: $pmart-red;
+                background-color: $white;
+                box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.12);
+              }
+            }
+          }
+
+          .resend-otp-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+
+            .timer-text {
+              font-size: 12.5px;
+              color: $text-muted;
+            }
+
+            .resend-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12.5px;
+              font-weight: $font-weight-semibold;
+              color: $pmart-red;
+              cursor: pointer;
+
+              &:hover {
+                text-decoration: underline;
+              }
+            }
+          }
+        }
+
+        .auth-terms-disclaimer {
+          font-size: 11px;
+          color: $text-muted;
+          text-align: center;
+          margin-top: 24px;
+          line-height: 1.4;
+
+          a {
+            color: $text-secondary;
+            text-decoration: underline;
+
+            &:hover {
+              color: $pmart-red;
+            }
+          }
+        }
+      }
+    }
+  }
+}

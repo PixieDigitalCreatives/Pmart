@@ -1,0 +1,448 @@
+.pmart-product-detail-page {
+  padding: 20px 0 48px;
+
+  .pdp-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: $text-muted;
+    margin-bottom: 24px;
+    text-transform: capitalize;
+
+    a {
+      color: $text-secondary;
+      transition: color $transition-fast;
+
+      &:hover {
+        color: $pmart-red;
+      }
+    }
+
+    .separator {
+      color: $border-dark;
+    }
+
+    .current-crumb {
+      color: $charcoal-black;
+      font-weight: $font-weight-semibold;
+      max-width: 300px;
+      @include text-truncate;
+    }
+  }
+
+  // Main Showcase Grid
+  .pdp-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-2xl;
+    padding: 36px;
+    margin-bottom: 36px;
+    box-shadow: $shadow-xs;
+
+    @include tablet-down {
+      grid-template-columns: 1fr;
+      padding: 20px;
+      gap: 28px;
+    }
+
+    // Left Gallery
+    .pdp-gallery-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .main-image-display {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        background-color: #FAFBFD;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        overflow: hidden;
+
+        .hero-img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          transition: transform $transition-smooth;
+
+          &:hover {
+            transform: scale(1.06);
+          }
+        }
+
+        .discount-tag {
+          position: absolute;
+          top: 14px;
+          left: 14px;
+          background: $pmart-red;
+          color: $white;
+          font-size: 12px;
+          font-weight: $font-weight-extrabold;
+          padding: 4px 10px;
+          border-radius: $radius-sm;
+        }
+      }
+
+      .thumbnail-row {
+        display: flex;
+        gap: 12px;
+
+        .thumb-btn {
+          width: 72px;
+          height: 72px;
+          border-radius: $radius-lg;
+          border: 2px solid $border-color;
+          background: #FAFBFD;
+          padding: 6px;
+          cursor: pointer;
+          transition: border-color $transition-fast;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
+
+          &:hover {
+            border-color: darken($border-color, 12%);
+          }
+
+          &.active {
+            border-color: $pmart-red;
+          }
+        }
+      }
+    }
+
+    // Right Info
+    .pdp-info-column {
+      display: flex;
+      flex-direction: column;
+
+      .brand-share-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+
+        .brand-label {
+          font-size: 13px;
+          font-weight: $font-weight-bold;
+          color: $pmart-red;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .share-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12.5px;
+          color: $text-secondary;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: $radius-sm;
+
+          &:hover {
+            background-color: $surface-secondary;
+          }
+
+          .text-success {
+            color: $success;
+          }
+        }
+      }
+
+      .pdp-product-title {
+        font-family: $font-family-display;
+        font-size: 26px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+        line-height: 1.3;
+        margin-bottom: 14px;
+
+        @include mobile {
+          font-size: 20px;
+        }
+      }
+
+      .meta-strip {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+
+        .rating-pill {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background-color: #FEF3C7;
+          border: 1px solid #FDE68A;
+          padding: 4px 10px;
+          border-radius: $radius-pill;
+          font-size: 12px;
+
+          .star-icon {
+            color: #D97706;
+            fill: #D97706;
+          }
+
+          .val {
+            font-weight: $font-weight-bold;
+            color: #92400E;
+          }
+
+          .reviews {
+            color: #78350F;
+          }
+        }
+
+        .eta-pill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background-color: $pmart-red-light;
+          color: $pmart-red;
+          font-size: 12px;
+          font-weight: $font-weight-bold;
+          padding: 4px 10px;
+          border-radius: $radius-pill;
+          border: 1px solid $pmart-red-light-border;
+        }
+      }
+
+      // Price Card
+      .price-unit-card {
+        background-color: $surface-secondary;
+        border-radius: $radius-xl;
+        padding: 18px 20px;
+        margin-bottom: 24px;
+
+        .unit-label {
+          font-size: 13px;
+          color: $text-secondary;
+          margin-bottom: 8px;
+        }
+
+        .price-display-row {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+          margin-bottom: 4px;
+
+          .selling-price {
+            font-size: 32px;
+            font-weight: $font-weight-extrabold;
+            color: $charcoal-black;
+          }
+
+          .mrp-price {
+            font-size: 16px;
+            color: $text-muted;
+            text-decoration: line-through;
+          }
+
+          .discount-badge {
+            font-size: 12px;
+            font-weight: $font-weight-bold;
+            background: $success-bg;
+            color: $success-text;
+            border: 1px solid $success-border;
+            padding: 2px 8px;
+            border-radius: $radius-xs;
+          }
+        }
+
+        .tax-inclusive-note {
+          font-size: 11px;
+          color: $text-muted;
+        }
+      }
+
+      // Actions
+      .purchase-action-container {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+
+        .add-to-cart-cta {
+          flex: 1;
+          min-width: 160px;
+        }
+
+        .buy-now-cta {
+          flex: 1;
+          min-width: 160px;
+          justify-content: space-between;
+        }
+
+        .qty-stepper-box {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: $surface-secondary;
+          border: 1px solid $border-color;
+          border-radius: $radius-lg;
+          padding: 6px 14px;
+
+          .qty-label {
+            font-size: 13px;
+            font-weight: $font-weight-medium;
+            color: $text-secondary;
+          }
+
+          .stepper-controls {
+            display: flex;
+            align-items: center;
+            background: $pmart-red;
+            color: $white;
+            border-radius: $radius-md;
+            padding: 2px 4px;
+
+            .step-btn {
+              color: $white;
+              padding: 6px 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              &:hover {
+                background: rgba(255, 255, 255, 0.2);
+              }
+            }
+
+            .step-val {
+              font-size: 14px;
+              font-weight: $font-weight-bold;
+              padding: 0 8px;
+            }
+          }
+        }
+      }
+
+      // Assurances
+      .product-assurances {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        border-top: 1px solid $border-color;
+        padding-top: 20px;
+        margin-top: auto;
+
+        .assurance-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+
+          .assure-icon {
+            color: $pmart-red;
+            margin-top: 2px;
+            flex-shrink: 0;
+          }
+
+          .item-title {
+            font-size: 13.5px;
+            font-weight: $font-weight-semibold;
+            color: $charcoal-black;
+          }
+
+          .item-sub {
+            font-size: 12px;
+            color: $text-muted;
+          }
+        }
+      }
+    }
+  }
+
+  // Details Tabs / Tables
+  .pdp-details-section {
+    margin-bottom: 40px;
+
+    .details-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-2xl;
+      padding: 32px;
+      box-shadow: $shadow-xs;
+
+      @include mobile {
+        padding: 20px;
+      }
+
+      .description-text {
+        font-size: 14.5px;
+        line-height: 1.7;
+        color: $text-secondary;
+        margin-bottom: 28px;
+      }
+
+      .specs-block, .nutrition-block {
+        margin-top: 24px;
+        border-top: 1px solid $border-light;
+        padding-top: 20px;
+
+        .specs-title {
+          font-size: 16px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          margin-bottom: 14px;
+        }
+
+        .specs-table {
+          display: flex;
+          flex-direction: column;
+          border: 1px solid $border-color;
+          border-radius: $radius-lg;
+          overflow: hidden;
+
+          .spec-row {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid $border-light;
+            font-size: 13px;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            &:nth-child(even) {
+              background-color: #FAFBFD;
+            }
+
+            .spec-key {
+              width: 220px;
+              padding: 10px 16px;
+              font-weight: $font-weight-semibold;
+              color: $text-secondary;
+              border-right: 1px solid $border-light;
+              flex-shrink: 0;
+
+              @include mobile {
+                width: 130px;
+              }
+            }
+
+            .spec-val {
+              padding: 10px 16px;
+              color: $charcoal-black;
+              flex: 1;
+            }
+          }
+        }
+      }
+    }
+  }
+}

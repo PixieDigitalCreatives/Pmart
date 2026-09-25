@@ -1,0 +1,205 @@
+.export-data-modal {
+  max-width: 520px;
+  border-radius: $radius-2xl;
+  padding: 0;
+  overflow: hidden;
+
+  .export-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid $border-color;
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+
+      .icon-badge {
+        width: 42px;
+        height: 42px;
+        border-radius: $radius-lg;
+        background-color: rgba($pmart-red, 0.1);
+        color: $pmart-red;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .modal-title {
+        font-size: 17px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+        margin: 0;
+      }
+
+      .modal-desc {
+        font-size: 12.5px;
+        color: $text-muted;
+        margin-top: 2px;
+      }
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: $text-muted;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: $radius-full;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color $transition-fast, color $transition-fast;
+
+      &:hover {
+        background-color: $surface-secondary;
+        color: $charcoal-black;
+      }
+    }
+  }
+
+  .export-modal-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .form-label {
+        font-size: 13px;
+        font-weight: $font-weight-semibold;
+        color: $charcoal-black;
+      }
+    }
+
+    .format-options-grid {
+      display: grid;
+      grid-templateColumns: repeat(3, 1fr);
+      gap: 10px;
+
+      @include mobile {
+        grid-templateColumns: 1fr;
+      }
+
+      .format-card {
+        border: 1px solid $border-color;
+        border-radius: $radius-lg;
+        padding: 12px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 4px;
+        position: relative;
+        transition: all $transition-fast;
+
+        input[type="radio"] {
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .format-icon {
+          margin-bottom: 2px;
+          &.excel { color: #16a34a; }
+          &.csv { color: #2563eb; }
+          &.pdf { color: $pmart-red; }
+        }
+
+        .format-name {
+          font-size: 12.5px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+        }
+
+        .format-sub {
+          font-size: 10.5px;
+          color: $text-muted;
+        }
+
+        &:hover {
+          border-color: $border-dark;
+          background-color: $surface-secondary;
+        }
+
+        &.active {
+          border-color: $pmart-red;
+          background-color: rgba($pmart-red, 0.04);
+          box-shadow: 0 0 0 1px $pmart-red;
+        }
+      }
+    }
+
+    .checkboxes-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        color: $text-secondary;
+        cursor: pointer;
+
+        input[type="checkbox"] {
+          accent-color: $pmart-red;
+          cursor: pointer;
+        }
+      }
+    }
+
+    .export-progress-container {
+      background-color: $surface-secondary;
+      padding: 12px 14px;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: $font-weight-semibold;
+        color: $charcoal-black;
+      }
+
+      .progress-track {
+        height: 6px;
+        background-color: $border-color;
+        border-radius: $radius-full;
+        overflow: hidden;
+
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, $pmart-red, #ff5e62);
+          transition: width 0.3s ease;
+        }
+      }
+    }
+  }
+
+  .export-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    background-color: $surface-secondary;
+    border-top: 1px solid $border-color;
+
+    .btn {
+      padding: 8px 18px;
+      font-size: 13.5px;
+    }
+  }
+}

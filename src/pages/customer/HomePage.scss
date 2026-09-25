@@ -1,0 +1,430 @@
+.pmart-home-page {
+  padding-bottom: 32px;
+
+  // Hero Section
+  .home-hero-section {
+    padding-top: 20px;
+    margin-bottom: 32px;
+
+    @include mobile {
+      padding-top: 12px;
+      margin-bottom: 24px;
+    }
+
+    .hero-banner-card {
+      background: linear-gradient(135deg, #111318 0%, #1E222B 100%);
+      border-radius: $radius-2xl;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      @include mobile {
+        flex-direction: column-reverse;
+      }
+
+      .hero-text-content {
+        padding: 44px 48px;
+        max-width: 600px;
+        z-index: 2;
+
+        @include mobile {
+          padding: 24px 20px;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(242, 13, 24, 0.2);
+          border: 1px solid rgba(242, 13, 24, 0.4);
+          color: #FF5A62;
+          font-size: 11px;
+          font-weight: $font-weight-bold;
+          padding: 4px 10px;
+          border-radius: $radius-pill;
+          margin-bottom: 18px;
+          letter-spacing: 0.04em;
+        }
+
+        .hero-title {
+          font-family: $font-family-display;
+          font-size: 40px;
+          font-weight: $font-weight-extrabold;
+          color: $white;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          margin-bottom: 14px;
+
+          @include mobile {
+            font-size: 26px;
+          }
+
+          .highlight-text {
+            color: $pmart-red;
+          }
+        }
+
+        .hero-desc {
+          font-size: 15px;
+          color: #D1D5DB;
+          line-height: 1.6;
+          margin-bottom: 28px;
+
+          @include mobile {
+            font-size: 13.5px;
+            margin-bottom: 20px;
+          }
+        }
+
+        .hero-actions {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          flex-wrap: wrap;
+
+          .hero-cta {
+            padding: 12px 24px;
+            font-size: 14.5px;
+          }
+
+          .hero-guarantee {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #9CA3AF;
+            font-weight: $font-weight-medium;
+
+            .shield-icon {
+              color: $success;
+            }
+          }
+        }
+      }
+
+      .hero-image-wrapper {
+        position: relative;
+        flex: 1;
+        height: 380px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        overflow: hidden;
+
+        @include mobile {
+          width: 100%;
+          height: 200px;
+        }
+
+        .hero-grocery-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          mask-image: linear-gradient(to right, transparent 0%, black 25%);
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%);
+
+          @include mobile {
+            mask-image: none;
+            -webkit-mask-image: none;
+          }
+        }
+
+        .floating-stat-card {
+          position: absolute;
+          bottom: 24px;
+          left: 24px;
+          background: rgba(17, 19, 24, 0.85);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: $radius-lg;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: $white;
+          box-shadow: $shadow-lg;
+
+          @include mobile {
+            bottom: 12px;
+            left: 12px;
+            padding: 6px 12px;
+          }
+
+          .zap {
+            color: #F59E0B;
+          }
+
+          .stat-bold {
+            font-size: 15px;
+            font-weight: $font-weight-extrabold;
+            color: $pmart-red;
+            line-height: 1.1;
+          }
+
+          .stat-label {
+            font-size: 11px;
+            color: #9CA3AF;
+          }
+        }
+      }
+    }
+  }
+
+  // Categories Section
+  .home-categories-section {
+    margin-bottom: 36px;
+
+    .section-header-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 18px;
+
+      .section-heading {
+        font-family: $font-family-display;
+        font-size: 20px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+
+        @include mobile {
+          font-size: 17px;
+        }
+      }
+
+      .section-subtext {
+        font-size: 13px;
+        color: $text-muted;
+        margin-top: 2px;
+
+        @include mobile {
+          font-size: 12px;
+        }
+      }
+
+      .view-all-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13.5px;
+        font-weight: $font-weight-bold;
+        color: $pmart-red;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .categories-grid-track {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 14px;
+
+      @include tablet {
+        grid-template-columns: repeat(6, 1fr);
+      }
+
+      @include mobile {
+        display: flex;
+        overflow-x: auto;
+        gap: 12px;
+        padding-bottom: 8px;
+        @include hide-scrollbar;
+      }
+
+      .category-pill-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: transform $transition-fast;
+
+        @include mobile {
+          flex: 0 0 76px;
+        }
+
+        &:hover {
+          transform: translateY(-3px);
+
+          .cat-image-box {
+            border-color: $pmart-red;
+            box-shadow: 0 4px 12px rgba(242, 13, 24, 0.12);
+          }
+
+          .cat-name {
+            color: $pmart-red;
+          }
+        }
+
+        .cat-image-box {
+          width: 72px;
+          height: 72px;
+          border-radius: $radius-xl;
+          background: #F1F3F5;
+          border: 1px solid $border-color;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all $transition-fast;
+
+          @include mobile {
+            width: 64px;
+            height: 64px;
+          }
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+
+        .cat-name {
+          font-size: 12px;
+          font-weight: $font-weight-semibold;
+          color: $charcoal-black;
+          line-height: 1.25;
+          max-width: 90px;
+          @include text-line-clamp(2);
+        }
+      }
+    }
+  }
+
+  // Promotional Banners Grid
+  .promotional-banners-section {
+    margin-bottom: 36px;
+
+    .promo-banners-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+
+      @include mobile {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .promo-banner-card {
+        border-radius: $radius-xl;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+
+        @include mobile {
+          padding: 18px;
+        }
+
+        &.banner-red {
+          background: linear-gradient(135deg, #FFF1F1 0%, #FEE2E2 100%);
+          border: 1px solid #FECACA;
+
+          .promo-tag {
+            color: $pmart-red;
+            font-weight: $font-weight-extrabold;
+          }
+
+          .promo-heading {
+            color: $pmart-red;
+          }
+
+          .coupon-code {
+            background: $white;
+            color: $charcoal-black;
+            border: 1px dashed $pmart-red;
+          }
+        }
+
+        &.banner-charcoal {
+          background: linear-gradient(135deg, #111318 0%, #1F242D 100%);
+          border: 1px solid #282C35;
+          color: $white;
+
+          .promo-tag {
+            color: #FBBF24;
+            font-weight: $font-weight-bold;
+          }
+
+          .promo-heading {
+            color: $white;
+          }
+
+          .promo-text {
+            color: #D1D5DB;
+          }
+
+          .coupon-code {
+            background: rgba(255, 255, 255, 0.1);
+            color: #E5E7EB;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+          }
+        }
+
+        .banner-content {
+          max-width: 65%;
+          z-index: 2;
+
+          .promo-tag {
+            font-size: 10.5px;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            display: block;
+          }
+
+          .promo-heading {
+            font-family: $font-family-display;
+            font-size: 22px;
+            font-weight: $font-weight-extrabold;
+            margin-bottom: 6px;
+
+            @include mobile {
+              font-size: 18px;
+            }
+          }
+
+          .promo-text {
+            font-size: 12.5px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+          }
+
+          .coupon-code {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: $radius-sm;
+            font-family: monospace;
+          }
+        }
+
+        .banner-img {
+          width: 110px;
+          height: 110px;
+          object-fit: cover;
+          border-radius: $radius-lg;
+          box-shadow: $shadow-md;
+
+          @include mobile {
+            width: 80px;
+            height: 80px;
+          }
+        }
+      }
+    }
+  }
+
+  .home-carousels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

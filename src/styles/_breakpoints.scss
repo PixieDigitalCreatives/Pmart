@@ -1,0 +1,56 @@
+// PMart SCSS Breakpoints & Responsive Mixins
+
+$breakpoint-sm: 576px;   // Mobile landscape / large phones
+$breakpoint-md: 768px;   // Tablets
+$breakpoint-lg: 1024px;  // Small laptops / desktops
+$breakpoint-xl: 1280px;  // Standard Desktop
+$breakpoint-2xl: 1440px; // Large widescreen
+
+// Mixins
+@mixin mobile {
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+@mixin mobile-sm {
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet-down {
+  @media (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+@mixin tablet-up {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
+@mixin desktop-xl {
+  @media (min-width: #{$breakpoint-xl}) {
+    @content;
+  }
+}
+
+@mixin widescreen {
+  @media (min-width: #{$breakpoint-2xl}) {
+    @content;
+  }
+}

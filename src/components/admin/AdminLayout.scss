@@ -1,0 +1,322 @@
+.admin-portal-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background-color: #F7F8FA;
+
+  // Sidebar
+  .admin-sidebar {
+    width: 270px;
+    background-color: #111318;
+    color: $white;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 31px;
+    bottom: 0;
+    left: 0;
+    z-index: 800;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform $transition-fast;
+
+    @include tablet-down {
+      transform: translateX(-100%);
+
+      &.open {
+        transform: translateX(0);
+      }
+    }
+
+    .admin-sidebar-head {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+      .admin-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .admin-logo {
+          height: 38px;
+          width: auto;
+        }
+
+        .brand-meta {
+          display: flex;
+          flex-direction: column;
+
+          .badge-tag {
+            font-size: 9px;
+            font-weight: $font-weight-extrabold;
+            color: #A855F7;
+            letter-spacing: 0.08em;
+          }
+
+          .platform-name {
+            font-size: 13.5px;
+            font-weight: $font-weight-bold;
+            color: $white;
+          }
+        }
+      }
+
+      .mobile-close {
+        color: #9CA3AF;
+        display: none;
+
+        @include tablet-down {
+          display: block;
+        }
+      }
+    }
+
+    .admin-nav-list {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      @include custom-scrollbar;
+
+      .admin-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: $radius-md;
+        font-size: 13.5px;
+        font-weight: $font-weight-medium;
+        color: #9CA3AF;
+        text-decoration: none;
+        transition: all $transition-fast;
+
+        &:hover {
+          color: $white;
+          background-color: rgba(255, 255, 255, 0.06);
+        }
+
+        &.active {
+          color: $white;
+          background-color: $pmart-red;
+          font-weight: $font-weight-semibold;
+
+          .link-icon {
+            color: $white;
+          }
+        }
+
+        .link-icon {
+          color: #9CA3AF;
+        }
+      }
+    }
+
+    .admin-sidebar-foot {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+      .foot-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #9CA3AF;
+        padding: 8px 12px;
+        border-radius: $radius-md;
+        background: rgba(255, 255, 255, 0.04);
+        margin-bottom: 12px;
+
+        &:hover {
+          color: $white;
+        }
+      }
+
+      .admin-profile-strip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .avatar-shield {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(168, 85, 247, 0.2);
+          color: #A855F7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .admin-info {
+          flex: 1;
+
+          .name {
+            font-size: 13px;
+            font-weight: $font-weight-bold;
+            color: $white;
+          }
+
+          .role {
+            font-size: 11px;
+            color: #9CA3AF;
+          }
+        }
+
+        .logout-btn {
+          color: #9CA3AF;
+          padding: 6px;
+
+          &:hover {
+            color: $error;
+          }
+        }
+      }
+    }
+  }
+
+  // Main Container
+  .admin-main-container {
+    flex: 1;
+    margin-left: 270px;
+    display: flex;
+    flex-direction: column;
+
+    @include tablet-down {
+      margin-left: 0;
+    }
+
+    .admin-topbar {
+      height: 64px;
+      background: $white;
+      border-bottom: 1px solid $border-color;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 31px;
+      z-index: 700;
+
+      @include mobile {
+        padding: 0 16px;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+        max-width: 480px;
+
+        .mobile-toggle-btn {
+          display: none;
+          color: $charcoal-black;
+
+          @include tablet-down {
+            display: block;
+          }
+        }
+
+        .admin-search-bar {
+          position: relative;
+          width: 100%;
+
+          .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 10px;
+            color: $text-muted;
+          }
+
+          input {
+            width: 100%;
+            height: 38px;
+            padding-left: 36px;
+            padding-right: 14px;
+            background: $surface-secondary;
+            border: 1px solid $border-color;
+            border-radius: $radius-md;
+            font-size: 13px;
+            outline: none;
+
+            &:focus {
+              border-color: $pmart-red;
+              background: $white;
+            }
+          }
+        }
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .system-health-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: $font-weight-medium;
+          color: $success-text;
+          background: $success-bg;
+          border: 1px solid $success-border;
+          padding: 4px 12px;
+          border-radius: $radius-pill;
+
+          @include mobile {
+            display: none;
+          }
+
+          .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: $success;
+          }
+        }
+
+        .icon-notice-btn {
+          position: relative;
+          color: $text-secondary;
+          padding: 6px;
+
+          .dot {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: $pmart-red;
+          }
+        }
+
+        .admin-user-pill {
+          background-color: $surface-secondary;
+          border: 1px solid $border-color;
+          padding: 4px 10px;
+          border-radius: $radius-sm;
+
+          .role-tag {
+            font-size: 11px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+          }
+        }
+      }
+    }
+
+    .admin-content-view {
+      padding: 28px;
+      flex: 1;
+
+      @include mobile {
+        padding: 16px;
+      }
+    }
+  }
+}

@@ -1,0 +1,154 @@
+.pmart-footer {
+  background: $white;
+  border-top: 1px solid $border-color;
+  margin-top: 48px;
+
+  @include mobile {
+    margin-bottom: $mobile-bottom-nav-height; // space for bottom nav
+  }
+
+  .footer-trust-strip {
+    background-color: #FAFBFD;
+    border-bottom: 1px solid $border-color;
+    padding: 32px 0;
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+
+      @include tablet {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+
+      @include mobile {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .trust-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+
+        .trust-icon-box {
+          width: 42px;
+          height: 42px;
+          border-radius: $radius-lg;
+          background-color: $pmart-red-light;
+          color: $pmart-red;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .trust-text {
+          .trust-title {
+            font-size: 14px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+          }
+
+          .trust-desc {
+            font-size: 12.5px;
+            color: $text-muted;
+            margin-top: 2px;
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+  }
+
+  .footer-main {
+    padding: 48px 0 32px;
+
+    @include mobile {
+      padding: 32px 0 24px;
+    }
+
+    .footer-cols-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.2fr;
+      gap: 40px;
+
+      @include tablet {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+      }
+
+      @include mobile {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+
+      .footer-brand-col {
+        .footer-logo-link {
+          display: inline-block;
+          margin-bottom: 14px;
+
+          .footer-logo {
+            height: 44px;
+            width: auto;
+          }
+        }
+
+        .brand-tagline {
+          font-size: 13.5px;
+          color: $text-secondary;
+          line-height: 1.6;
+          max-width: 320px;
+          margin-bottom: 18px;
+        }
+
+        .brand-legal-badge {
+          font-size: 12px;
+          color: $text-muted;
+        }
+      }
+
+      .footer-links-col {
+        .col-heading {
+          font-size: 14px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 16px;
+        }
+
+        .links-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+
+          li a {
+            font-size: 13.5px;
+            color: $text-secondary;
+            transition: color $transition-fast;
+
+            &:hover {
+              color: $pmart-red;
+            }
+          }
+
+          &.ecosystem-links {
+            .partner-link {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              color: $charcoal-black;
+              font-weight: $font-weight-medium;
+
+              &:hover {
+                color: $pmart-red;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

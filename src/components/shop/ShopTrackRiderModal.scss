@@ -1,0 +1,134 @@
+.shop-track-rider-modal {
+  max-width: 780px;
+  width: 95%;
+  border-radius: $radius-2xl;
+  padding: 0;
+  overflow: hidden;
+
+  .track-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid $border-color;
+    background-color: $white;
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .badge-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: $radius-md;
+        background-color: rgba($pmart-red, 0.1);
+        color: $pmart-red;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .modal-title {
+        font-size: 16px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+        margin: 0;
+      }
+
+      .modal-desc {
+        font-size: 12px;
+        color: $text-muted;
+        margin-top: 2px;
+      }
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: $text-muted;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: $radius-full;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color $transition-fast, color $transition-fast;
+
+      &:hover {
+        background-color: $surface-secondary;
+        color: $charcoal-black;
+      }
+    }
+  }
+
+  .operational-metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background-color: $surface-secondary;
+    border-bottom: 1px solid $border-color;
+    padding: 10px 20px;
+    gap: 12px;
+
+    @include mobile {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .metric-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .label {
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        color: $text-muted;
+        text-transform: uppercase;
+      }
+
+      .val {
+        font-size: 13px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+      }
+
+      .phone-link {
+        font-size: 12.5px;
+        font-weight: $font-weight-semibold;
+        color: #2563eb;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  .track-map-wrapper {
+    padding: 16px;
+    background-color: #fafbfc;
+  }
+
+  .track-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid $border-color;
+    background-color: $white;
+
+    .dest-snippet {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: $text-secondary;
+
+      .pin-icon {
+        color: $pmart-red;
+      }
+    }
+  }
+}

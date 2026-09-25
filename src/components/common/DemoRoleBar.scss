@@ -1,0 +1,156 @@
+.demo-role-bar {
+  background-color: $charcoal-black;
+  color: $white;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  .demo-role-container {
+    max-width: $container-max-width;
+    margin: 0 auto;
+    padding: 6px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    @include mobile {
+      padding: 6px 12px;
+    }
+  }
+
+  .demo-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    color: #9CA3AF;
+
+    .sparkle-icon {
+      color: #F59E0B;
+    }
+  }
+
+  .role-selector-dropdown {
+    position: relative;
+  }
+
+  .current-role-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: $radius-pill;
+    padding: 4px 12px;
+    color: $white;
+    font-size: 12px;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .arrow {
+      color: #9CA3AF;
+      transition: transform $transition-fast;
+
+      &.open {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 260px;
+    background: #1A1D24;
+    border: 1px solid #2E333D;
+    border-radius: $radius-lg;
+    padding: 8px;
+    box-shadow: $shadow-xl;
+    z-index: 1000;
+
+    .dropdown-header {
+      font-size: 10px;
+      font-weight: $font-weight-bold;
+      color: #9CA3AF;
+      padding: 6px 8px 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px;
+      border-radius: $radius-md;
+      color: #E5E7EB;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color $transition-fast;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+      }
+
+      &.active {
+        background-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .icon-wrapper {
+        width: 30px;
+        height: 30px;
+        border-radius: $radius-md;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .item-text {
+        flex: 1;
+
+        .portal-name {
+          font-size: 13px;
+          font-weight: $font-weight-semibold;
+          color: $white;
+        }
+
+        .portal-path {
+          font-size: 11px;
+          color: #9CA3AF;
+        }
+      }
+
+      .active-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: #2E333D;
+      margin: 6px 0;
+    }
+
+    .auth-link {
+      color: #9CA3AF;
+      font-size: 12px;
+
+      &:hover {
+        color: $white;
+      }
+    }
+  }
+}

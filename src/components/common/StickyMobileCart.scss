@@ -1,0 +1,76 @@
+.sticky-mobile-cart {
+  display: none;
+
+  @include mobile {
+    display: block;
+    position: fixed;
+    bottom: calc(#{$mobile-bottom-nav-height} + 10px);
+    left: 12px;
+    right: 12px;
+    z-index: 940;
+  }
+
+  .sticky-cart-btn {
+    width: 100%;
+    background: $pmart-red;
+    color: $white;
+    border-radius: $radius-xl;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 20px $pmart-red-shadow;
+    cursor: pointer;
+    border: none;
+    transition: transform $transition-fast;
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    .cart-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .cart-badge-icon {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 10px;
+        border-radius: $radius-pill;
+        font-weight: $font-weight-bold;
+        font-size: 13px;
+      }
+
+      .cart-cost {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .qty-label {
+          font-size: 13px;
+          opacity: 0.9;
+        }
+
+        .dot {
+          opacity: 0.7;
+        }
+
+        .total-amt {
+          font-size: 15px;
+          font-weight: $font-weight-bold;
+        }
+      }
+    }
+
+    .cart-action {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}

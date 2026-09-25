@@ -1,0 +1,427 @@
+.admin-live-deliveries-page {
+  .page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+
+    .header-stats-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      font-size: 12.5px;
+      font-weight: $font-weight-semibold;
+      padding: 6px 14px;
+      border-radius: $radius-pill;
+
+      .live-pulsing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #16a34a;
+        animation: livePulse 1.5s infinite;
+      }
+    }
+  }
+
+  .delivery-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+
+    @include tablet {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 380px;
+
+      @include tablet {
+        max-width: 100%;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        color: $text-muted;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px 12px 8px 36px;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+        font-size: 13px;
+        background: $white;
+
+        &:focus {
+          outline: none;
+          border-color: $pmart-red;
+        }
+      }
+    }
+
+    .filter-pill-group {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      @include custom-scrollbar;
+      white-space: nowrap;
+
+      .filter-pill {
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-pill;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: $font-weight-medium;
+        color: $text-secondary;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+          border-color: $border-dark;
+          color: $charcoal-black;
+        }
+
+        &.active {
+          background-color: $charcoal-black;
+          border-color: $charcoal-black;
+          color: $white;
+          font-weight: $font-weight-semibold;
+        }
+      }
+    }
+  }
+
+  .operations-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+
+    @include tablet {
+      grid-template-columns: 1fr;
+    }
+
+    .logistics-map-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-xl;
+      overflow: hidden;
+      box-shadow: $shadow-sm;
+
+      .map-viewport {
+        position: relative;
+        height: 580px;
+        background-color: #f4f3f0;
+
+        @include mobile {
+          height: 380px;
+        }
+
+        .logistics-svg-canvas {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+
+        .admin-selected-pulse {
+          animation: adminRingPulse 1.8s infinite;
+        }
+
+        .gmap-watermark-strip {
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          pointer-events: none;
+
+          .google-font-logo {
+            font-size: 17px;
+            font-weight: 700;
+          }
+
+          .logistics-engine-pill {
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: $text-muted;
+            padding: 2px 6px;
+            border-radius: $radius-xs;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+          }
+        }
+      }
+    }
+
+    .inspector-side-col {
+      .rider-inspection-panel {
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        overflow: hidden;
+        box-shadow: $shadow-sm;
+
+        .panel-head {
+          padding: 16px 18px;
+          border-bottom: 1px solid $border-color;
+          background-color: $surface-secondary;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          .rider-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .avatar {
+              width: 40px;
+              height: 40px;
+              border-radius: $radius-full;
+              background-color: $charcoal-black;
+              color: $white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+
+            .rider-name {
+              font-size: 15px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+              margin: 0;
+            }
+
+            .rider-sub {
+              font-size: 11px;
+              color: $text-muted;
+              margin-top: 1px;
+            }
+          }
+
+          .status-badge-chip {
+            font-size: 10px;
+            font-weight: $font-weight-bold;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: $radius-pill;
+
+            &.out_for_delivery {
+              background-color: #eff6ff;
+              color: #1d4ed8;
+              border: 1px solid #bfdbfe;
+            }
+
+            &.near_customer {
+              background-color: #f0fdf4;
+              color: #15803d;
+              border: 1px solid #bbf7d0;
+            }
+
+            &.picked_up {
+              background-color: #fefce8;
+              color: #a16207;
+              border: 1px solid #fef08a;
+            }
+
+            &.assigned {
+              background-color: $surface-secondary;
+              color: $text-secondary;
+              border: 1px solid $border-color;
+            }
+          }
+        }
+
+        .panel-body {
+          padding: 16px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+
+          .telemetry-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+            background: #fafbfc;
+            padding: 12px;
+            border-radius: $radius-md;
+            border: 1px solid $border-color;
+
+            .tele-item {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+
+              .label {
+                font-size: 10px;
+                color: $text-muted;
+                text-transform: uppercase;
+                font-weight: $font-weight-semibold;
+              }
+
+              .val {
+                font-size: 12.5px;
+                font-weight: $font-weight-bold;
+                color: $charcoal-black;
+              }
+            }
+          }
+
+          .detail-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+
+            .section-label {
+              font-size: 11px;
+              font-weight: $font-weight-bold;
+              color: $text-muted;
+              text-transform: uppercase;
+            }
+
+            .detail-row {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              font-size: 12.5px;
+
+              .key {
+                color: $text-secondary;
+              }
+
+              .value {
+                font-weight: $font-weight-medium;
+                color: $charcoal-black;
+              }
+
+              .order-link {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+                color: $pmart-red;
+                font-weight: $font-weight-bold;
+                text-decoration: none;
+
+                &:hover {
+                  text-decoration: underline;
+                }
+              }
+            }
+
+            .hub-card, .customer-card {
+              display: flex;
+              gap: 10px;
+              background-color: $surface-secondary;
+              padding: 10px 12px;
+              border-radius: $radius-md;
+              font-size: 12px;
+
+              .hub-icon {
+                color: $pmart-red;
+                flex-shrink: 0;
+                margin-top: 2px;
+              }
+
+              .cust-icon {
+                color: #2563eb;
+                flex-shrink: 0;
+                margin-top: 2px;
+              }
+
+              .hub-title, .cust-name {
+                font-weight: $font-weight-bold;
+                color: $charcoal-black;
+              }
+
+              .hub-address, .cust-address {
+                color: $text-secondary;
+                margin-top: 1px;
+                line-height: 1.35;
+              }
+
+              .cust-phone {
+                color: $text-muted;
+                margin-top: 3px;
+                font-size: 11px;
+              }
+            }
+          }
+
+          .panel-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 6px;
+
+            .btn {
+              justify-content: center;
+              font-size: 13px;
+            }
+          }
+        }
+      }
+
+      .no-selection-card {
+        padding: 40px 20px;
+        text-align: center;
+        background: $white;
+        border: 1px dashed $border-color;
+        border-radius: $radius-xl;
+        color: $text-muted;
+        font-size: 13px;
+      }
+    }
+  }
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.5;
+  }
+}
+
+@keyframes adminRingPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
