@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { mockCategories } from '@/data/mockCategories';
 import { productService } from '@/services/productService';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
-import { Zap, Clock, ShieldCheck, ArrowRight, Sparkles, ChevronRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import heroBgImage from '@/assets/hero-bg.png';
 import './HomePage.scss';
 
 export const HomePage = () => {
@@ -34,15 +35,21 @@ export const HomePage = () => {
 
   return (
     <div className="pmart-home-page">
-      {/* Hero Promotional Banner Section */}
-      <section className="home-hero-section">
-        <div className="container">
-          <div className="hero-banner-card">
+      {/* Hero Promotional Banner Section (Full-Width Immersive Design) */}
+      <section className="home-hero-section full-width-hero">
+        <div className="hero-banner-card">
+          {/* Full Width Edge-to-Edge Image Media Backdrop */}
+          <div className="hero-backdrop-media">
+            <img
+              src={heroBgImage}
+              alt="Fresh Groceries Delivered Fast"
+              className="hero-grocery-img"
+            />
+            <div className="hero-gradient-overlay" />
+          </div>
+
+          <div className="hero-container-inner">
             <div className="hero-text-content">
-              <div className="hero-badge">
-                <Clock size={14} />
-                <span>SUPERFAST 10-MINUTE GROCERY DELIVERY</span>
-              </div>
               <h1 className="hero-title">
                 Everything you need, <br />
                 <span className="highlight-text">delivered fast.</span>
@@ -62,21 +69,6 @@ export const HomePage = () => {
                 </div>
               </div>
             </div>
-
-            <div className="hero-image-wrapper">
-              <img
-                src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80"
-                alt="Fresh Groceries Delivered in 10 Mins"
-                className="hero-grocery-img"
-              />
-              <div className="floating-stat-card">
-                <Zap size={18} className="zap" />
-                <div>
-                  <div className="stat-bold">10 MINS</div>
-                  <div className="stat-label">Average Delivery</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -85,10 +77,7 @@ export const HomePage = () => {
       <section className="home-categories-section">
         <div className="container">
           <div className="section-header-row">
-            <div>
-              <h2 className="section-heading">Explore Categories</h2>
-              <p className="section-subtext">Quick access to fresh groceries, dairy, snacks & home needs</p>
-            </div>
+            <h2 className="section-heading">Explore Categories</h2>
             <Link to="/category/fruits-vegetables" className="view-all-link">
               <span>View All 18 Categories</span>
               <ChevronRight size={16} />
@@ -152,7 +141,6 @@ export const HomePage = () => {
         {/* Daily Essentials */}
         <ProductCarousel
           title="Daily Essentials"
-          subtitle="Milk, bread, butter, fresh eggs & daily staples"
           viewAllLink="/category/dairy-breakfast"
           products={dailyEssentials}
         />
@@ -160,7 +148,6 @@ export const HomePage = () => {
         {/* Fresh Picks */}
         <ProductCarousel
           title="Farm Fresh Picks"
-          subtitle="Hand-picked seasonal fruits and crispy vegetables"
           viewAllLink="/category/fruits-vegetables"
           products={freshPicks}
         />
@@ -168,7 +155,6 @@ export const HomePage = () => {
         {/* Most Bought */}
         <ProductCarousel
           title="Most Bought in Noida"
-          subtitle="Popular staples ordered by thousands of neighbors today"
           viewAllLink="/offers"
           products={mostBought}
         />
@@ -176,7 +162,6 @@ export const HomePage = () => {
         {/* Under ₹99 Budget Store */}
         <ProductCarousel
           title="Under ₹99 Express Store"
-          subtitle="Snacks, soft drinks, daily staples and pocket-friendly treats"
           viewAllLink="/offers"
           products={under99}
         />
@@ -184,7 +169,6 @@ export const HomePage = () => {
         {/* Best Deals */}
         <ProductCarousel
           title="Best Deals & Discounts"
-          subtitle="Big savings on household detergents, flours, oils and personal care"
           viewAllLink="/offers"
           products={bestDeals}
         />
