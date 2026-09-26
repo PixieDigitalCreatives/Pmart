@@ -67,7 +67,7 @@ export const TrackingStatus = ({ trackingState = 'TRACKING_ACTIVE', onRetry = nu
       default:
         return {
           icon: <Navigation size={16} className="active-arrow" />,
-          title: 'Your order is on the way • 10-minute guarantee active',
+          title: 'Your order is on the way • Express delivery active',
           type: 'active'
         };
     }

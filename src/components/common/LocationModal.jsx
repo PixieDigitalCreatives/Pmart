@@ -53,7 +53,7 @@ export const LocationModal = () => {
           <div className="modal-header">
             <div>
               <h3 className="modal-title">Select Delivery Location</h3>
-              <p className="modal-subtitle">Fast 10-minute delivery from nearby darkstore</p>
+              <p className="modal-subtitle">Express delivery from nearby darkstore</p>
             </div>
             <button
               className="close-btn"

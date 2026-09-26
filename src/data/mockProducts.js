@@ -17,7 +17,7 @@ export const mockProducts = [
     reviewsCount: 3420,
     inStock: true,
     stockCount: 85,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=600&q=80',
@@ -55,7 +55,7 @@ export const mockProducts = [
     reviewsCount: 5210,
     inStock: true,
     stockCount: 60,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=600&q=80'
@@ -89,7 +89,7 @@ export const mockProducts = [
     reviewsCount: 1890,
     inStock: true,
     stockCount: 45,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80'
@@ -121,7 +121,7 @@ export const mockProducts = [
     reviewsCount: 2980,
     inStock: true,
     stockCount: 38,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80'
@@ -155,7 +155,7 @@ export const mockProducts = [
     reviewsCount: 4120,
     inStock: true,
     stockCount: 120,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80'
@@ -187,7 +187,7 @@ export const mockProducts = [
     reviewsCount: 1650,
     inStock: true,
     stockCount: 40,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=600&q=80'
@@ -219,7 +219,7 @@ export const mockProducts = [
     reviewsCount: 890,
     inStock: true,
     stockCount: 75,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1628556270448-4d4e4148e1b1?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1628556270448-4d4e4148e1b1?auto=format&fit=crop&w=600&q=80'
@@ -249,7 +249,7 @@ export const mockProducts = [
     reviewsCount: 740,
     inStock: true,
     stockCount: 30,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1582979512210-99b6a53386f9?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1582979512210-99b6a53386f9?auto=format&fit=crop&w=600&q=80'
@@ -281,7 +281,7 @@ export const mockProducts = [
     reviewsCount: 8400,
     inStock: true,
     stockCount: 110,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80'
@@ -315,7 +315,7 @@ export const mockProducts = [
     reviewsCount: 3950,
     inStock: true,
     stockCount: 55,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80'
@@ -347,7 +347,7 @@ export const mockProducts = [
     reviewsCount: 2190,
     inStock: true,
     stockCount: 65,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1585992638530-398601438995?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1585992638530-398601438995?auto=format&fit=crop&w=600&q=80'
@@ -381,7 +381,7 @@ export const mockProducts = [
     reviewsCount: 6100,
     inStock: true,
     stockCount: 90,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80'
@@ -413,7 +413,7 @@ export const mockProducts = [
     reviewsCount: 12500,
     inStock: true,
     stockCount: 150,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?auto=format&fit=crop&w=600&q=80'
@@ -445,7 +445,7 @@ export const mockProducts = [
     reviewsCount: 7800,
     inStock: true,
     stockCount: 80,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=600&q=80'
@@ -477,7 +477,7 @@ export const mockProducts = [
     reviewsCount: 4600,
     inStock: true,
     stockCount: 70,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1621996346565-e3d5d62811b4?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1621996346565-e3d5d62811b4?auto=format&fit=crop&w=600&q=80'
@@ -509,7 +509,7 @@ export const mockProducts = [
     reviewsCount: 9200,
     inStock: true,
     stockCount: 88,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=600&q=80'
@@ -541,7 +541,7 @@ export const mockProducts = [
     reviewsCount: 3890,
     inStock: true,
     stockCount: 110,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80'
@@ -572,7 +572,7 @@ export const mockProducts = [
     reviewsCount: 5120,
     inStock: true,
     stockCount: 95,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80'
@@ -603,7 +603,7 @@ export const mockProducts = [
     reviewsCount: 11400,
     inStock: true,
     stockCount: 140,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=600&q=80'
@@ -636,7 +636,7 @@ export const mockProducts = [
     reviewsCount: 4320,
     inStock: true,
     stockCount: 50,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80'
@@ -668,7 +668,7 @@ export const mockProducts = [
     reviewsCount: 3800,
     inStock: true,
     stockCount: 40,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1585421514738-01798e348b17?auto=format&fit=crop&w=600&q=80'
@@ -696,7 +696,7 @@ export const mockProducts = [
     reviewsCount: 5100,
     inStock: true,
     stockCount: 65,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=600&q=80'
@@ -726,7 +726,7 @@ export const mockProducts = [
     reviewsCount: 7100,
     inStock: true,
     stockCount: 85,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1608248597359-31e9c8bc8ea7?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1608248597359-31e9c8bc8ea7?auto=format&fit=crop&w=600&q=80'
@@ -753,7 +753,7 @@ export const mockProducts = [
     reviewsCount: 6540,
     inStock: true,
     stockCount: 70,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1559591937-e160a22a30bb?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1559591937-e160a22a30bb?auto=format&fit=crop&w=600&q=80'
@@ -780,7 +780,7 @@ export const mockProducts = [
     reviewsCount: 3100,
     inStock: true,
     stockCount: 35,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=600&q=80'
@@ -810,7 +810,7 @@ export const mockProducts = [
     reviewsCount: 8900,
     inStock: true,
     stockCount: 95,
-    deliveryTime: '10 MINS',
+    deliveryTime: 'EXPRESS',
     image: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=500&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=600&q=80'

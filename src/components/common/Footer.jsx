@@ -1,58 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, ShieldCheck, Tag, RotateCcw, Store, Bike, Shield } from 'lucide-react';
+import { Store, Bike, Shield } from 'lucide-react';
 import './Footer.scss';
 
 export const Footer = () => {
   return (
     <footer className="pmart-footer">
-      {/* Trust Badges Strip */}
-      <div className="footer-trust-strip">
-        <div className="container">
-          <div className="trust-grid">
-            <div className="trust-item">
-              <div className="trust-icon-box">
-                <Clock size={20} />
-              </div>
-              <div className="trust-text">
-                <div className="trust-title">10-Minute Superfast Delivery</div>
-                <div className="trust-desc">From our local micro-fulfillment darkstores</div>
-              </div>
-            </div>
-
-            <div className="trust-item">
-              <div className="trust-icon-box">
-                <ShieldCheck size={20} />
-              </div>
-              <div className="trust-text">
-                <div className="trust-title">100% Fresh & Authentic</div>
-                <div className="trust-desc">Direct farm sourcing & strict quality checks</div>
-              </div>
-            </div>
-
-            <div className="trust-item">
-              <div className="trust-icon-box">
-                <Tag size={20} />
-              </div>
-              <div className="trust-text">
-                <div className="trust-title">Best Wholesale & Retail Deals</div>
-                <div className="trust-desc">Save up to 35% on daily grocery staples</div>
-              </div>
-            </div>
-
-            <div className="trust-item">
-              <div className="trust-icon-box">
-                <RotateCcw size={20} />
-              </div>
-              <div className="trust-text">
-                <div className="trust-title">Instant Doorstep Refunds</div>
-                <div className="trust-desc">No questions asked return or replacement</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer Links */}
       <div className="footer-main">
         <div className="container">
@@ -63,7 +16,7 @@ export const Footer = () => {
                 <img src="/Pmart.png" alt="PMart" className="footer-logo" />
               </Link>
               <p className="brand-tagline">
-                PMart delivers farm-fresh groceries, dairy, pantry staples, and everyday essentials straight to your home in 10 minutes.
+                PMart delivers farm-fresh groceries, dairy, pantry staples, and everyday essentials straight to your home fast.
               </p>
               <div className="brand-legal-badge">
                 <span>© 2026 PMart Technologies Private Limited. All rights reserved.</span>

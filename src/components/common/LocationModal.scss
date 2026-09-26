@@ -71,7 +71,7 @@
     transition: all $transition-fast;
 
     &:hover {
-      background-color: darken($pmart-red-light, 2%);
+      background-color: color.adjust($pmart-red-light, $lightness: -2%);
     }
 
     .gps-icon-wrapper {
@@ -135,7 +135,7 @@
 
       &:hover {
         background-color: $surface-secondary;
-        border-color: darken($border-color, 8%);
+        border-color: color.adjust($border-color, $lightness: -8%);
       }
 
       &.selected {

@@ -1,6 +1,40 @@
 .pmart-profile-page {
   padding: 24px 0 48px;
 
+  .profile-menu-container {
+    max-width: 580px;
+    margin: 0 auto;
+  }
+
+  .account-details-view {
+    max-width: 640px;
+    margin: 0 auto;
+
+    .details-header-nav {
+      margin-bottom: 16px;
+
+      .back-to-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-pill;
+        padding: 8px 16px;
+        font-size: 13.5px;
+        font-weight: $font-weight-semibold;
+        color: $charcoal-black;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+          background-color: $surface-secondary;
+          border-color: #CBD5E1;
+        }
+      }
+    }
+  }
+
   .profile-layout-grid {
     display: grid;
     grid-template-columns: 280px 1fr;

@@ -1,0 +1,183 @@
+.pmart-order-status-timeline {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  padding: 18px 20px;
+
+  @include mobile {
+    padding: 14px 14px;
+  }
+
+  .timeline-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $border-color;
+
+    .timeline-title {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+      margin: 0;
+    }
+
+    .current-stage-tag {
+      font-size: 11px;
+      font-weight: $font-weight-bold;
+      background-color: $pmart-red-light;
+      color: $pmart-red;
+      padding: 3px 8px;
+      border-radius: $radius-pill;
+      letter-spacing: 0.03em;
+    }
+  }
+
+  .stages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .timeline-step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    min-height: 48px;
+
+    .indicator-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 24px;
+      flex-shrink: 0;
+
+      .circle-node {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: $font-weight-bold;
+        border: 2px solid $border-color;
+        background-color: $white;
+        color: $text-muted;
+        transition: all $transition-fast;
+        z-index: 2;
+      }
+
+      .connector-line {
+        width: 2px;
+        flex: 1;
+        min-height: 26px;
+        background-color: $border-color;
+        transition: background-color $transition-fast;
+
+        &.filled {
+          background-color: #16a34a;
+        }
+      }
+    }
+
+    .content-column {
+      flex: 1;
+      padding-top: 2px;
+      padding-bottom: 14px;
+
+      .stage-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+
+        .stage-name {
+          font-size: $font-size-sm;
+          font-weight: $font-weight-semibold;
+          color: $text-secondary;
+          letter-spacing: 0.02em;
+        }
+
+        .stage-time {
+          font-size: $font-size-xs;
+          color: $text-muted;
+        }
+      }
+
+      .stage-description {
+        font-size: 12px;
+        color: $text-muted;
+        margin: 2px 0 0;
+      }
+    }
+
+    // Step state variations
+    &.is-done {
+      .circle-node {
+        border-color: #16a34a;
+        background-color: #16a34a;
+        color: $white;
+      }
+
+      .content-column .stage-name {
+        color: $charcoal-black;
+        font-weight: $font-weight-bold;
+      }
+    }
+
+    &.is-current {
+      .circle-node {
+        border-color: $pmart-red;
+        background-color: $pmart-red;
+        color: $white;
+        box-shadow: 0 0 0 4px rgba(242, 13, 24, 0.16);
+      }
+
+      .content-column .stage-name {
+        color: $pmart-red;
+        font-weight: $font-weight-bold;
+      }
+
+      .content-column .stage-time {
+        color: $pmart-red;
+        font-weight: $font-weight-semibold;
+      }
+    }
+
+    &.is-pending {
+      opacity: 0.65;
+    }
+  }
+
+  &.compact-mode {
+    padding: 12px 14px;
+
+    .timeline-step-row {
+      min-height: 36px;
+
+      .indicator-column {
+        width: 18px;
+
+        .circle-node {
+          width: 18px;
+          height: 18px;
+          font-size: 9px;
+        }
+
+        .connector-line {
+          min-height: 18px;
+        }
+      }
+
+      .content-column {
+        padding-bottom: 8px;
+
+        .stage-label-row .stage-name {
+          font-size: 12.5px;
+        }
+      }
+    }
+  }
+}

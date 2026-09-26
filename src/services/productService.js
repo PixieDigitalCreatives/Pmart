@@ -102,7 +102,7 @@ export const productService = {
       reviewsCount: 0,
       rating: 5.0,
       inStock: true,
-      deliveryTime: '10 MINS',
+      deliveryTime: 'EXPRESS',
       tags: ['new-arrivals'],
       ...data
     };

@@ -113,7 +113,7 @@
           }
 
           &:hover {
-            border-color: darken($border-color, 12%);
+            border-color: color.adjust($border-color, $lightness: -12%);
           }
 
           &.active {

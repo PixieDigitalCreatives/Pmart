@@ -1,3 +1,4 @@
+@use "sass:color";
 @use 'variables' as *;
 @use 'breakpoints' as *;
 
@@ -50,7 +51,7 @@
 
   &:hover {
     box-shadow: $shadow-card-hover;
-    border-color: darken($border-color, 6%);
+    border-color: color.adjust($border-color, $lightness: -6%);
   }
 }
 
@@ -106,7 +107,7 @@
 
   &:hover:not(:disabled) {
     background-color: $surface-secondary;
-    border-color: darken($border-color, 10%);
+    border-color: color.adjust($border-color, $lightness: -10%);
   }
 
   &:active:not(:disabled) {
@@ -132,7 +133,7 @@
   border-color: $charcoal-black;
 
   &:hover:not(:disabled) {
-    background-color: lighten($charcoal-black, 8%);
+    background-color: color.adjust($charcoal-black, $lightness: 8%);
   }
 }
 

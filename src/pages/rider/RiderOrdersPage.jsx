@@ -39,7 +39,7 @@ export const RiderOrdersPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-muted" />
-              <span>Target Handover: 10 Mins SLA</span>
+              <span>Target Handover: Express SLA</span>
             </div>
           </div>
 

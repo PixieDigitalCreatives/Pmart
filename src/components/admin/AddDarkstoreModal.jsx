@@ -67,7 +67,7 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
               </div>
               <div>
                 <h3 className="modal-title">Provision New Darkstore</h3>
-                <p className="modal-desc">Onboard a regional micro-fulfillment center to the 10-minute network</p>
+                <p className="modal-desc">Onboard a regional micro-fulfillment center to the quick delivery network</p>
               </div>
             </div>
             <button type="button" className="close-btn" onClick={onClose}>

@@ -12,7 +12,7 @@ export const MobileLocationStrip = () => {
         <div className="strip-left">
           <div className="eta-badge">
             <Clock size={12} />
-            <span>10 MINS</span>
+            <span>Express</span>
           </div>
           <div className="address-snippet">
             <span className="location-tag">{selectedLocation?.tag || 'Delivery'}</span>

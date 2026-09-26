@@ -44,7 +44,7 @@ export const ProductCard = ({ product }) => {
         {/* ETA Badge */}
         <div className="card-eta-badge">
           <Clock size={11} />
-          <span>{product.deliveryTime || '10 MINS'}</span>
+          <span>{product.deliveryTime && !product.deliveryTime.includes('10') ? product.deliveryTime : 'EXPRESS'}</span>
         </div>
 
         {/* Discount Badge */}

@@ -46,7 +46,7 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
             </div>
             <div className="metric-cell">
               <span className="label">Estimated Arrival</span>
-              <span className="val">8–10 mins</span>
+              <span className="val">On the way</span>
             </div>
             <div className="metric-cell">
               <span className="label">Distance to Customer</span>

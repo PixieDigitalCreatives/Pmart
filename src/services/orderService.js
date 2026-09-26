@@ -1,13 +1,44 @@
 import { mockOrders } from '../data/mockOrders';
+import {
+  ORDER_STATUS,
+  PAYMENT_METHOD,
+  PAYMENT_STATUS,
+  DELIVERY_VERIFICATION_STATUS,
+  ORDER_PROGRESSION_STAGES,
+  normalizeOrderStatus
+} from '../types/orderTypes';
 
 let ordersDatabase = [...mockOrders];
+
+const createStandardTimeline = (currentStatus = ORDER_STATUS.PLACED) => {
+  const normCurrent = normalizeOrderStatus(currentStatus);
+  const statusOrder = [
+    ORDER_STATUS.PLACED,
+    ORDER_STATUS.CONFIRMED,
+    ORDER_STATUS.PREPARING,
+    ORDER_STATUS.READY_FOR_PICKUP,
+    ORDER_STATUS.OUT_FOR_DELIVERY,
+    ORDER_STATUS.ARRIVED,
+    ORDER_STATUS.DELIVERED
+  ];
+  const activeIdx = Math.max(0, statusOrder.indexOf(normCurrent));
+
+  return ORDER_PROGRESSION_STAGES.map((stage, idx) => ({
+    status: stage.label,
+    stageKey: stage.key,
+    time: idx < activeIdx ? 'Completed' : idx === activeIdx ? 'Just now' : 'Pending',
+    completed: idx <= activeIdx,
+    current: idx === activeIdx
+  }));
+};
 
 export const orderService = {
   // Get all orders, optionally filtered by status or customer
   async getOrders(filter = {}) {
     let list = [...ordersDatabase];
     if (filter.status && filter.status !== 'all') {
-      list = list.filter(o => o.status === filter.status);
+      const targetNorm = normalizeOrderStatus(filter.status);
+      list = list.filter(o => normalizeOrderStatus(o.status || o.orderStatus) === targetNorm);
     }
     if (filter.customerId) {
       list = list.filter(o => o.customer.id === filter.customerId);
@@ -19,13 +50,30 @@ export const orderService = {
   async getOrderById(id) {
     const order = ordersDatabase.find(o => o.id === id);
     if (!order) {
-      // Fallback: return first order if demoing non-existent id
       return ordersDatabase[0];
+    }
+    // Ensure all required fields exist
+    if (!order.orderStatus) order.orderStatus = normalizeOrderStatus(order.status);
+    if (!order.paymentMethod) order.paymentMethod = PAYMENT_METHOD.COD;
+    if (!order.paymentStatus) {
+      order.paymentStatus = (order.payment?.status === 'Paid' || order.status === 'delivered')
+        ? PAYMENT_STATUS.COLLECTED
+        : PAYMENT_STATUS.PENDING;
+    }
+    if (!order.deliveryVerificationStatus) {
+      order.deliveryVerificationStatus = (order.status === 'delivered')
+        ? DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED
+        : DELIVERY_VERIFICATION_STATUS.OTP_PENDING;
     }
     return order;
   },
 
-  // Create new order on checkout
+  // Alias for getOrderById
+  async getOrder(id) {
+    return this.getOrderById(id);
+  },
+
+  // Create new order on checkout (COD only)
   async createOrder(orderPayload) {
     const newId = `PM-${Math.floor(10000 + Math.random() * 90000)}`;
     const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -55,24 +103,20 @@ export const orderService = {
         rating: 4.9,
         deliveriesCompleted: 1421
       },
-      status: 'placed',
+      orderStatus: ORDER_STATUS.PLACED,
+      status: ORDER_STATUS.PLACED,
+      paymentMethod: PAYMENT_METHOD.COD,
+      paymentStatus: PAYMENT_STATUS.PENDING,
+      deliveryVerificationStatus: DELIVERY_VERIFICATION_STATUS.OTP_PENDING,
       deliveryOtp: randomOtp,
-      timeline: [
-        { status: 'Order Placed', time: 'Just now', completed: true, current: true },
-        { status: 'Order Accepted', time: 'Pending', completed: false },
-        { status: 'Preparing', time: 'Pending', completed: false },
-        { status: 'Ready', time: 'Pending', completed: false },
-        { status: 'Rider Assigned', time: 'Pending', completed: false },
-        { status: 'Picked Up', time: 'Pending', completed: false },
-        { status: 'Out for Delivery', time: 'Pending', completed: false },
-        { status: 'Delivered', time: 'Pending', completed: false }
-      ],
+      timeline: createStandardTimeline(ORDER_STATUS.PLACED),
       items: orderPayload.items,
       billing: orderPayload.billing,
       payment: {
-        method: orderPayload.paymentMethod,
-        status: orderPayload.paymentMethod === 'Cash on Delivery' ? 'Pending' : 'Paid',
-        transactionId: `TXN-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+        method: 'Cash on Delivery',
+        paymentMethod: PAYMENT_METHOD.COD,
+        status: PAYMENT_STATUS.PENDING,
+        transactionId: `COD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
       },
       estimatedDeliveryTime: '10–12 mins'
     };
@@ -85,23 +129,26 @@ export const orderService = {
   async updateOrderStatus(id, newStatus) {
     const order = ordersDatabase.find(o => o.id === id);
     if (order) {
-      order.status = newStatus;
-      // update timeline
-      const statusMap = {
-        'placed': 0,
-        'accepted': 1,
-        'preparing': 2,
-        'ready': 3,
-        'rider_assigned': 4,
-        'picked_up': 5,
-        'out_for_delivery': 6,
-        'delivered': 7
-      };
-      const activeIdx = statusMap[newStatus] ?? 0;
-      order.timeline.forEach((step, idx) => {
-        step.completed = idx <= activeIdx;
-        step.current = idx === activeIdx;
-      });
+      const canonicalStatus = normalizeOrderStatus(newStatus);
+      order.orderStatus = canonicalStatus;
+      order.status = canonicalStatus;
+      order.timeline = createStandardTimeline(canonicalStatus);
+      return order;
+    }
+    throw new Error('Order not found');
+  },
+
+  // Update arbitrary partial fields on an order
+  async updateOrderData(id, partialData) {
+    const order = ordersDatabase.find(o => o.id === id);
+    if (order) {
+      Object.assign(order, partialData);
+      if (partialData.orderStatus || partialData.status) {
+        const canonical = normalizeOrderStatus(partialData.orderStatus || partialData.status);
+        order.orderStatus = canonical;
+        order.status = canonical;
+        order.timeline = createStandardTimeline(canonical);
+      }
       return order;
     }
     throw new Error('Order not found');

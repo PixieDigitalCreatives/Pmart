@@ -47,7 +47,7 @@
       transition: all $transition-fast;
 
       &:hover {
-        border-color: darken($border-color, 8%);
+        border-color: color.adjust($border-color, $lightness: -8%);
         box-shadow: $shadow-md;
       }
 

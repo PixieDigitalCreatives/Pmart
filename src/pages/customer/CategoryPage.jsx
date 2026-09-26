@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -8,7 +8,9 @@ import './CategoryPage.scss';
 
 export const CategoryPage = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [category, setCategory] = useState(null);
+  const [allCategories, setAllCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [activeSubcategory, setActiveSubcategory] = useState('All');
   const [sortBy, setSortBy] = useState('default');
@@ -18,8 +20,12 @@ export const CategoryPage = () => {
     const loadCategoryData = async () => {
       setLoading(true);
       try {
-        const cat = await categoryService.getCategoryBySlug(slug);
+        const [cat, all] = await Promise.all([
+          categoryService.getCategoryBySlug(slug),
+          categoryService.getCategories()
+        ]);
         setCategory(cat);
+        setAllCategories(all || []);
         setActiveSubcategory('All');
 
         const res = await productService.getProducts({ category: slug });
@@ -33,6 +39,13 @@ export const CategoryPage = () => {
 
     loadCategoryData();
   }, [slug]);
+
+  const handleCategoryChange = (e) => {
+    const newSlug = e.target.value;
+    if (newSlug && newSlug !== slug) {
+      navigate(`/category/${newSlug}`);
+    }
+  };
 
   const handleSubcategoryChange = async (sub) => {
     setActiveSubcategory(sub);
@@ -79,43 +92,51 @@ export const CategoryPage = () => {
           <span className="current-crumb">{category?.name}</span>
         </nav>
 
-        {/* Category Hero Banner */}
-        <div className="category-hero-header">
-          <div className="cat-header-text">
-            <span className="sub-badge">EXPRESS GROCERY</span>
-            <h1 className="category-title">{category?.name}</h1>
-            <p className="category-desc">{category?.description}</p>
-          </div>
-          {category?.image && (
-            <img src={category.image} alt={category.name} className="cat-header-img" />
-          )}
+        <div className="category-page-header">
+          <h1 className="category-page-title">{category?.name}</h1>
         </div>
 
-        {/* Subcategories Strip */}
-        {category?.subcategories && category.subcategories.length > 0 && (
-          <div className="subcategories-chip-strip">
-            <button
-              className={`subcat-chip ${activeSubcategory === 'All' ? 'active' : ''}`}
-              onClick={() => handleSubcategoryChange('All')}
-            >
-              All {category.name}
-            </button>
-            {category.subcategories.map((sub, i) => (
-              <button
-                key={i}
-                className={`subcat-chip ${activeSubcategory === sub ? 'active' : ''}`}
-                onClick={() => handleSubcategoryChange(sub)}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Toolbar: Count & Sort */}
+        {/* Toolbar: Category Dropdown (All 18 Categories), Subcategory Filter, Count & Sort */}
         <div className="category-toolbar">
-          <div className="items-count-text">
-            Showing <strong>{products.length}</strong> items in {category?.name}
+          <div className="toolbar-left-group">
+            {/* All 18 Categories Dropdown */}
+            <div className="toolbar-control-item">
+              <label htmlFor="cat-dropdown-filter">Categories:</label>
+              <select
+                id="cat-dropdown-filter"
+                className="form-select category-filter-select"
+                value={category?.slug || slug}
+                onChange={handleCategoryChange}
+              >
+                {allCategories.map((cat) => (
+                  <option key={cat.id} value={cat.slug}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subcategories Filter for the selected category */}
+            {category?.subcategories && category.subcategories.length > 0 && (
+              <div className="toolbar-control-item">
+                <label htmlFor="subcat-dropdown-filter">Subcategory:</label>
+                <select
+                  id="subcat-dropdown-filter"
+                  className="form-select subcategory-filter-select"
+                  value={activeSubcategory}
+                  onChange={(e) => handleSubcategoryChange(e.target.value)}
+                >
+                  <option value="All">All {category.name}</option>
+                  {category.subcategories.map((sub, i) => (
+                    <option key={i} value={sub}>{sub}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="items-count-text">
+              Showing <strong>{products.length}</strong> items in {category?.name}
+            </div>
           </div>
 
           <div className="toolbar-sort">

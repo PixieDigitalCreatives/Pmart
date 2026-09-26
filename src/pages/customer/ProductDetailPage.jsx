@@ -156,7 +156,7 @@ export const ProductDetailPage = () => {
               )}
               <div className="eta-pill">
                 <Clock size={13} />
-                <span>10 MINS Express Delivery</span>
+                <span>Express Superfast Delivery</span>
               </div>
             </div>
 

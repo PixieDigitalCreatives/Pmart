@@ -3,6 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { mockRiders } from '@/data/mockRiders';
 import { ShopTrackRiderModal } from '@/components/shop/ShopTrackRiderModal';
+import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
+import {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  DELIVERY_VERIFICATION_STATUS,
+  normalizeOrderStatus
+} from '@/types/orderTypes';
 import {
   ChevronLeft,
   CheckCircle2,
@@ -14,7 +21,11 @@ import {
   XCircle,
   AlertTriangle,
   Package,
-  Navigation
+  Navigation,
+  Lock,
+  ShieldCheck,
+  Banknote,
+  KeyRound
 } from 'lucide-react';
 import './ShopOrderDetailPage.scss';
 
@@ -28,29 +39,40 @@ export const ShopOrderDetailPage = () => {
   const [isTrackRiderOpen, setIsTrackRiderOpen] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchOrder = async () => {
-      setLoading(true);
       const data = await orderService.getOrderById(id);
-      setOrder(data);
-      if (data?.rider) setSelectedRiderId(data.rider.id);
-      setLoading(false);
+      if (isMounted) {
+        setOrder(data);
+        if (data?.rider) setSelectedRiderId(data.rider.id);
+        setLoading(false);
+      }
     };
 
     fetchOrder();
+    const interval = setInterval(fetchOrder, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [id]);
 
   const handleStatusChange = async (newStatus) => {
     const updated = await orderService.updateOrderStatus(order.id, newStatus);
     setOrder({ ...updated });
-    setActionNotice(`Order status successfully updated to "${newStatus.replace('_', ' ')}"`);
+    setActionNotice(`Order status successfully updated to "${newStatus.replace(/_/g, ' ')}"`);
     setTimeout(() => setActionNotice(''), 3000);
   };
 
-  const handleAssignRider = (e) => {
+  const handleAssignRider = async (e) => {
     e.preventDefault();
     const riderObj = mockRiders.find(r => r.id === selectedRiderId);
     if (riderObj) {
-      const updated = { ...order, rider: riderObj, status: 'rider_assigned' };
+      const updated = await orderService.updateOrderData(order.id, {
+        rider: riderObj,
+        status: ORDER_STATUS.CONFIRMED,
+        orderStatus: ORDER_STATUS.CONFIRMED
+      });
       setOrder(updated);
       setActionNotice(`Rider ${riderObj.name} assigned to Order #${order.id}`);
       setTimeout(() => setActionNotice(''), 3000);
@@ -65,6 +87,17 @@ export const ShopOrderDetailPage = () => {
       </div>
     );
   }
+
+  const currentStatus = normalizeOrderStatus(order?.orderStatus || order?.status);
+  const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
+  const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
+  const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
+  const isReady = currentStatus === ORDER_STATUS.READY_FOR_PICKUP;
+  const isPreparing = currentStatus === ORDER_STATUS.PREPARING;
+  const isConfirmed = currentStatus === ORDER_STATUS.CONFIRMED;
+  const isPlaced = currentStatus === ORDER_STATUS.PLACED;
+  const isCashCollected = order?.paymentStatus === PAYMENT_STATUS.COLLECTED;
+  const isOtpVerified = order?.deliveryVerificationStatus === DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED;
 
   return (
     <div className="shop-order-detail-page">
@@ -88,11 +121,15 @@ export const ShopOrderDetailPage = () => {
         <div className="status-indicator-box">
           <div className="flex items-center gap-2">
             <span className="status-label">Current Stage:</span>
-            <span className="badge badge-primary status-chip">
-              {order?.status?.replace('_', ' ').toUpperCase()}
+            <span className={`badge ${
+              isDelivered ? 'badge-success' :
+              isArrived ? 'badge-info' :
+              isOutForDelivery ? 'badge-primary' : 'badge-warning'
+            } status-chip`}>
+              {currentStatus.replace(/_/g, ' ')}
             </span>
           </div>
-          {order?.status === 'out_for_delivery' && (
+          {(isOutForDelivery || isArrived) && (
             <button
               type="button"
               className="btn btn-primary btn-sm track-rider-top-btn"
@@ -111,6 +148,98 @@ export const ShopOrderDetailPage = () => {
           <span>{actionNotice}</span>
         </div>
       )}
+
+      {/* Dedicated Section 10: COD Payment & Delivery Verification Card */}
+      <div className="detail-card cod-verification-card" style={{ marginBottom: '24px' }}>
+        <div className="card-header-with-badge" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 className="card-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Banknote size={20} className="text-primary" />
+            <span>COD Payment & Delivery Verification</span>
+          </h3>
+          <PaymentStatusBadge
+            paymentStatus={order?.paymentStatus}
+            paymentMethod={order?.paymentMethod || 'COD'}
+            amount={order?.billing?.grandTotal}
+            compact={true}
+          />
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '12px',
+            marginBottom: '16px'
+          }}
+        >
+          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Order Status</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
+              {currentStatus.replace(/_/g, ' ')}
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Payment Method</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
+              {order?.paymentMethod || 'COD'}
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Payment Status</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: isCashCollected ? '#16a34a' : '#d97706', marginTop: '4px' }}>
+              {isCashCollected ? 'COLLECTED ✓' : 'PENDING'}
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Delivery Verification</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: isOtpVerified ? '#16a34a' : '#64748b', marginTop: '4px' }}>
+              {isOtpVerified ? 'OTP VERIFIED ✓' : 'OTP PENDING'}
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time State Callouts for Shop Owner */}
+        {isArrived && !isCashCollected && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#fef3c7', color: '#92400e', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
+            <AlertTriangle size={16} />
+            <span>Rider has arrived at customer location. Awaiting cash collection of ₹{order?.billing?.grandTotal}.</span>
+          </div>
+        )}
+
+        {isArrived && isCashCollected && !isOtpVerified && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#eff6ff', color: '#1e40af', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
+            <KeyRound size={16} />
+            <span>Cash collected ✓ Rider is verifying customer Delivery OTP. Final delivery completion will trigger upon verification.</span>
+          </div>
+        )}
+
+        {isDelivered && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#f0fdf4', color: '#166534', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
+            <CheckCircle2 size={16} />
+            <span>Delivery Completed & Verified ✓ ₹{order?.billing?.grandTotal} collected, customer OTP verified successfully.</span>
+          </div>
+        )}
+
+        {/* Section 10 Rule: Shop owner cannot manually mark as delivered if delivery OTP is not verified */}
+        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#64748b' }}>
+            <Lock size={14} />
+            <span>Manual delivery override is locked. Delivery completion strictly requires customer OTP verification by the rider.</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={true}
+            style={{ opacity: 0.65, cursor: 'not-allowed', fontSize: '12px' }}
+            title="Shop owners cannot mark an order as delivered without verified customer OTP"
+          >
+            {isDelivered ? '✓ Order Delivered' : '🔒 Mark Delivered (Requires OTP)'}
+          </button>
+        </div>
+      </div>
 
       {/* Main 2-column Grid */}
       <div className="detail-grid">
@@ -182,27 +311,27 @@ export const ShopOrderDetailPage = () => {
           {/* Order Processing Actions */}
           <div className="detail-card actions-card">
             <h3 className="card-heading">Fulfillment Actions</h3>
-            <p className="actions-subtext">Progress the order through darkstore packaging stages</p>
+            <p className="actions-subtext">Progress the darkstore packaging workflow</p>
 
             <div className="action-buttons-stack">
               <button
                 className="btn btn-secondary btn-full stage-btn"
-                onClick={() => handleStatusChange('accepted')}
-                disabled={order?.status !== 'placed'}
+                onClick={() => handleStatusChange(ORDER_STATUS.CONFIRMED)}
+                disabled={!isPlaced}
               >
                 1. Accept Order
               </button>
               <button
                 className="btn btn-secondary btn-full stage-btn"
-                onClick={() => handleStatusChange('preparing')}
-                disabled={order?.status === 'ready' || order?.status === 'out_for_delivery' || order?.status === 'delivered'}
+                onClick={() => handleStatusChange(ORDER_STATUS.PREPARING)}
+                disabled={!isConfirmed}
               >
                 2. Mark as Preparing / In Packing
               </button>
               <button
                 className="btn btn-primary btn-full stage-btn"
-                onClick={() => handleStatusChange('ready')}
-                disabled={order?.status === 'ready' || order?.status === 'out_for_delivery' || order?.status === 'delivered'}
+                onClick={() => handleStatusChange(ORDER_STATUS.READY_FOR_PICKUP)}
+                disabled={!isPreparing}
               >
                 3. Mark Ready for Rider Pickup
               </button>
@@ -249,7 +378,7 @@ export const ShopOrderDetailPage = () => {
                   </div>
                 </div>
 
-                {order?.status === 'out_for_delivery' && (
+                {(isOutForDelivery || isArrived) && (
                   <button
                     type="button"
                     className="btn btn-outline-red btn-sm btn-full mt-3"

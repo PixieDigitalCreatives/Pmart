@@ -65,7 +65,7 @@ export const CartPage = () => {
                 <div className="dest-details">
                   <div className="dest-title">
                     <span>Delivering to <strong>{selectedLocation?.tag}</strong></span>
-                    <span className="eta-badge">10 MINS</span>
+                    <span className="eta-badge">EXPRESS</span>
                   </div>
                   <div className="dest-address">{selectedLocation?.address}</div>
                 </div>
@@ -207,7 +207,7 @@ export const CartPage = () => {
 
               <div className="cancellation-policy-note">
                 <ShieldCheck size={14} className="shield" />
-                <span>Orders are safely packed & delivered in 10 minutes</span>
+                <span>Orders are safely packed & delivered fast</span>
               </div>
             </div>
           </div>

@@ -4,11 +4,11 @@ import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
 import { useAuth } from '@/context/AuthContext';
 import { orderService } from '@/services/orderService';
+import { CODPaymentCard } from '@/components/order/CODPaymentCard';
+import { PAYMENT_METHOD, PAYMENT_STATUS } from '@/types/orderTypes';
 import {
   MapPin,
   CheckCircle2,
-  CreditCard,
-  Smartphone,
   Banknote,
   ShieldCheck,
   Clock,
@@ -27,8 +27,7 @@ export const CheckoutPage = () => {
 
   const [activeAddressId, setActiveAddressId] = useState(selectedLocation?.id || savedLocations[0]?.id);
   const [deliveryNote, setDeliveryNote] = useState('Ring the doorbell twice. Please handle fragile produce carefully.');
-  const [paymentMethod, setPaymentMethod] = useState('UPI');
-  const [upiOption, setUpiOption] = useState('Google Pay');
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHOD.COD);
   const [isPlacing, setIsPlacing] = useState(false);
 
   if (items.length === 0) {
@@ -60,7 +59,8 @@ export const CheckoutPage = () => {
         deliveryInstructions: deliveryNote,
         items,
         billing: billSummary,
-        paymentMethod: paymentMethod === 'UPI' ? `UPI (${upiOption})` : paymentMethod
+        paymentMethod: PAYMENT_METHOD.COD,
+        paymentStatus: PAYMENT_STATUS.PENDING
       };
 
       const newOrder = await orderService.createOrder(orderPayload);
@@ -93,7 +93,7 @@ export const CheckoutPage = () => {
                 <div className="step-num">1</div>
                 <div>
                   <h3 className="step-title">Delivery Address</h3>
-                  <p className="step-subtitle">Express delivery within 10 minutes to your selected address</p>
+                  <p className="step-subtitle">Express delivery to your selected address</p>
                 </div>
               </div>
 
@@ -167,97 +167,22 @@ export const CheckoutPage = () => {
               />
             </section>
 
-            {/* Step 3: Payment Method */}
+            {/* Step 3: Payment Method (COD Only) */}
             <section className="checkout-section-card">
               <div className="section-head">
                 <div className="step-num">3</div>
                 <div>
-                  <h3 className="step-title">Select Payment Method</h3>
-                  <p className="step-subtitle">Fast, seamless, and completely secure checkout options</p>
+                  <h3 className="step-title">Payment Method</h3>
+                  <p className="step-subtitle">Cash on Delivery (COD) only for your neighborhood</p>
                 </div>
               </div>
 
               <div className="payment-options-list">
-                {/* UPI Option */}
-                <div
-                  className={`payment-option-row ${paymentMethod === 'UPI' ? 'selected' : ''}`}
-                  onClick={() => setPaymentMethod('UPI')}
-                >
-                  <div className="option-radio">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === 'UPI'}
-                      onChange={() => setPaymentMethod('UPI')}
-                    />
-                  </div>
-                  <div className="option-icon">
-                    <Smartphone size={20} />
-                  </div>
-                  <div className="option-details">
-                    <div className="option-name">UPI (Instant & Zero Surcharge)</div>
-                    <div className="option-desc">Google Pay, PhonePe, Paytm or UPI ID</div>
-                  </div>
-                </div>
-
-                {paymentMethod === 'UPI' && (
-                  <div className="upi-apps-subrow">
-                    {['Google Pay', 'PhonePe', 'Paytm UPI', 'BHIM UPI'].map((app) => (
-                      <button
-                        key={app}
-                        type="button"
-                        className={`upi-app-chip ${upiOption === app ? 'active' : ''}`}
-                        onClick={() => setUpiOption(app)}
-                      >
-                        {app}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Cards Option */}
-                <div
-                  className={`payment-option-row ${paymentMethod === 'Card' ? 'selected' : ''}`}
-                  onClick={() => setPaymentMethod('Card')}
-                >
-                  <div className="option-radio">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === 'Card'}
-                      onChange={() => setPaymentMethod('Card')}
-                    />
-                  </div>
-                  <div className="option-icon">
-                    <CreditCard size={20} />
-                  </div>
-                  <div className="option-details">
-                    <div className="option-name">Credit / Debit Card</div>
-                    <div className="option-desc">Visa, MasterCard, RuPay & American Express</div>
-                  </div>
-                </div>
-
-                {/* COD Option */}
-                <div
-                  className={`payment-option-row ${paymentMethod === 'Cash on Delivery' ? 'selected' : ''}`}
-                  onClick={() => setPaymentMethod('Cash on Delivery')}
-                >
-                  <div className="option-radio">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={paymentMethod === 'Cash on Delivery'}
-                      onChange={() => setPaymentMethod('Cash on Delivery')}
-                    />
-                  </div>
-                  <div className="option-icon">
-                    <Banknote size={20} />
-                  </div>
-                  <div className="option-details">
-                    <div className="option-name">Cash on Delivery (COD)</div>
-                    <div className="option-desc">Pay cash or scan QR at your doorstep</div>
-                  </div>
-                </div>
+                <CODPaymentCard
+                  amount={billSummary.grandTotal}
+                  selected={true}
+                  onSelect={() => setPaymentMethod(PAYMENT_METHOD.COD)}
+                />
               </div>
             </section>
           </div>
@@ -318,13 +243,13 @@ export const CheckoutPage = () => {
                 onClick={handlePlaceOrder}
                 disabled={isPlacing}
               >
-                <span>{isPlacing ? 'Placing Order...' : `Place Order • ₹${billSummary.grandTotal}`}</span>
+                <span>{isPlacing ? 'Placing Order...' : `Place COD Order • ₹${billSummary.grandTotal}`}</span>
                 <ArrowRight size={18} />
               </button>
 
               <div className="safety-note">
                 <ShieldCheck size={14} className="shield" />
-                <span>Guaranteed contact-less & prompt delivery</span>
+                <span>Pay ₹{billSummary.grandTotal} cash upon doorstep delivery</span>
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ export const mockCategories = [
     shortName: 'Fresh Produce',
     icon: 'Apple',
     image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=400&q=80',
-    description: 'Farm-fresh organic fruits, seasonal greens, and daily vegetables delivered in 10 minutes.',
+    description: 'Farm-fresh organic fruits, seasonal greens, and daily vegetables delivered fast to your doorstep.',
     subcategories: ['Fresh Fruits', 'Fresh Vegetables', 'Leafy Greens & Herbs', 'Exotic Fruits', 'Season Specials', 'Organic & Hydroponic'],
     itemCount: 142
   },

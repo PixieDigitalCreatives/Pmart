@@ -446,6 +446,458 @@
   .order-details-bottom-section {
     max-width: 780px;
     margin-top: 32px;
+
+    .card-top-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .payment-status-badge-container {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed $border-color;
+
+      .cod-details-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 13px;
+
+        .cod-title {
+          font-weight: 700;
+          color: $charcoal-black;
+        }
+
+        .cod-amount {
+          color: $text-secondary;
+          font-weight: 600;
+        }
+
+        .cod-status {
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: $radius-pill;
+          font-size: 11.5px;
+
+          &.status-pending {
+            background-color: #fef3c7;
+            color: #b45309;
+          }
+
+          &.status-collected {
+            background-color: #dcfce7;
+            color: #15803d;
+          }
+        }
+      }
+    }
+  }
+
+  // Rider Arrived Notification Card
+  .rider-arrived-alert-card {
+    background: #ffffff;
+    border: 2px solid #22c55e;
+    border-radius: $radius-xl;
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.12);
+
+    @include mobile {
+      padding: 16px;
+    }
+
+    .alert-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+
+      .arrived-icon-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #dcfce7;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .arrived-headings {
+        .arrived-pill {
+          display: inline-block;
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          color: #15803d;
+          background-color: #dcfce7;
+          padding: 3px 8px;
+          border-radius: $radius-pill;
+          margin-bottom: 4px;
+        }
+
+        .arrived-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: $charcoal-black;
+          margin: 0 0 4px;
+
+          @include mobile {
+            font-size: 20px;
+          }
+        }
+
+        .arrived-subtext {
+          font-size: 14px;
+          color: $text-secondary;
+          margin: 0;
+        }
+      }
+    }
+
+    .cash-payment-readiness-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: $radius-lg;
+      padding: 16px;
+      margin-bottom: 14px;
+
+      .cash-box-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+
+        .cash-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: $radius-md;
+          background: #fde68a;
+          color: #b45309;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .cash-callout-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #92400e;
+          margin-bottom: 4px;
+
+          .highlight-amount {
+            color: $pmart-red;
+            font-size: 19px;
+            font-weight: 800;
+          }
+        }
+
+        .cash-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+          color: #78350f;
+          flex-wrap: wrap;
+
+          .text-amber {
+            color: #b45309;
+          }
+
+          .text-green {
+            color: #15803d;
+          }
+        }
+      }
+    }
+
+    .otp-sharing-instruction {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: $text-secondary;
+      background: $surface-secondary;
+      padding: 10px 14px;
+      border-radius: $radius-md;
+
+      .key-icon {
+        color: #d97706;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .hero-cod-callout {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+    padding: 6px 12px;
+    border-radius: $radius-pill;
+    font-size: 12.5px;
+    margin-top: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  // Order Details Bottom Section & Items Accordion
+  .order-details-bottom-section {
+    margin-top: 24px;
+
+    .order-items-summary-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-2xl;
+      padding: 24px;
+      box-shadow: $shadow-xs;
+
+      @include mobile {
+        padding: 16px;
+        border-radius: $radius-xl;
+      }
+
+      .card-top-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        .card-title {
+          font-size: 17px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          margin: 0;
+        }
+      }
+
+      // Dropdown Trigger: View Items
+      .view-items-dropdown-trigger {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: $radius-lg;
+        cursor: pointer;
+        transition: all $transition-fast;
+        margin-bottom: 16px;
+
+        &:hover {
+          background: #F1F5F9;
+          border-color: #CBD5E1;
+        }
+
+        .trigger-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          .pkg-icon {
+            color: $pmart-red;
+          }
+
+          .trigger-label {
+            font-size: 13.5px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+          }
+        }
+
+        .trigger-right {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .subtext {
+            font-size: 12px;
+            color: $text-muted;
+
+            @include mobile {
+              display: none;
+            }
+          }
+
+          .dropdown-chevron {
+            color: $text-secondary;
+            transition: transform 0.25s ease;
+
+            &.rotated {
+              transform: rotate(180deg);
+            }
+          }
+        }
+      }
+
+      // Beautiful Small Cards Grid
+      .items-small-cards-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+        animation: fadeIn 0.2s ease-out;
+
+        .small-product-order-card {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 10px 14px;
+          background: #FFFFFF;
+          border: 1px solid #F1F5F9;
+          border-radius: $radius-lg;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: border-color $transition-fast, box-shadow $transition-fast;
+
+          &:hover {
+            border-color: #E2E8F0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+          }
+
+          .thumb-container {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            max-width: 52px;
+            border-radius: $radius-md;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            .thumb-img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: block;
+            }
+          }
+
+          .card-info {
+            flex: 1;
+            min-width: 0;
+
+            .item-name {
+              font-size: 13.5px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+              @include text-truncate;
+              line-height: 1.3;
+            }
+
+            .item-unit-row {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12px;
+              color: $text-muted;
+              margin-top: 2px;
+
+              .qty-chip {
+                color: $charcoal-black;
+                font-weight: $font-weight-semibold;
+              }
+            }
+
+            .item-rate-calc {
+              font-size: 11.5px;
+              color: $text-secondary;
+              margin-top: 1px;
+            }
+          }
+
+          .card-amount {
+            flex-shrink: 0;
+            text-align: right;
+
+            .currency-val {
+              font-size: 14px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+            }
+          }
+        }
+      }
+
+      // Bill Breakdown
+      .bill-breakdown-sub {
+        border-top: 1px solid $border-light;
+        padding-top: 16px;
+        margin-top: 8px;
+
+        .line {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13.5px;
+          color: $text-secondary;
+          margin-bottom: 8px;
+
+          &.total {
+            font-size: 16px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+            border-top: 1px dashed $border-color;
+            padding-top: 12px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+          }
+        }
+
+        .payment-status-badge-container {
+          background: #F8FAFC;
+          border-radius: $radius-lg;
+          padding: 12px 16px;
+          margin-top: 12px;
+          border: 1px solid #E2E8F0;
+
+          .cod-details-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12.5px;
+            font-weight: $font-weight-semibold;
+            flex-wrap: wrap;
+            gap: 8px;
+
+            .cod-title {
+              color: #475569;
+            }
+
+            .cod-amount {
+              color: $charcoal-black;
+            }
+
+            .cod-status {
+              padding: 2px 8px;
+              border-radius: $radius-pill;
+              font-size: 11.5px;
+
+              &.status-pending {
+                background: #FEF3C7;
+                color: #92400E;
+              }
+
+              &.status-collected {
+                background: #DCFCE7;
+                color: #15803D;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

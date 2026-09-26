@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Layouts
 import { CustomerLayout } from '@/components/common/CustomerLayout';
 import { ShopLayout } from '@/components/shop/ShopLayout';
 import { RiderLayout } from '@/components/rider/RiderLayout';

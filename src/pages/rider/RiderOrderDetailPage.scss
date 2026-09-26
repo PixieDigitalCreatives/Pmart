@@ -275,4 +275,70 @@
       outline: none;
     }
   }
+
+  .action-notice-toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: $success-bg;
+    color: $success-text;
+    border: 1px solid $success-border;
+    border-radius: $radius-lg;
+    font-size: 13px;
+    font-weight: $font-weight-medium;
+    margin-bottom: 16px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .rider-arrived-workflow-container {
+    margin-bottom: 20px;
+  }
+
+  .arrived-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #059669;
+    border-color: #059669;
+    color: $white;
+    font-size: 16px;
+    font-weight: $font-weight-bold;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+
+    &:hover:not(:disabled) {
+      background: #047857;
+      border-color: #047857;
+    }
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  .rider-guidance-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-radius: $radius-xl;
+    font-size: 13.5px;
+    font-weight: $font-weight-semibold;
+    text-align: center;
+
+    &.warning {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    &.info {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+  }
 }

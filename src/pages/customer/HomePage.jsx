@@ -5,7 +5,6 @@ import { productService } from '@/services/productService';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { ShieldCheck, ArrowRight, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import heroBgImage from '@/assets/hero-bg.png';
 import './HomePage.scss';
 
 export const HomePage = () => {
@@ -41,7 +40,7 @@ export const HomePage = () => {
           {/* Full Width Edge-to-Edge Image Media Backdrop */}
           <div className="hero-backdrop-media">
             <img
-              src={heroBgImage}
+              src="/hero-bg.png"
               alt="Fresh Groceries Delivered Fast"
               className="hero-grocery-img"
             />

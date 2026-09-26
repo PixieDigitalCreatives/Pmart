@@ -8,7 +8,7 @@ export const LiveChatModal = ({ isOpen, onClose }) => {
     {
       id: 1,
       sender: 'agent',
-      text: 'Hello! Welcome to PMart 24x7 Priority Support. How can we assist you with your 10-minute grocery delivery today?',
+      text: 'Hello! Welcome to PMart 24x7 Priority Support. How can we assist you with your grocery delivery today?',
       time: 'Just now'
     }
   ]);

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation as useRouteLocation, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, ShoppingBag, User, Tag, Package, ChevronDown, Menu, X } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
@@ -11,10 +11,31 @@ export const Header = () => {
   const { selectedLocation, setLocationModalOpen } = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const routeLocation = useRouteLocation();
+  const [searchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const searchInputRef = useRef(null);
+
+  // Sync searchQuery with URL query parameter when on /search
+  useEffect(() => {
+    if (routeLocation.pathname === '/search') {
+      const q = searchParams.get('q') || '';
+      setSearchQuery(q);
+      // Auto-focus top main search bar when on search page
+      searchInputRef.current?.focus();
+    }
+  }, [routeLocation.pathname, searchParams]);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (routeLocation.pathname === '/search') {
+      navigate(val.trim() ? `/search?q=${encodeURIComponent(val.trim())}` : '/search', { replace: true });
+    }
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -25,9 +46,29 @@ export const Header = () => {
     }
   };
 
+  const handleSearchFocus = () => {
+    if (routeLocation.pathname !== '/search') {
+      navigate(searchQuery.trim() ? `/search?q=${encodeURIComponent(searchQuery.trim())}` : '/search');
+    }
+  };
+
+  const handleClear = () => {
+    setSearchQuery('');
+    if (routeLocation.pathname === '/search') {
+      navigate('/search', { replace: true });
+    }
+    searchInputRef.current?.focus();
+  };
+
+  const isAccountOrOrders =
+    routeLocation.pathname.startsWith('/profile') ||
+    routeLocation.pathname.startsWith('/addresses') ||
+    routeLocation.pathname.startsWith('/orders') ||
+    routeLocation.pathname.startsWith('/account');
+
   return (
     <header className="pmart-header">
-      <div className="header-container">
+      <div className={`header-container ${isAccountOrOrders ? 'no-search' : ''}`}>
         {/* Left: Brand Logo & Delivery Location */}
         <div className="header-left">
           <Link to="/" className="brand-logo-link">
@@ -44,9 +85,7 @@ export const Header = () => {
             </div>
             <div className="location-text">
               <div className="delivery-time-tag">
-                <span className="bold-time">10 MINS</span>
-                <span className="dot">•</span>
-                <span className="deliver-label">Express Delivery</span>
+                <span className="bold-time">Express Delivery</span>
               </div>
               <div className="location-address">
                 <span className="address-line">
@@ -58,33 +97,33 @@ export const Header = () => {
           </button>
         </div>
 
-        {/* Center: Search Bar */}
-        <div className="header-search">
-          <form onSubmit={handleSearchSubmit} className="search-form">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search for groceries, milk, fruits, veggies and more..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => {
-                if (window.location.pathname !== '/search' && !searchQuery) {
-                  // Allow typing or navigating
-                }
-              }}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="clear-search-btn"
-                onClick={() => setSearchQuery('')}
-              >
-                <X size={15} />
-              </button>
-            )}
-          </form>
-        </div>
+        {/* Center: Search Bar (Hidden on Account and Orders pages) */}
+        {!isAccountOrOrders && (
+          <div className="header-search">
+            <form onSubmit={handleSearchSubmit} className="search-form">
+              <Search size={18} className="search-icon" />
+              <input
+                ref={searchInputRef}
+                id="header-main-search-input"
+                type="text"
+                className="search-input"
+                placeholder="Search for groceries, milk, fruits, veggies and more..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={handleClear}
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </form>
+          </div>
+        )}
 
         {/* Right: Navigation Actions */}
         <div className="header-actions">

@@ -6,14 +6,11 @@ import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { StickyMobileCart } from '@/components/common/StickyMobileCart';
 import { CartDrawer } from '@/components/common/CartDrawer';
 import { LocationModal } from '@/components/common/LocationModal';
-import { DemoRoleBar } from '@/components/common/DemoRoleBar';
-
 export const CustomerLayout = ({ children }) => {
   return (
     <div className="pmart-customer-layout">
-      <DemoRoleBar />
-      <Header />
       <MobileLocationStrip />
+      <Header />
       <CartDrawer />
       <LocationModal />
       <main className="customer-main-content">

@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { riderService } from '@/services/riderService';
 import { orderService } from '@/services/orderService';
+import { deliveryService } from '@/services/deliveryService';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { locationService } from '@/services/locationService';
+import { CollectPaymentSection } from '@/components/delivery/CollectPaymentSection';
+import { DeliveryVerificationSection } from '@/components/delivery/DeliveryVerificationSection';
+import { DeliveryCompletionScreen } from '@/components/delivery/DeliveryCompletionScreen';
+import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
+import {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  DELIVERY_VERIFICATION_STATUS,
+  normalizeOrderStatus
+} from '@/types/orderTypes';
 import {
   Navigation,
   Phone,
@@ -13,10 +23,10 @@ import {
   Clock,
   KeyRound,
   ChevronLeft,
-  X,
   ShieldCheck,
   ArrowRight,
-  Radio
+  Banknote,
+  Loader2
 } from 'lucide-react';
 import './RiderOrderDetailPage.scss';
 
@@ -26,27 +36,31 @@ export const RiderOrderDetailPage = () => {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [actionNotice, setActionNotice] = useState('');
   const [isGpsActive, setIsGpsActive] = useState(true);
   const [liveGpsCoords, setLiveGpsCoords] = useState(null);
 
-  useEffect(() => {
-    const fetchOrder = async () => {
-      setLoading(true);
+  const fetchOrder = async () => {
+    try {
       const data = await orderService.getOrderById(id);
       setOrder(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
+    setLoading(true);
     fetchOrder();
   }, [id]);
 
-  // Activate location tracking when order is out for delivery
+  // Activate location tracking when order is out for delivery or arrived
   useEffect(() => {
-    if (order?.status === 'out_for_delivery' && isGpsActive) {
+    const norm = normalizeOrderStatus(order?.orderStatus || order?.status);
+    if ((norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED) && isGpsActive) {
       locationService.startLocationTracking(order.id, (loc) => {
         setLiveGpsCoords(loc);
       });
@@ -55,50 +69,129 @@ export const RiderOrderDetailPage = () => {
     }
 
     return () => locationService.stopLocationTracking();
-  }, [order?.status, isGpsActive, order?.id]);
+  }, [order?.status, order?.orderStatus, isGpsActive, order?.id]);
 
   const handleStageUpdate = async (stage) => {
-    const updated = await orderService.updateOrderStatus(order.id, stage);
-    setOrder({ ...updated });
-  };
-
-  const handleVerifyOtpSubmit = async (e) => {
-    e.preventDefault();
-    setOtpError('');
-
+    if (isProcessing) return;
+    setIsProcessing(true);
     try {
-      await riderService.verifyDeliveryOtp(order.id, enteredOtp);
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsOtpModalOpen(false);
-        navigate('/rider');
-      }, 1500);
+      const updated = await orderService.updateOrderStatus(order.id, stage);
+      setOrder({ ...updated });
+      setActionNotice(`Order status updated to "${stage.replace(/_/g, ' ')}"`);
+      setTimeout(() => setActionNotice(''), 3000);
     } catch (err) {
-      setOtpError(err.message || 'Invalid or expired OTP. Please recheck with customer.');
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  if (!order && !loading) {
+  // Rider taps "Arrived at Customer"
+  const handleArrivedAtCustomer = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const updated = await deliveryService.arriveAtCustomer(order.id);
+      setOrder({ ...updated });
+      setActionNotice('Status updated to ARRIVED. Please collect payment from customer.');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Called when payment is marked as collected in CollectPaymentSection
+  const handlePaymentCollected = async () => {
+    await fetchOrder();
+    setActionNotice('Cash collected ✓ Now verify customer delivery OTP.');
+  };
+
+  // Called when OTP verification succeeds in DeliveryVerificationSection
+  const handleDeliveryVerified = async (deliveredOrder) => {
+    setOrder(deliveredOrder);
+    setActionNotice('✓ Delivery completed and verified successfully!');
+  };
+
+  if (loading) {
     return (
-      <div className="p-4 text-center">
-        <h3>Order not found</h3>
-        <Link to="/rider" className="btn btn-primary mt-3">Back to Rider Home</Link>
+      <div className="p-8 text-center">
+        <p>Loading order details...</p>
       </div>
     );
   }
 
+  if (!order) {
+    return (
+      <div className="p-6 text-center">
+        <h3>Order not found</h3>
+        <Link to="/rider" className="btn btn-primary mt-3">Back to Rider Hub</Link>
+      </div>
+    );
+  }
+
+  const currentStatus = normalizeOrderStatus(order.orderStatus || order.status);
+  const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
+  const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
+  const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
+  const isCashCollected = order.paymentStatus === PAYMENT_STATUS.COLLECTED;
+  const isOtpVerified = order.deliveryVerificationStatus === DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED;
+
   return (
     <div className="rider-order-detail-page">
-      {/* Top back */}
+      {/* Top Back navigation */}
       <div className="detail-top-nav">
         <Link to="/rider" className="back-link">
           <ChevronLeft size={16} />
           <span>Back to Rider Hub</span>
         </Link>
+        <span className="order-id-badge font-mono font-bold">#{order.id}</span>
       </div>
 
-      {/* Live GPS Delivery Map & Broadcasting Telemetry */}
-      <div style={{ marginBottom: '16px' }}>
+      {actionNotice && (
+        <div className="action-notice-toast">
+          <CheckCircle2 size={16} />
+          <span>{actionNotice}</span>
+        </div>
+      )}
+
+      {/* 1. COMPLETED SCREEN (When delivery is fully completed) */}
+      {isDelivered && (
+        <DeliveryCompletionScreen
+          order={order}
+          onViewOrder={() => navigate('/rider')}
+        />
+      )}
+
+      {/* 2. DEDICATED ARRIVED WORKFLOW: COLLECT PAYMENT & DELIVERY VERIFICATION */}
+      {isArrived && (
+        <div className="rider-arrived-workflow-container">
+          {!isCashCollected ? (
+            /* Step A: Collect Payment Section */
+            <CollectPaymentSection
+              order={order}
+              onPaymentSuccess={handlePaymentCollected}
+              isProcessing={isProcessing}
+            />
+          ) : !isOtpVerified ? (
+            /* Step B: Delivery OTP Verification Section */
+            <DeliveryVerificationSection
+              order={order}
+              onVerificationSuccess={handleDeliveryVerified}
+              isProcessing={isProcessing}
+            />
+          ) : (
+            /* Step C: Completed */
+            <DeliveryCompletionScreen
+              order={order}
+              onViewOrder={() => navigate('/rider')}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 3. LIVE GPS TELEMETRY & ROUTE MAP */}
+      <div className="gps-map-section-wrapper" style={{ marginBottom: '16px' }}>
         <div
           style={{
             display: 'flex',
@@ -123,7 +216,7 @@ export const RiderOrderDetailPage = () => {
               }}
             />
             <span style={{ fontWeight: 600, color: '#111318' }}>
-              {isGpsActive ? 'Broadcasting Live GPS Telemetry to Customer' : 'GPS Telemetry Paused'}
+              {isGpsActive ? 'Live GPS Telemetry Active' : 'GPS Telemetry Paused'}
             </span>
             {liveGpsCoords && (
               <span style={{ color: '#6b7280' }}>
@@ -140,25 +233,26 @@ export const RiderOrderDetailPage = () => {
             {isGpsActive ? 'Pause GPS' : 'Resume GPS'}
           </button>
         </div>
+
         <LiveTrackingMap
           riderLocation={order?.rider?.location}
           customerLocation={order?.deliveryAddress}
           hubLocation={order?.shop}
-          height="300px"
+          height="280px"
           riderName={order?.rider?.name || 'You (Partner)'}
           orderId={order?.id}
         />
       </div>
 
-      {/* Customer & Address Details */}
+      {/* 4. CUSTOMER & ADDRESS DETAILS CARD */}
       <div className="rider-info-card">
         <div className="customer-header-row">
           <div>
-            <span className="tag-pill">{order?.deliveryAddress.tag} Delivery</span>
-            <h3 className="customer-name">{order?.customer.name}</h3>
-            <p className="address-full">{order?.deliveryAddress.line1}, {order?.deliveryAddress.city}</p>
+            <span className="tag-pill">{order?.deliveryAddress?.tag || 'Home'} Delivery</span>
+            <h3 className="customer-name">{order?.customer?.name || 'Customer'}</h3>
+            <p className="address-full">{order?.deliveryAddress?.line1}, {order?.deliveryAddress?.city}</p>
           </div>
-          <a href={`tel:${order?.customer.phone}`} className="call-customer-btn">
+          <a href={`tel:${order?.customer?.phone}`} className="call-customer-btn" title="Call Customer">
             <Phone size={18} />
           </a>
         </div>
@@ -172,18 +266,20 @@ export const RiderOrderDetailPage = () => {
 
         <div className="payment-mode-box">
           <span className="label">Payment Mode:</span>
-          <span className="val font-semibold">{order?.payment.method} ({order?.payment.status})</span>
-          {order?.payment.method.includes('Cash') && (
-            <span className="badge badge-warning ml-auto">Collect ₹{order?.billing.grandTotal}</span>
-          )}
+          <PaymentStatusBadge
+            paymentStatus={order.paymentStatus}
+            paymentMethod={order.paymentMethod}
+            amount={order.billing?.grandTotal}
+            compact={true}
+          />
         </div>
       </div>
 
-      {/* Ordered Items Preview */}
+      {/* 5. ORDER MANIFEST */}
       <div className="rider-info-card">
-        <h4 className="card-heading">Package Manifest ({order?.items.length} items)</h4>
+        <h4 className="card-heading">Package Manifest ({order?.items?.length || 0} items)</h4>
         <div className="items-manifest-list">
-          {order?.items.map((item, idx) => (
+          {order?.items?.map((item, idx) => (
             <div key={idx} className="manifest-row">
               <span className="qty-chip">{item.quantity}x</span>
               <span className="name">{item.name}</span>
@@ -193,100 +289,60 @@ export const RiderOrderDetailPage = () => {
         </div>
       </div>
 
-      {/* Action Controls Bar */}
+      {/* 6. PRIMARY ACTION CONTROLS BAR (Mobile-First Sticky/Stacked) */}
       <div className="rider-action-bar">
-        {order?.status === 'rider_assigned' && (
+        {currentStatus === ORDER_STATUS.READY_FOR_PICKUP && (
           <button
             className="btn btn-primary btn-lg btn-full"
-            onClick={() => handleStageUpdate('picked_up')}
-          >
-            <span>Confirm Order Picked Up from Hub</span>
-          </button>
-        )}
-
-        {order?.status === 'picked_up' && (
-          <button
-            className="btn btn-primary btn-lg btn-full"
-            onClick={() => handleStageUpdate('out_for_delivery')}
+            onClick={() => handleStageUpdate(ORDER_STATUS.OUT_FOR_DELIVERY)}
+            disabled={isProcessing}
           >
             <Navigation size={18} />
-            <span>Start Delivery Run to Doorstep</span>
+            <span>Confirm Picked Up & Start Run</span>
           </button>
         )}
 
-        {order?.status === 'out_for_delivery' && (
+        {isOutForDelivery && (
           <button
-            className="btn btn-primary btn-lg btn-full verify-cta"
-            onClick={() => setIsOtpModalOpen(true)}
+            className="btn btn-primary btn-lg btn-full arrived-cta-btn"
+            onClick={handleArrivedAtCustomer}
+            disabled={isProcessing}
           >
-            <KeyRound size={18} />
-            <span>Enter Customer OTP & Complete Delivery</span>
+            {isProcessing ? (
+              <>
+                <Loader2 size={18} className="spinner" />
+                <span>Updating Status...</span>
+              </>
+            ) : (
+              <>
+                <MapPin size={18} />
+                <span>Arrived at Customer</span>
+              </>
+            )}
           </button>
         )}
 
-        {order?.status === 'delivered' && (
+        {isArrived && !isCashCollected && (
+          <div className="rider-guidance-pill warning">
+            <Banknote size={16} />
+            <span>Collect ₹{order.billing?.grandTotal} cash from customer above</span>
+          </div>
+        )}
+
+        {isArrived && isCashCollected && !isOtpVerified && (
+          <div className="rider-guidance-pill info">
+            <KeyRound size={16} />
+            <span>Enter the customer's 4-digit Delivery OTP above</span>
+          </div>
+        )}
+
+        {isDelivered && (
           <div className="delivery-completed-banner">
             <CheckCircle2 size={24} className="text-success" />
             <span>Delivery Completed Successfully</span>
           </div>
         )}
       </div>
-
-      {/* OTP Verification Modal */}
-      {isOtpModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content rider-otp-modal">
-            <div className="modal-header">
-              <h3>Verify Delivery Handover</h3>
-              <button className="close-btn" onClick={() => setIsOtpModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="otp-modal-sub">
-              Ask customer for their 4-digit Delivery OTP shown on their screen.
-            </p>
-
-            {otpError && (
-              <div className="otp-alert error">
-                <AlertCircle size={16} />
-                <span>{otpError}</span>
-              </div>
-            )}
-
-            {isSuccess && (
-              <div className="otp-alert success">
-                <CheckCircle2 size={16} />
-                <span>Delivery verified! Payout recorded.</span>
-              </div>
-            )}
-
-            <form onSubmit={handleVerifyOtpSubmit}>
-              <div className="form-group text-center">
-                <input
-                  type="text"
-                  maxLength={4}
-                  className="rider-otp-input"
-                  placeholder="• • • •"
-                  value={enteredOtp}
-                  onChange={e => setEnteredOtp(e.target.value)}
-                  autoFocus
-                  required
-                />
-                <div className="form-hint">Tip: Order OTP is {order?.deliveryOtp || '4829'} or demo code 1234</div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-lg btn-full mt-4"
-                disabled={enteredOtp.length < 4 || isSuccess}
-              >
-                <span>Confirm Delivery Handover</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

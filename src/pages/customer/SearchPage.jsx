@@ -60,26 +60,8 @@ export const SearchPage = () => {
   return (
     <div className="pmart-search-page">
       <div className="container">
-        {/* Prominent Search Header */}
+        {/* Quick Search Chips & Search Status */}
         <div className="search-header-container">
-          <form onSubmit={handleSearchSubmit} className="main-search-bar">
-            <Search size={22} className="search-lens" />
-            <input
-              type="text"
-              className="search-input-field"
-              placeholder="Search 1,000+ groceries, dairy, staples, snacks & fresh produce..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
-            {query && (
-              <button type="button" className="clear-query-btn" onClick={handleClear}>
-                <X size={18} />
-              </button>
-            )}
-          </form>
-
-          {/* Quick Search Chips */}
           <div className="quick-tags-container">
             <div className="tags-row">
               <span className="tags-label">Trending:</span>
@@ -87,7 +69,7 @@ export const SearchPage = () => {
                 {popularSearches.map((term, i) => (
                   <button
                     key={i}
-                    className="search-tag-chip"
+                    className={`search-tag-chip ${query.toLowerCase() === term.toLowerCase() ? 'active' : ''}`}
                     onClick={() => handleChipClick(term)}
                   >
                     {term}

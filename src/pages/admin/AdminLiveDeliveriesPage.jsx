@@ -181,7 +181,7 @@ export const AdminLiveDeliveriesPage = () => {
         <div>
           <h1 className="page-title">Real-Time Fleet & Delivery Operations</h1>
           <p className="page-subtitle">
-            Live GPS telemetry of darkstore dispatch, moving riders, and active 10-minute customer drop-offs
+            Live GPS telemetry of darkstore dispatch, moving riders, and active express customer drop-offs
           </p>
         </div>
         <div className="header-stats-badge">
@@ -402,6 +402,22 @@ export const AdminLiveDeliveriesPage = () => {
                   <div className="detail-row">
                     <span className="key">Basket:</span>
                     <span className="value">{selectedDelivery.itemsCount} packed items (₹{selectedDelivery.orderTotal})</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="key">Payment:</span>
+                    <span className="value font-bold">Cash on Delivery (COD)</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="key">Payment Status:</span>
+                    <span className="value text-warning font-bold">
+                      {selectedDelivery.paymentStatus || 'PENDING'}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="key">Delivery OTP:</span>
+                    <span className="value text-muted font-bold">
+                      {selectedDelivery.deliveryVerificationStatus === 'OTP_VERIFIED' ? 'OTP VERIFIED ✓' : 'OTP PENDING'}
+                    </span>
                   </div>
                 </div>
 

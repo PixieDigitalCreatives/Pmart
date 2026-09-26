@@ -1,0 +1,150 @@
+.pmart-delivery-completion-screen {
+  background: $white;
+  border-radius: $radius-xl;
+  border: 1px solid $border-color;
+  box-shadow: $shadow-md;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto 24px;
+
+  @include mobile {
+    padding: 24px 16px;
+  }
+
+  .success-icon-badge {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #dcfce7;
+    color: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2);
+
+    @include mobile {
+      width: 68px;
+      height: 68px;
+    }
+  }
+
+  .success-headline {
+    font-size: 26px;
+    font-weight: 800;
+    color: $charcoal-black;
+    margin: 0 0 4px;
+
+    @include mobile {
+      font-size: 22px;
+    }
+  }
+
+  .order-id-label {
+    font-size: 14px;
+    color: $text-secondary;
+    font-family: monospace;
+    font-weight: 600;
+    margin: 0 0 24px;
+  }
+
+  .summary-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+    text-align: left;
+
+    .completion-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: $radius-lg;
+      border: 1px solid $border-color;
+      background: #f8fafc;
+
+      .card-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: $radius-md;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      &.payment-card {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+
+        .card-icon-box {
+          background: #dcfce7;
+          color: #15803d;
+        }
+
+        .amount-highlight {
+          font-size: 20px;
+          font-weight: 800;
+          color: #15803d;
+        }
+
+        .status-caption {
+          font-size: 12px;
+          color: #166534;
+          font-weight: 600;
+        }
+      }
+
+      &.delivery-card {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+
+        .card-icon-box {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
+        .delivery-status-highlight {
+          font-size: 16px;
+          font-weight: 800;
+          color: #1e3a8a;
+        }
+
+        .status-caption {
+          font-size: 12px;
+          color: #2563eb;
+          font-weight: 600;
+        }
+      }
+
+      .card-info {
+        flex: 1;
+
+        .card-title {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: $text-muted;
+          display: block;
+          margin-bottom: 2px;
+        }
+      }
+    }
+  }
+
+  .footer-actions-wrapper {
+    .view-order-btn {
+      height: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: $radius-lg;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+  }
+}

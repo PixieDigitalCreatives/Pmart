@@ -9,15 +9,15 @@
   .search-header-container {
     background: $white;
     border: 1px solid $border-color;
-    border-radius: $radius-2xl;
-    padding: 24px 28px;
-    margin-bottom: 28px;
+    border-radius: $radius-xl;
+    padding: 14px 20px;
+    margin-bottom: 20px;
     box-shadow: $shadow-xs;
 
     @include mobile {
-      padding: 16px;
-      margin-bottom: 18px;
-      border-radius: $radius-xl;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border-radius: $radius-lg;
     }
 
     .main-search-bar {

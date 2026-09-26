@@ -1,5 +1,5 @@
 import { mockShops } from '../data/mockShops';
-import { mockOrders } from '../data/mockOrders';
+import { orderService } from './orderService';
 import { mockProducts } from '../data/mockProducts';
 
 export const shopService = {
@@ -20,8 +20,7 @@ export const shopService = {
   },
 
   async getShopOrders(status = 'all') {
-    if (status === 'all') return mockOrders;
-    return mockOrders.filter(o => o.status === status);
+    return orderService.getOrders({ status });
   },
 
   async getInventory(category = null) {

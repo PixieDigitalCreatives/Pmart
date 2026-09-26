@@ -1,5 +1,8 @@
 import { mockRiders } from '../data/mockRiders';
-import { mockOrders } from '../data/mockOrders';
+import { orderService } from './orderService';
+import { deliveryOtpService } from './deliveryOtpService';
+import { deliveryService } from './deliveryService';
+import { normalizeOrderStatus, ORDER_STATUS } from '../types/orderTypes';
 
 export const riderService = {
   async getRiderProfile(riderId = 'rider-201') {
@@ -7,11 +10,21 @@ export const riderService = {
   },
 
   async getActiveDelivery(riderId = 'rider-201') {
-    return mockOrders.find(o => o.status === 'out_for_delivery' || o.status === 'picked_up' || o.status === 'rider_assigned') || mockOrders[0];
+    const all = await orderService.getOrders();
+    // Prioritize active in-flight orders
+    return (
+      all.find(o => {
+        const norm = normalizeOrderStatus(o.orderStatus || o.status);
+        return norm === ORDER_STATUS.OUT_FOR_DELIVERY ||
+               norm === ORDER_STATUS.ARRIVED ||
+               norm === ORDER_STATUS.READY_FOR_PICKUP;
+      }) || all[0]
+    );
   },
 
   async getRiderHistory(riderId = 'rider-201') {
-    return mockOrders.filter(o => o.status === 'delivered');
+    const all = await orderService.getOrders();
+    return all.filter(o => normalizeOrderStatus(o.orderStatus || o.status) === ORDER_STATUS.DELIVERED);
   },
 
   async updateRiderStatus(riderId, status) {
@@ -24,26 +37,20 @@ export const riderService = {
   },
 
   async updateDeliveryStage(orderId, stage) {
-    const order = mockOrders.find(o => o.id === orderId);
-    if (order) {
-      order.status = stage;
-      return order;
-    }
-    return { success: true, stage };
+    return orderService.updateOrderStatus(orderId, stage);
   },
 
   async verifyDeliveryOtp(orderId, enteredOtp) {
-    const order = mockOrders.find(o => o.id === orderId) || mockOrders[0];
-    
-    // In demo, check matching OTP or demo override '1234'
-    if (enteredOtp === order.deliveryOtp || enteredOtp === '1234') {
-      order.status = 'delivered';
-      return {
-        success: true,
-        message: 'Delivery confirmed successfully! Earnings credited.'
-      };
-    } else {
-      throw new Error('Invalid or expired Delivery OTP. Please verify with the customer.');
-    }
+    // 1. Verify OTP with deliveryOtpService
+    await deliveryOtpService.verifyDeliveryOtp(orderId, enteredOtp);
+
+    // 2. Complete delivery through deliveryService with all strict checks
+    const res = await deliveryService.completeDelivery(orderId);
+
+    return {
+      success: true,
+      message: 'Delivery confirmed successfully! Earnings credited.',
+      order: res.order
+    };
   }
 };

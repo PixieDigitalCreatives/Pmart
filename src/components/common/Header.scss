@@ -2,7 +2,7 @@
   background: $white;
   border-bottom: 1px solid $border-color;
   position: sticky;
-  top: 31px; // right beneath demo-role-bar
+  top: 0;
   z-index: 900;
   box-shadow: $shadow-xs;
 
@@ -59,7 +59,7 @@
       transition: all $transition-fast;
 
       &:hover {
-        background: darken($surface-secondary, 3%);
+        background: color.adjust($surface-secondary, $lightness: -3%);
         border-color: $border-color;
       }
 
@@ -330,8 +330,8 @@
       transition: all $transition-fast;
 
       &:hover {
-        background-color: darken($surface-secondary, 3%);
-        border-color: darken($border-color, 6%);
+        background-color: color.adjust($surface-secondary, $lightness: -3%);
+        border-color: color.adjust($border-color, $lightness: -6%);
       }
 
       &.has-items {

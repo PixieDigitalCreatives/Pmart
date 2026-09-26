@@ -25,6 +25,11 @@ export const MobileBottomNav = () => {
 
       <NavLink
         to="/search"
+        onClick={() => {
+          setTimeout(() => {
+            document.getElementById('header-main-search-input')?.focus();
+          }, 100);
+        }}
         className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
       >
         <Search size={20} />
