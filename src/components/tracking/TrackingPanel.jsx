@@ -10,10 +10,10 @@ import './TrackingPanel.scss';
 export const TrackingPanel = ({
   order,
   trackingState = 'TRACKING_ACTIVE',
-  etaMinutes = 10,
-  distanceKm = 1.4,
+  etaMinutes,
+  distanceKm,
   rider = null,
-  otp = '4829',
+  otp,
   onRetry = null
 }) => {
   const isNearby = trackingState === 'RIDER_NEARBY' || trackingState === 'DELIVERY_ARRIVING';
@@ -61,7 +61,11 @@ export const TrackingPanel = ({
           <div className="store-meta">
             <h4 className="store-title">{order?.shop?.name || 'P Mart Sasaram'}</h4>
             <p className="store-address-text">
-              {order?.shop?.address || 'P Mart, Panjar Colony, Near Sasaram Junction, Sasaram, Bihar 821115'}
+              {order?.shop?.address 
+                ? (typeof order.shop.address === 'string' 
+                  ? order.shop.address 
+                  : `${order.shop.address.street || ''}, ${order.shop.address.city || ''}, ${order.shop.address.state || ''} ${order.shop.address.pincode || ''}`.replace(/^[,\s]+|[,\s]+$/g, '').replace(/,\s*,/g, ','))
+                : 'P Mart, Panjar Colony, Near Sasaram Junction, Sasaram, Bihar 821115'}
             </p>
             <span className="store-geo-tag">📍 GPS: 24.9588592° N, 84.0155717° E</span>
           </div>
@@ -69,13 +73,13 @@ export const TrackingPanel = ({
       </div>
 
       {/* 5. Delivery Verification OTP */}
-      <DeliveryOTP otp={otp || order?.deliveryOtp} isNearby={isNearby} />
+      <DeliveryOTP otp={otp || order?.deliveryOtp} isNearby={isNearby} status={order?.status || order?.orderStatus} />
 
       {/* 5. Existing PMart Order Timeline */}
-      <div className="tracking-timeline-card">
+      {/* <div className="tracking-timeline-card">
         <h4 className="timeline-title">Fulfillment Progress</h4>
         <OrderTimeline timeline={order?.timeline || []} />
-      </div>
+      </div> */}
     </motion.div>
   );
 };

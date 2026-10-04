@@ -8,6 +8,15 @@ export const CartProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
+    cartService.fetchSettings(); // fetch settings first
+    cartService.fetchCart().then(backendItems => {
+      if (backendItems && backendItems.length > 0) {
+        setItems(backendItems);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     cartService.saveCart(items);
   }, [items]);
 
@@ -22,14 +31,15 @@ export const CartProvider = ({ children }) => {
       return [
         ...prevItems,
         {
-          id: product.id,
+          id: product._id || product.id,
           name: product.name,
           slug: product.slug,
           price: product.price,
           mrp: product.mrp || product.price,
           unit: product.unit,
-          image: product.image,
+          image: product.imageUrl || product.image,
           categorySlug: product.categorySlug,
+          shop: product.shop?._id || product.shop?.id || product.shop,
           quantity: quantity
         }
       ];
@@ -62,6 +72,13 @@ export const CartProvider = ({ children }) => {
   const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
   const billSummary = cartService.calculateBill(items);
 
+  const refreshCart = async () => {
+    const backendItems = await cartService.fetchCart();
+    if (backendItems) {
+      setItems(backendItems);
+    }
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -75,7 +92,8 @@ export const CartProvider = ({ children }) => {
         getItemQuantity,
         clearCart,
         isCartOpen,
-        setIsCartOpen
+        setIsCartOpen,
+        refreshCart
       }}
     >
       {children}

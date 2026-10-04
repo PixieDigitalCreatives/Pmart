@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
@@ -9,7 +9,8 @@ import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import {
   ORDER_STATUS,
   PAYMENT_STATUS,
-  normalizeOrderStatus
+  normalizeOrderStatus,
+  getCustomerOrderStatus
 } from '@/types/orderTypes';
 import {
   Clock,
@@ -48,16 +49,30 @@ export const OrderTrackingPage = () => {
     recenter
   } = useLiveTracking(id);
 
-  // Fetch and poll order data so status changes by rider or shop update in real time
+  // Fetch and poll order data + OTP so status/code changes by rider update in real time
+  const [deliveryOtp, setDeliveryOtp] = useState(null);
+
+  const orderStatusRef = useRef(null);
+
   useEffect(() => {
     let isMounted = true;
 
-    const fetchOrder = async () => {
+    const fetchOrderAndOtp = async () => {
       try {
         const data = await orderService.getOrderById(id);
-        if (isMounted) {
-          setOrder(data);
-          setLoading(false);
+        if (!isMounted) return;
+
+        setOrder(data);
+        setLoading(false);
+        orderStatusRef.current = data?.status || data?.orderStatus;
+
+        // Fetch OTP alongside order when status warrants it
+        const currentStatus = normalizeOrderStatus(data?.status || data?.orderStatus);
+        if (['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) && data?.deliveryVerificationStatus !== 'OTP_VERIFIED') {
+          const otp = await orderService.getDeliveryOtp(id);
+          if (isMounted && otp) {
+            setDeliveryOtp(otp);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -65,22 +80,23 @@ export const OrderTrackingPage = () => {
       }
     };
 
-    fetchOrder();
+    fetchOrderAndOtp();
 
-    // Auto-poll every 2.5 seconds while order is in flight
+    // Poll every 5 seconds — fetches both order + OTP in one cycle
     const pollInterval = setInterval(() => {
-      if (order && normalizeOrderStatus(order.status || order.orderStatus) === ORDER_STATUS.DELIVERED) {
+      const currentNorm = getCustomerOrderStatus(orderStatusRef.current);
+      if (currentNorm === ORDER_STATUS.DELIVERED || currentNorm === ORDER_STATUS.CANCELLED) {
         clearInterval(pollInterval);
         return;
       }
-      fetchOrder();
-    }, 2500);
+      fetchOrderAndOtp();
+    }, 5000);
 
     return () => {
       isMounted = false;
       clearInterval(pollInterval);
     };
-  }, [id, order?.status]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -99,12 +115,19 @@ export const OrderTrackingPage = () => {
     );
   }
 
-  const currentStatus = normalizeOrderStatus(order.orderStatus || order.status);
+  const currentStatus = getCustomerOrderStatus(order.orderStatus || order.status);
   const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
   const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
   const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
+  const isCancelled = currentStatus === ORDER_STATUS.CANCELLED;
   const isPendingCash = order.paymentStatus !== PAYMENT_STATUS.COLLECTED;
-  const payableAmount = order.billing?.grandTotal || 0;
+  const payableAmount = order.totalAmount || order.billing?.grandTotal || 0;
+
+  const showDeliveryOtp = ['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) 
+    && order.deliveryVerificationStatus !== 'OTP_VERIFIED' 
+    && currentStatus !== 'DELIVERED';
+
+  const showTrackingMap = ['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus);
 
   return (
     <div className="pmart-order-tracking-page">
@@ -117,85 +140,54 @@ export const OrderTrackingPage = () => {
           </Link>
         </div>
 
-        {/* 1. ARRIVED BANNER (Customer notification when rider reaches doorstep) */}
-        {isArrived && (
-          <div className="rider-arrived-alert-card">
-            <div className="alert-top-row">
-              <div className="arrived-icon-circle">
-                <Bike size={24} />
-              </div>
-              <div className="arrived-headings">
-                <span className="arrived-pill">ARRIVED AT YOUR DOORSTEP</span>
-                <h2 className="arrived-title">Your delivery has arrived</h2>
-                <p className="arrived-subtext">
-                  Our delivery partner <strong>{order.rider?.name || 'Vikram Singh'}</strong> is at your door.
-                </p>
+        <div className="live-delivery-tracking-section">
+          {/* ORDER HEADER / HERO */}
+          <div className="order-eta-hero">
+            <div className="hero-status-left">
+              <span className="order-id-tag">ORDER #{order.orderNumber || order.id}</span>
+              <h1 className="eta-title">
+                {isDelivered ? 'Order Delivered!'
+                  : isCancelled ? 'Order Cancelled'
+                  : isArrived ? 'Your delivery has arrived'
+                  : isOutForDelivery ? `Arriving in ${etaMinutes || '--'} minutes`
+                  : currentStatus === ORDER_STATUS.PENDING ? 'Order Placed'
+                  : currentStatus === ORDER_STATUS.ACCEPTED ? 'Order Accepted'
+                  : currentStatus === ORDER_STATUS.PREPARING ? 'Preparing Order'
+                  : currentStatus === ORDER_STATUS.READY ? 'Ready for Pickup'
+                  : currentStatus === ORDER_STATUS.ASSIGNED ? 'Rider Assigned'
+                  : currentStatus === ORDER_STATUS.PICKED_UP ? 'Order Picked Up'
+                  : 'Order Confirmed'}
+              </h1>
+              <p className="eta-subtext">
+                {isDelivered ? 'Thank you for shopping with PMart. Your cash payment and delivery OTP have been verified!'
+                  : isCancelled ? 'This order has been cancelled. If you have been charged, the amount will be refunded shortly.'
+                  : isArrived ? `Our delivery partner ${order.rider?.name || 'Delivery Partner'} is at your door.`
+                  : isOutForDelivery ? 'Your delivery partner is on the way with your grocery order!'
+                  : currentStatus === ORDER_STATUS.PENDING ? 'Waiting for darkstore confirmation.'
+                  : currentStatus === ORDER_STATUS.ACCEPTED ? 'Your order has been accepted by the darkstore.'
+                  : currentStatus === ORDER_STATUS.PREPARING ? 'Our darkstore team is preparing your fresh grocery items.'
+                  : currentStatus === ORDER_STATUS.READY ? 'Your items are packed and waiting for the rider.'
+                  : currentStatus === ORDER_STATUS.ASSIGNED ? 'A delivery partner has been assigned to your order.'
+                  : currentStatus === ORDER_STATUS.PICKED_UP ? 'The rider has picked up your order and will head your way soon.'
+                  : 'We are processing your order.'}
+              </p>
+              
+              <div className="hero-cod-callout">
+                <Banknote size={15} />
+                <span>
+                  Payment Method: <strong>{order.paymentMethod || 'Cash on Delivery (COD)'}</strong> 
+                  <span style={{ margin: '0 8px' }}>•</span>
+                  {isPendingCash ? `Keep ₹${payableAmount} ready` : 'Payment Collected ✓'}
+                </span>
               </div>
             </div>
 
-            <div className="cash-payment-readiness-box">
-              <div className="cash-box-left">
-                <div className="cash-icon-box">
-                  <Banknote size={24} />
-                </div>
-                <div>
-                  <div className="cash-callout-title">
-                    Please keep <span className="highlight-amount">₹{payableAmount}</span> ready for payment.
-                  </div>
-                  <div className="cash-meta-row">
-                    <span className="meta-item">Payment Method: <strong>Cash on Delivery (COD)</strong></span>
-                    <span className="meta-separator">•</span>
-                    <span className="meta-item">
-                      Status: <strong className={isPendingCash ? 'text-amber' : 'text-green'}>
-                        {isPendingCash ? 'Payment Pending' : 'Payment Collected ✓'}
-                      </strong>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="otp-sharing-instruction">
-              <KeyRound size={16} className="key-icon" />
-              <span>
-                Please provide your 4-digit Delivery OTP (<strong>{order.deliveryOtp || '5821'}</strong>) to the rider after inspecting and receiving your package.
-              </span>
-            </div>
           </div>
-        )}
 
-        {/* 2. OUT_FOR_DELIVERY: LIVE MAP & ETA */}
-        {isOutForDelivery && (
-          <div className="live-delivery-tracking-section">
-            <div className="order-eta-hero">
-              <div className="hero-status-left">
-                <span className="order-id-tag">ORDER #{order.id}</span>
-                <h1 className="eta-title">
-                  Arriving in {etaMinutes || 10} minutes
-                </h1>
-                <p className="eta-subtext">
-                  Your delivery partner is on the way with your grocery order!
-                </p>
-                <div className="hero-cod-callout">
-                  <Banknote size={15} />
-                  <span>Cash on Delivery: Keep <strong>₹{payableAmount}</strong> ready</span>
-                </div>
-              </div>
-
-              {/* Secure Delivery OTP Notice */}
-              <div className="otp-display-card">
-                <div className="otp-card-head">
-                  <KeyRound size={16} className="otp-key" />
-                  <span>DELIVERY OTP</span>
-                </div>
-                <div className="otp-number">{order.deliveryOtp || '5821'}</div>
-                <span className="otp-instruction">Share with rider only upon delivery</span>
-              </div>
-            </div>
-
-            {/* Split Screen: Map + Panel */}
-            <div className="live-tracking-split-view">
-              <div className="map-column">
+          {/* Map and Info Layout */}
+          <div className="tracking-grid" style={{ marginTop: '20px' }}>
+            {showTrackingMap && (
+              <div className="tracking-left-col">
                 <LiveTrackingMap
                   riderLocation={riderLocation || order.rider?.location}
                   customerLocation={customerLocation || order.deliveryAddress}
@@ -204,69 +196,42 @@ export const OrderTrackingPage = () => {
                   etaMinutes={etaMinutes}
                   distanceKm={distanceKm}
                   trackingState={trackingState}
-                  riderName={order.rider?.name || 'Vikram Singh'}
+                  riderName={order.rider?.name || 'Rider'}
                   height="480px"
                   orderId={order.id}
                   recenterTrigger={recenterTrigger}
                 />
               </div>
+            )}
 
-              <div className="info-column">
+            <div className={`tracking-right-col ${!showTrackingMap ? 'full-width' : ''}`}>
+              {['ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) && (
                 <TrackingPanel
                   order={order}
                   trackingState={trackingState}
-                  etaMinutes={etaMinutes}
+                  etaMinutes={isArrived ? 'Arrived' : etaMinutes}
                   distanceKm={distanceKm}
                   rider={order.rider}
-                  otp={order.deliveryOtp}
+                  otp={deliveryOtp}
                 />
-              </div>
-            </div>
-          </div>
-        )}
+              )}
 
-        {/* 3. ORDER TIMELINE (Placed / Preparing / Arrived / Delivered) */}
-        {!isOutForDelivery && (
-          <div className="standard-tracking-status-block">
-            <div className="order-eta-hero">
-              <div className="hero-status-left">
-                <span className="order-id-tag">ORDER #{order.id}</span>
-                <h1 className="eta-title">
-                  {isDelivered
-                    ? 'Order Delivered!'
-                    : isArrived
-                    ? 'Delivery Partner Arrived'
-                    : 'Order Confirmed'}
-                </h1>
-                <p className="eta-subtext">
-                  {isDelivered
-                    ? 'Thank you for shopping with PMart. Your cash payment and delivery OTP have been verified!'
-                    : isArrived
-                    ? 'Your delivery partner is at your doorstep. Please collect your items.'
-                    : 'Our darkstore team is preparing your fresh grocery items.'}
-                </p>
-                <div className="hero-cod-callout">
-                  <Banknote size={15} />
-                  <span>
-                    Payment Method: <strong>Cash on Delivery (COD)</strong> • Amount to Pay: <strong>₹{payableAmount}</strong>
-                  </span>
-                </div>
-              </div>
-
-              {order.deliveryOtp && !isDelivered && (
-                <div className="otp-display-card">
-                  <div className="otp-card-head">
-                    <KeyRound size={16} className="otp-key" />
-                    <span>DELIVERY OTP</span>
+              {currentStatus === 'DELIVERED' && (
+                <div className="pmart-delivery-otp-card" style={{ marginBottom: '1.5rem', border: '1px solid #16a34a' }}>
+                  <div className="otp-top-row">
+                    <div className="otp-shield-icon" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div className="otp-text-meta">
+                      <h4 className="otp-title" style={{ color: '#16a34a' }}>Delivery Verification</h4>
+                      <p className="otp-desc" style={{ color: '#15803d', fontWeight: '500' }}>OTP Verified ✓</p>
+                    </div>
                   </div>
-                  <div className="otp-number">{order.deliveryOtp}</div>
-                  <span className="otp-instruction">Share with rider only upon delivery</span>
                 </div>
               )}
-            </div>
-
-            <div className="tracking-grid">
-              <div className="tracking-left-col">
+              
+              <div className="tracking-timeline-card mt-6">
+                <h4 className="timeline-title">Order Status</h4>
                 <OrderStatusTimeline
                   status={currentStatus}
                   timeline={order.timeline}
@@ -274,7 +239,7 @@ export const OrderTrackingPage = () => {
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* 4. ORDER ITEMS & BILL BREAKDOWN */}
         <div className="order-details-bottom-section">
@@ -313,7 +278,7 @@ export const OrderTrackingPage = () => {
                 {order.items.map((item, idx) => (
                   <div key={idx} className="small-product-order-card">
                     <div className="thumb-container">
-                      <img src={item.image} alt={item.name} className="thumb-img" />
+                      <img src={item.imageUrl || item.image} alt={item.name} className="thumb-img" />
                     </div>
                     <div className="card-info">
                       <div className="item-name">{item.name}</div>
@@ -337,19 +302,19 @@ export const OrderTrackingPage = () => {
             <div className="bill-breakdown-sub">
               <div className="line">
                 <span>Item Total</span>
-                <span>₹{order.billing.itemTotal}</span>
+                <span>₹{order.subTotal || order.billing?.itemTotal || 0}</span>
               </div>
               <div className="line">
                 <span>Delivery Fee</span>
-                <span>{order.billing.deliveryFee === 0 ? 'FREE' : `₹${order.billing.deliveryFee}`}</span>
+                <span>{(order.deliveryFee === 0 || order.billing?.deliveryFee === 0) ? 'FREE' : `₹${order.deliveryFee || order.billing?.deliveryFee || 0}`}</span>
               </div>
               <div className="line total">
                 <span>Total Amount {isDelivered ? 'Paid' : 'Payable on Delivery'}</span>
-                <span>₹{order.billing.grandTotal}</span>
+                <span>₹{order.totalAmount || order.billing?.grandTotal || 0}</span>
               </div>
               <div className="payment-status-badge-container">
                 <div className="cod-details-row">
-                  <span className="cod-title">Payment: Cash on Delivery (COD)</span>
+                  <span className="cod-title">Payment: {order.paymentMethod || 'Cash on Delivery (COD)'}</span>
                   <span className="cod-amount">Amount: ₹{payableAmount}</span>
                   <span className={`cod-status ${isPendingCash ? 'status-pending' : 'status-collected'}`}>
                     Status: {isPendingCash ? 'Payment Pending' : 'Payment Collected ✓'}

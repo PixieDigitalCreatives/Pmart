@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Save, Check } from 'lucide-react';
+import api from '@/services/apiClient';
 
 export const AdminSettingsPage = () => {
   const [freeDelThreshold, setFreeDelThreshold] = useState('299');
@@ -7,10 +8,35 @@ export const AdminSettingsPage = () => {
   const [platformFee, setPlatformFee] = useState('5');
   const [saved, setSaved] = useState(false);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await api.get('/admin/settings');
+        if (data) {
+          setFreeDelThreshold(data.freeDeliveryThreshold?.toString() || '299');
+          setBaseDelFee(data.baseDeliveryFee?.toString() || '15');
+          setPlatformFee(data.platformHandlingFee?.toString() || '5');
+        }
+      } catch (err) {
+        console.error('Error fetching settings', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await api.put('/admin/settings', {
+        freeDeliveryThreshold: Number(freeDelThreshold),
+        baseDeliveryFee: Number(baseDelFee),
+        platformHandlingFee: Number(platformFee)
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving settings', err);
+    }
   };
 
   return (

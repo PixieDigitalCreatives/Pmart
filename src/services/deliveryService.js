@@ -1,5 +1,6 @@
-import { orderService } from './orderService';
+import apiClient from './apiClient';
 import { ORDER_STATUS, PAYMENT_STATUS, DELIVERY_VERIFICATION_STATUS } from '../types/orderTypes';
+import { orderService } from './orderService';
 
 export const deliveryService = {
   /**
@@ -7,16 +8,13 @@ export const deliveryService = {
    * Order status transitions to ARRIVED.
    */
   async arriveAtCustomer(orderId) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
-    const updated = await orderService.updateOrderData(orderId, {
-      orderStatus: ORDER_STATUS.ARRIVED,
-      status: ORDER_STATUS.ARRIVED,
-      arrivedAt: new Date().toISOString()
-    });
-
-    return updated;
+    try {
+      const response = await apiClient.put(`/orders/${orderId}/status`, { status: ORDER_STATUS.ARRIVED });
+      return response.data?.data || response.data;
+    } catch (e) {
+      console.error('[ARRIVE ERROR]', e.response?.data);
+      throw e;
+    }
   },
 
   /**
@@ -26,31 +24,16 @@ export const deliveryService = {
    * 3. Delivery OTP is OTP_VERIFIED
    */
   async completeDelivery(orderId) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
-    if (order.orderStatus !== ORDER_STATUS.ARRIVED && order.status !== ORDER_STATUS.ARRIVED) {
-      throw new Error('Rider must arrive at the customer doorstep before completing delivery.');
-    }
-
-    if (order.paymentStatus !== PAYMENT_STATUS.COLLECTED) {
-      throw new Error('Cash payment must be collected before completing delivery.');
-    }
-
-    if (order.deliveryVerificationStatus !== DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED) {
-      throw new Error('Customer delivery OTP must be verified before completing delivery.');
-    }
-
-    const updated = await orderService.updateOrderData(orderId, {
-      orderStatus: ORDER_STATUS.DELIVERED,
-      status: ORDER_STATUS.DELIVERED,
-      deliveredAt: new Date().toISOString()
-    });
-
+    const response = await apiClient.post(`/orders/${orderId}/deliver`);
     return {
       success: true,
-      order: updated,
-      message: 'Delivery Completed Successfully.'
+      order: response.data?.data || response.data,
+      message: response.data?.message || 'Delivery Completed Successfully.'
     };
+  },
+
+  async pickupOrder(orderId) {
+    const response = await apiClient.post(`/rider/orders/${orderId}/pickup`);
+    return response.data?.data?.order || response.data?.order || response.data?.data || response.data;
   }
 };

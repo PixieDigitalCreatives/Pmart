@@ -21,11 +21,10 @@ import './CheckoutPage.scss';
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { items, billSummary, clearCart } = useCart();
-  const { savedLocations, selectedLocation, selectLocation } = useLocation();
+  const { items, billSummary, clearCart, refreshCart } = useCart();
+  const { savedLocations, selectedLocation, selectLocation, setLocationModalOpen } = useLocation();
   const { user } = useAuth();
 
-  const [activeAddressId, setActiveAddressId] = useState(selectedLocation?.id || savedLocations[0]?.id);
   const [deliveryNote, setDeliveryNote] = useState('Ring the doorbell twice. Please handle fragile produce carefully.');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHOD.COD);
   const [isPlacing, setIsPlacing] = useState(false);
@@ -40,35 +39,51 @@ export const CheckoutPage = () => {
   }
 
   const handlePlaceOrder = async () => {
+    console.log('[CHECKOUT] Place order clicked');
     setIsPlacing(true);
     try {
-      const chosenAddr = savedLocations.find(l => l.id === activeAddressId) || selectedLocation;
+      console.log('[CHECKOUT] Validating checkout');
+      const chosenAddr = selectedLocation;
+      console.log('[CHECKOUT] Selected address:', !!chosenAddr);
+      console.log('[CHECKOUT] Payment method:', paymentMethod);
+      console.log('[CHECKOUT] Cart items:', items.length);
+      
+      if (!chosenAddr) {
+        alert('Please select a delivery address');
+        setIsPlacing(false);
+        return;
+      }
+
+      if (chosenAddr.isDetected || !chosenAddr._id) {
+        alert('Please save this address with complete details (House No, Flat, etc.) before placing the order.');
+        setIsPlacing(false);
+        return;
+      }
+
       const orderPayload = {
-        customer: user || {
-          id: 'cust-1',
-          name: 'Rohan Sharma',
-          phone: '+91 98765 43210'
-        },
-        deliveryAddress: {
-          tag: chosenAddr.tag,
-          line1: chosenAddr.address,
-          city: 'Noida',
-          pincode: chosenAddr.pincode,
-          phone: user?.phone || '+91 98765 43210'
-        },
-        deliveryInstructions: deliveryNote,
         items,
-        billing: billSummary,
-        paymentMethod: PAYMENT_METHOD.COD,
-        paymentStatus: PAYMENT_STATUS.PENDING
+        paymentMethod: paymentMethod,
+        deliveryInstructions: deliveryNote,
+        addressId: chosenAddr._id
       };
 
+      console.log('[CHECKOUT] Sending checkout request', orderPayload);
       const newOrder = await orderService.createOrder(orderPayload);
       clearCart();
       setIsPlacing(false);
       navigate(`/orders/${newOrder.id}`);
     } catch (err) {
-      console.error(err);
+      console.error('[CHECKOUT] Error:', err);
+      
+      const resData = err?.response?.data;
+      if (resData?.code === 'PRODUCT_NOT_FOUND' || resData?.code === 'INSUFFICIENT_STOCK') {
+        alert(resData.message || 'One item in your cart is no longer available in the requested quantity. Your cart has been refreshed.');
+        if (refreshCart) {
+          await refreshCart();
+        }
+      } else {
+        alert(resData?.message || err.message || 'Failed to place order. Please try again.');
+      }
       setIsPlacing(false);
     }
   };
@@ -97,30 +112,42 @@ export const CheckoutPage = () => {
                 </div>
               </div>
 
-              <div className="addresses-selection-grid">
-                {savedLocations.map((addr) => {
-                  const isSelected = activeAddressId === addr.id;
+              <div className="selected-delivery-address">
+                {selectedLocation ? (() => {
+                  const addr = selectedLocation;
                   return (
-                    <div
-                      key={addr.id}
-                      className={`checkout-addr-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => {
-                        setActiveAddressId(addr.id);
-                        selectLocation(addr);
-                      }}
-                    >
-                      <div className="addr-top">
+                    <div className="selected-addr-card">
+                      <div className="addr-top-flex">
                         <div className="tag-box">
-                          {addr.tag === 'Home' ? <Home size={15} /> : <Briefcase size={15} />}
-                          <span>{addr.tag}</span>
+                          {addr.tag === 'Home' || addr.label === 'HOME' ? <Home size={16} /> : (addr.tag === 'Work' || addr.label === 'WORK' ? <Briefcase size={16} /> : <MapPin size={16} />)}
+                          <span className="font-bold ml-1">{addr.tag || addr.label}</span>
                         </div>
-                        {isSelected && <CheckCircle2 size={18} className="check-icon" />}
+                        <button className="change-btn" onClick={() => setLocationModalOpen(true)}>Change</button>
                       </div>
-                      <div className="addr-text">{addr.address}</div>
-                      <div className="pincode-text">PIN: {addr.pincode}</div>
+                      
+                      <div className="addr-recipient">
+                        <strong>{addr.recipientName || user?.name || 'Customer'}</strong>
+                      </div>
+                      
+                      <div className="addr-details">
+                        {addr.formattedAddress || [addr.houseNumber, addr.buildingName, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')}
+                      </div>
+                      
+                      <div className="addr-phone">
+                        +91 {addr.recipientPhone || user?.phone || 'N/A'}
+                      </div>
+                      
+                      {addr.isDetected && (
+                        <p className="text-red-500 text-sm mt-2">Please save this address with complete details before placing an order.</p>
+                      )}
                     </div>
                   );
-                })}
+                })() : (
+                  <div className="no-address-state">
+                    <p>Please select a delivery address</p>
+                    <button className="btn btn-outline btn-sm mt-2" onClick={() => setLocationModalOpen(true)}>Select Address</button>
+                  </div>
+                )}
               </div>
             </section>
 

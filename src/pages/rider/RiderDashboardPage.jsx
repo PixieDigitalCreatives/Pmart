@@ -40,13 +40,11 @@ export const RiderDashboardPage = () => {
       <div className="rider-stats-grid">
         <div className="stat-card">
           <div className="stat-label">TODAY'S DELIVERIES</div>
-          <div className="stat-val">{profile?.todayDeliveries || 18}</div>
-          <span className="sub-stat">Target: 22</span>
+          <div className="stat-val">{profile?.todayDeliveries || 0}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">TODAY'S EARNINGS</div>
-          <div className="stat-val">₹{profile?.todayEarnings || 1260}</div>
-          <span className="sub-stat text-success font-semibold">+₹120 Tips</span>
+          <div className="stat-val">₹{profile?.todayEarnings || 0}</div>
         </div>
       </div>
 
@@ -61,10 +59,10 @@ export const RiderDashboardPage = () => {
           <div className="active-delivery-card">
             <div className="card-top">
               <div className="order-id-group">
-                <span className="order-id">Order #{activeOrder.id}</span>
-                <span className="badge badge-primary">{activeOrder.status.replace('_', ' ')}</span>
+                <span className="order-id">Order #{activeOrder.id || activeOrder.orderNumber || 'Unknown'}</span>
+                <span className="badge badge-primary">{(activeOrder.status || '').replace('_', ' ')}</span>
               </div>
-              <span className="eta-countdown">ETA: 8 Mins</span>
+              <span className="eta-countdown">ETA: Unavailable</span>
             </div>
 
             {/* Pickup & Drop Off Route */}
@@ -73,7 +71,7 @@ export const RiderDashboardPage = () => {
                 <div className="marker-dot green" />
                 <div className="point-info">
                   <div className="label">PICKUP FROM</div>
-                  <div className="name">{activeOrder.shop?.name || 'P Mart Sasaram'}</div>
+                  <div className="name">{activeOrder.shop?.name || 'Not available'}</div>
                 </div>
               </div>
 
@@ -83,7 +81,7 @@ export const RiderDashboardPage = () => {
                 <div className="marker-dot red" />
                 <div className="point-info">
                   <div className="label">DELIVER TO</div>
-                  <div className="name">{activeOrder.deliveryAddress?.tag}: {activeOrder.deliveryAddress?.line1}</div>
+                  <div className="name">{activeOrder.deliveryAddress?.street || 'Not available'}{activeOrder.deliveryAddress?.city ? `, ${activeOrder.deliveryAddress.city}` : ''}</div>
                 </div>
               </div>
             </div>
@@ -91,8 +89,8 @@ export const RiderDashboardPage = () => {
             {/* Customer Details */}
             <div className="customer-strip">
               <div>
-                <div className="cust-name font-semibold">{activeOrder.customer?.name}</div>
-                <div className="cust-items text-muted text-xs">{activeOrder.items?.length} items ({activeOrder.items?.map(i => i.name).slice(0, 2).join(', ')}...)</div>
+                <div className="cust-name font-semibold">{activeOrder.customer?.name || 'Customer'}</div>
+                <div className="cust-items text-muted text-xs">{activeOrder.items?.length || 0} items ({activeOrder.items?.map(i => i.name).filter(Boolean).slice(0, 2).join(', ') || 'N/A'})</div>
               </div>
               <a href={`tel:${activeOrder.customer?.phone}`} className="phone-btn" title="Call Customer">
                 <Phone size={16} />

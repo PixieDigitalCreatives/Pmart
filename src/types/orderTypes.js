@@ -4,14 +4,19 @@
  */
 
 export const ORDER_STATUS = {
-  PLACED: 'PLACED',
-  CONFIRMED: 'CONFIRMED',
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
   PREPARING: 'PREPARING',
-  READY_FOR_PICKUP: 'READY_FOR_PICKUP',
+  READY: 'READY',
+  ASSIGNED: 'ASSIGNED',
+  PICKED_UP: 'PICKED_UP',
   OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
   ARRIVED: 'ARRIVED',
   DELIVERED: 'DELIVERED',
-  CANCELLED: 'CANCELLED'
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+  DELIVERY_FAILED: 'DELIVERY_FAILED',
+  RETRY: 'RETRY'
 };
 
 export const PAYMENT_METHOD = {
@@ -34,10 +39,12 @@ export const DELIVERY_VERIFICATION_STATUS = {
  * Standard 7-stage order status progression
  */
 export const ORDER_PROGRESSION_STAGES = [
-  { key: ORDER_STATUS.PLACED, label: 'ORDER PLACED', description: 'Order placed by customer' },
-  { key: ORDER_STATUS.CONFIRMED, label: 'ORDER CONFIRMED', description: 'Confirmed by darkstore' },
+  { key: ORDER_STATUS.PENDING, label: 'ORDER PLACED', description: 'Order placed by customer' },
+  { key: ORDER_STATUS.ACCEPTED, label: 'ORDER ACCEPTED', description: 'Confirmed by darkstore' },
   { key: ORDER_STATUS.PREPARING, label: 'PREPARING', description: 'Packing items in darkstore' },
-  { key: ORDER_STATUS.READY_FOR_PICKUP, label: 'READY FOR PICKUP', description: 'Bagged & ready for rider' },
+  { key: ORDER_STATUS.READY, label: 'READY FOR PICKUP', description: 'Bagged & ready for rider' },
+  { key: ORDER_STATUS.ASSIGNED, label: 'RIDER ASSIGNED', description: 'Rider assigned to order' },
+  { key: ORDER_STATUS.PICKED_UP, label: 'PICKED UP', description: 'Order picked up by rider' },
   { key: ORDER_STATUS.OUT_FOR_DELIVERY, label: 'OUT FOR DELIVERY', description: 'Rider on the way to doorstep' },
   { key: ORDER_STATUS.ARRIVED, label: 'ARRIVED', description: 'Rider reached customer doorstep' },
   { key: ORDER_STATUS.DELIVERED, label: 'DELIVERED', description: 'Cash collected & OTP verified' }
@@ -47,12 +54,14 @@ export const ORDER_PROGRESSION_STAGES = [
  * Normalizes legacy lowercase or snake_case statuses to canonical uppercase
  */
 export const normalizeOrderStatus = (status) => {
-  if (!status) return ORDER_STATUS.PLACED;
+  if (!status) return ORDER_STATUS.PENDING;
   const s = String(status).toUpperCase();
-  if (s === 'PLACED') return ORDER_STATUS.PLACED;
-  if (s === 'ACCEPTED' || s === 'CONFIRMED') return ORDER_STATUS.CONFIRMED;
+  if (s === 'PLACED' || s === 'PENDING') return ORDER_STATUS.PENDING;
+  if (s === 'ACCEPTED' || s === 'CONFIRMED') return ORDER_STATUS.ACCEPTED;
   if (s === 'PREPARING') return ORDER_STATUS.PREPARING;
-  if (s === 'READY' || s === 'READY_FOR_PICKUP' || s === 'RIDER_ASSIGNED' || s === 'PICKED_UP') return ORDER_STATUS.READY_FOR_PICKUP;
+  if (s === 'READY' || s === 'READY_FOR_PICKUP') return ORDER_STATUS.READY;
+  if (s === 'ASSIGNED' || s === 'RIDER_ASSIGNED') return ORDER_STATUS.ASSIGNED;
+  if (s === 'PICKED_UP') return ORDER_STATUS.PICKED_UP;
   if (s === 'OUT_FOR_DELIVERY') return ORDER_STATUS.OUT_FOR_DELIVERY;
   if (s === 'ARRIVED') return ORDER_STATUS.ARRIVED;
   if (s === 'DELIVERED') return ORDER_STATUS.DELIVERED;
@@ -72,12 +81,21 @@ export const normalizePaymentStatus = (status) => {
   return PAYMENT_STATUS.PENDING;
 };
 
-/**
- * Normalizes verification status
- */
 export const normalizeVerificationStatus = (status) => {
   if (!status) return DELIVERY_VERIFICATION_STATUS.OTP_PENDING;
   const s = String(status).toUpperCase();
   if (s === 'OTP_VERIFIED' || s === 'VERIFIED') return DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED;
   return DELIVERY_VERIFICATION_STATUS.OTP_PENDING;
+};
+
+/**
+ * Customer-facing order status mapper.
+ * Internal states like REJECTED are mapped to CANCELLED for the customer.
+ */
+export const getCustomerOrderStatus = (status) => {
+  const norm = normalizeOrderStatus(status);
+  if (norm === ORDER_STATUS.REJECTED) {
+    return ORDER_STATUS.CANCELLED;
+  }
+  return norm;
 };

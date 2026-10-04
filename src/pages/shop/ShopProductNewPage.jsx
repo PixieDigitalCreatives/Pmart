@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { productService } from '@/services/productService';
-import { mockCategories } from '@/data/mockCategories';
+import apiClient from '@/services/apiClient';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
 
 export const ShopProductNewPage = () => {
@@ -17,6 +17,11 @@ export const ShopProductNewPage = () => {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=500&q=80');
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    apiClient.get('/categories').then(res => setCategories(res.data.data)).catch(console.error);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,8 +98,8 @@ export const ShopProductNewPage = () => {
                 value={categorySlug}
                 onChange={e => setCategorySlug(e.target.value)}
               >
-                {mockCategories.map(c => (
-                  <option key={c.id} value={c.slug}>{c.name}</option>
+                {categories.map(c => (
+                  <option key={c._id || c.id} value={c.slug}>{c.name}</option>
                 ))}
               </select>
             </div>

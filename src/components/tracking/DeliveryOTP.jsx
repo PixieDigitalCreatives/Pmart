@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { KeyRound, Copy, Check, ShieldCheck } from 'lucide-react';
 import './DeliveryOTP.scss';
 
-export const DeliveryOTP = ({ otp = '4829', isNearby = false }) => {
+export const DeliveryOTP = ({ otp, isNearby = false, status = 'OUT_FOR_DELIVERY' }) => {
   const [copied, setCopied] = useState(false);
 
   if (!otp) return null;
@@ -14,6 +14,10 @@ export const DeliveryOTP = ({ otp = '4829', isNearby = false }) => {
   };
 
   const digits = otp.toString().split('');
+  
+  const instructionText = status === 'ARRIVED' 
+    ? 'Share this code with the partner to confirm receipt' 
+    : 'Share this code with the partner upon arrival';
 
   return (
     <div className={`pmart-delivery-otp-card ${isNearby ? 'highlight-pulse' : ''}`}>
@@ -23,12 +27,12 @@ export const DeliveryOTP = ({ otp = '4829', isNearby = false }) => {
         </div>
         <div className="otp-text-meta">
           <h4 className="otp-title">Delivery Verification OTP</h4>
-          <p className="otp-desc">Share this code with the partner upon arrival to confirm receipt</p>
+          <p className="otp-desc">{instructionText}</p>
         </div>
       </div>
 
       <div className="otp-digits-display">
-        <div className="digits-group">
+        <div className="digits-group otp-number">
           {digits.map((digit, idx) => (
             <div key={idx} className="otp-digit-box">
               {digit}

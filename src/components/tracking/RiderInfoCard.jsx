@@ -8,11 +8,11 @@ export const RiderInfoCard = ({
   status = 'Out for Delivery',
   onContactClick = null
 }) => {
-  const riderName = rider.name || 'Vikram Singh';
-  const phone = rider.phone || '+91 98112 34567';
-  const vehicle = rider.vehicleType || 'Electric Scooter';
-  const vehicleNumber = rider.vehicleNumber || 'UP 16 AX 4492';
-  const rating = rider.rating || 4.9;
+  const riderName = rider.name;
+  const phone = rider.phone;
+  const vehicle = rider.vehicleType;
+  const vehicleNumber = rider.vehicleNumber;
+  const rating = rider.rating;
 
   return (
     <div className="pmart-rider-info-card">

@@ -32,8 +32,6 @@ export const AdminLayout = ({ children }) => {
     { name: 'Live Deliveries', path: '/admin/live-deliveries', icon: Navigation },
     { name: 'All Orders', path: '/admin/orders', icon: ShoppingBag },
     { name: 'User Management', path: '/admin/users', icon: Users },
-    { name: 'Darkstore Hubs', path: '/admin/shops', icon: Store },
-    { name: 'Fleet Riders', path: '/admin/riders', icon: Bike },
     { name: 'Catalog Governance', path: '/admin/products', icon: Package },
     { name: 'Payments & Settlement', path: '/admin/payments', icon: CreditCard },
     { name: 'Analytics & Reports', path: '/admin/reports', icon: FileBarChart },
@@ -123,7 +121,7 @@ export const AdminLayout = ({ children }) => {
           <div className="topbar-right">
             <div className="system-health-badge">
               <span className="pulse-dot" />
-              <span>All 32 Darkstores Operational</span>
+              <span>Platform Operational</span>
             </div>
 
             <button className="icon-notice-btn" aria-label="Alerts">

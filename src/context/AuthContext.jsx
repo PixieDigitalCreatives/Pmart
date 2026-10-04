@@ -1,33 +1,63 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { mockUsers } from '../data/mockUsers';
+import apiClient from '../services/apiClient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(mockUsers.customer);
-  const [role, setRole] = useState('customer'); // 'customer' | 'shop_owner' | 'rider' | 'admin'
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial auth state from localStorage or default to customer demo
-    const storedUser = localStorage.getItem('pmart_user');
-    if (storedUser) {
+    const checkAuth = async () => {
       try {
-        const parsed = JSON.parse(storedUser);
-        setUser(parsed);
-        setRole(parsed.role || 'customer');
-      } catch (e) {
-        setUser(mockUsers.customer);
+        const response = await apiClient.get('/auth/me');
+        if (response.data && response.data.user) {
+          const u = response.data.user;
+          setUser(u);
+          setRole(u.role || 'CUSTOMER');
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        setUser(null);
+        setRole(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+    checkAuth();
   }, []);
 
-  const loginWithOtp = async (identifier, otp, requestedRole) => {
-    setLoading(true);
+  /**
+   * Login with phone and password.
+   */
+  const login = async (phone, password) => {
     try {
-      const response = await authService.verifyOtp(identifier, otp, requestedRole);
+      const response = await authService.login(phone, password);
+      if (response.success) {
+        setUser(response.data.user);
+        setRole(response.data.user.role);
+        setIsAuthenticated(true);
+        return {
+          success: true,
+          user: response.data.user,
+          profileComplete: response.data.profileComplete,
+        };
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
+   * Register with phone, password, and name.
+   */
+  const register = async (phone, password, name) => {
+    try {
+      const response = await authService.register(phone, password, name);
       if (response.success) {
         setUser(response.data.user);
         setRole(response.data.user.role);
@@ -36,8 +66,55 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       throw error;
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  /**
+   * Login with Google.
+   */
+  const googleLogin = async (idToken) => {
+    try {
+      const response = await authService.googleLogin(idToken);
+      if (response.success) {
+        setUser(response.data.user);
+        setRole(response.data.user.role);
+        setIsAuthenticated(true);
+        return {
+          success: true,
+          user: response.data.user,
+          profileComplete: response.data.profileComplete,
+        };
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  /**
+   * Complete rider profile after Admin provision + Google login.
+   */
+  const completeRiderProfile = async (data) => {
+    try {
+      const response = await apiClient.put('/rider/profile', data);
+      if (response.data.success) {
+        const updatedUser = { ...user, profileComplete: true, ...response.data.rider };
+        setUser(updatedUser);
+        return { success: true, user: updatedUser };
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const completeProfile = async (data) => {
+    try {
+      const response = await authService.completeProfile(data);
+      if (response.success) {
+        setUser(response.user);
+        return { success: true, user: response.user };
+      }
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -45,31 +122,7 @@ export const AuthProvider = ({ children }) => {
     await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
-    setRole('customer');
-  };
-
-  // Seamless demo role switch for frontend inspection
-  const switchRole = (newRole) => {
-    let selectedUser;
-    switch (newRole) {
-      case 'shop_owner':
-        selectedUser = mockUsers.shopOwner;
-        break;
-      case 'rider':
-        selectedUser = mockUsers.rider;
-        break;
-      case 'admin':
-        selectedUser = mockUsers.admin;
-        break;
-      case 'customer':
-      default:
-        selectedUser = mockUsers.customer;
-        break;
-    }
-    setUser(selectedUser);
-    setRole(newRole);
-    setIsAuthenticated(true);
-    localStorage.setItem('pmart_user', JSON.stringify(selectedUser));
+    setRole(null);
   };
 
   return (
@@ -79,12 +132,13 @@ export const AuthProvider = ({ children }) => {
         role,
         isAuthenticated,
         loading,
-        loginWithOtp,
+        login, register, googleLogin,
+        completeProfile,
+        completeRiderProfile,
         logout,
-        switchRole
       }}
     >
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

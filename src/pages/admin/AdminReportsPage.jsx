@@ -44,23 +44,23 @@ export const AdminReportsPage = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <div className="pmart-card">
           <span className="text-muted text-xs font-semibold">GROSS PERIOD SALES</span>
-          <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.totalSales?.toLocaleString('en-IN') || '2,17,270'}</div>
-          <span className="text-success text-xs font-semibold mt-1 block">100% audited</span>
+          <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.totalSales?.toLocaleString('en-IN') || '0'}</div>
+          <span className="text-success text-xs font-semibold mt-1 block"></span>
         </div>
         <div className="pmart-card">
           <span className="text-muted text-xs font-semibold">TOTAL ORDERS PROCESSED</span>
-          <div className="text-2xl font-extrabold text-dark mt-1">{report?.totalOrders || 642}</div>
-          <span className="text-muted text-xs mt-1 block">Avg delivery: 11.8 mins</span>
+          <div className="text-2xl font-extrabold text-dark mt-1">{report?.totalOrders || 0}</div>
+          <span className="text-muted text-xs mt-1 block"></span>
         </div>
         <div className="pmart-card">
           <span className="text-muted text-xs font-semibold">AVERAGE ORDER VALUE</span>
-          <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.avgTicketSize || 338}</div>
-          <span className="text-muted text-xs mt-1 block">+₹24 vs baseline</span>
+          <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.avgTicketSize || 0}</div>
+          <span className="text-muted text-xs mt-1 block"></span>
         </div>
         <div className="pmart-card">
           <span className="text-muted text-xs font-semibold">SLA BREACHES</span>
-          <div className="text-2xl font-extrabold text-dark mt-1">{report?.slaBreaches || 4}</div>
-          <span className="text-xs text-muted mt-1 block">0.6% breach rate</span>
+          <div className="text-2xl font-extrabold text-dark mt-1">{report?.slaBreaches || 0}</div>
+          <span className="text-xs text-muted mt-1 block"></span>
         </div>
       </div>
 

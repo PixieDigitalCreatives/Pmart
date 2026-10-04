@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
-import { mockRiders } from '@/data/mockRiders';
+import { adminService } from '@/services/adminService';
 import { ShopTrackRiderModal } from '@/components/shop/ShopTrackRiderModal';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import {
@@ -37,6 +37,7 @@ export const ShopOrderDetailPage = () => {
   const [selectedRiderId, setSelectedRiderId] = useState('');
   const [actionNotice, setActionNotice] = useState('');
   const [isTrackRiderOpen, setIsTrackRiderOpen] = useState(false);
+  const [availableRiders, setAvailableRiders] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +46,8 @@ export const ShopOrderDetailPage = () => {
       if (isMounted) {
         setOrder(data);
         if (data?.rider) setSelectedRiderId(data.rider.id);
+        const riders = await adminService.getEligibleRiders();
+        setAvailableRiders(riders);
         setLoading(false);
       }
     };
@@ -66,7 +69,7 @@ export const ShopOrderDetailPage = () => {
 
   const handleAssignRider = async (e) => {
     e.preventDefault();
-    const riderObj = mockRiders.find(r => r.id === selectedRiderId);
+    const riderObj = availableRiders.find(r => r.id === selectedRiderId);
     if (riderObj) {
       const updated = await orderService.updateOrderData(order.id, {
         rider: riderObj,
@@ -74,7 +77,7 @@ export const ShopOrderDetailPage = () => {
         orderStatus: ORDER_STATUS.CONFIRMED
       });
       setOrder(updated);
-      setActionNotice(`Rider ${riderObj.name} assigned to Order #${order.id}`);
+      setActionNotice(`Rider ${riderObj.name || riderObj.fullName} assigned to Order #${order.id}`);
       setTimeout(() => setActionNotice(''), 3000);
     }
   };
@@ -251,7 +254,7 @@ export const ShopOrderDetailPage = () => {
             <div className="items-table-list">
               {order?.items.map((item, idx) => (
                 <div key={idx} className="item-row">
-                  <img src={item.image} alt={item.name} className="item-thumb" />
+                  <img src={item.imageUrl || item.image} alt={item.name} className="item-thumb" />
                   <div className="item-info">
                     <div className="name">{item.name}</div>
                     <div className="unit">{item.unit}</div>
@@ -265,15 +268,15 @@ export const ShopOrderDetailPage = () => {
             <div className="bill-summary-sub">
               <div className="sub-row">
                 <span>Items Subtotal</span>
-                <span>₹{order?.billing.itemTotal}</span>
+                <span>₹{order?.subTotal || order?.billing?.itemTotal || 0}</span>
               </div>
               <div className="sub-row">
                 <span>Delivery Fee</span>
-                <span>₹{order?.billing.deliveryFee}</span>
+                <span>₹{order?.deliveryFee || order?.billing?.deliveryFee || 0}</span>
               </div>
               <div className="sub-row total">
                 <span>Grand Total</span>
-                <span>₹{order?.billing.grandTotal}</span>
+                <span>₹{order?.totalAmount || order?.billing?.grandTotal || 0}</span>
               </div>
             </div>
           </div>
@@ -350,9 +353,10 @@ export const ShopOrderDetailPage = () => {
                   onChange={e => setSelectedRiderId(e.target.value)}
                 >
                   <option value="">-- Choose Rider --</option>
-                  {mockRiders.map(r => (
+                  {availableRiders.length === 0 && <option value="" disabled>No riders found.</option>}
+                  {availableRiders.map(r => (
                     <option key={r.id} value={r.id}>
-                      {r.name} ({r.vehicleNumber}) — {r.status === 'available' ? '🟢 Available' : '🟡 On Delivery'}
+                      {r.name || r.fullName} ({r.vehicleNumber}) — {r.availabilityStatus === 'AVAILABLE' ? '🟢 Available' : '🟡 On Delivery'}
                     </option>
                   ))}
                 </select>

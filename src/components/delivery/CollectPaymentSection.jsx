@@ -13,19 +13,21 @@ export const CollectPaymentSection = ({
 
   if (!order) return null;
 
-  const payableAmount = order.billing?.grandTotal || 0;
-  const customerName = order.customer?.name || 'Customer';
+  const hasValidAmount = order.totalAmount !== undefined && order.totalAmount !== null;
+  const payableAmount = hasValidAmount ? order.totalAmount : 'Unavailable';
+  const customerName = order.customer?.fullName || order.customer?.name || 'Customer';
   const paymentStatus = order.paymentStatus || 'PENDING';
   const isAlreadyCollected = paymentStatus === 'COLLECTED';
 
   const handleConfirmPayment = async () => {
-    if (submitting || isProcessing || isAlreadyCollected) return;
+    if (submitting || isProcessing || isAlreadyCollected || !hasValidAmount) return;
 
     setSubmitting(true);
     setErrorMessage('');
 
     try {
-      await paymentService.markPaymentCollected(order.id);
+      const orderId = order.id || order._id;
+      await paymentService.markPaymentCollected(orderId);
       onPaymentSuccess();
     } catch (err) {
       console.error(err);
@@ -51,8 +53,14 @@ export const CollectPaymentSection = ({
           <div className="amount-left">
             <span className="amount-caption">Amount to Collect</span>
             <div className="amount-display">
-              <span className="currency-symbol">₹</span>
-              <span className="amount-number">{payableAmount}</span>
+              {hasValidAmount ? (
+                <>
+                  <span className="currency-symbol">₹</span>
+                  <span className="amount-number">{payableAmount}</span>
+                </>
+              ) : (
+                <span className="amount-unavailable-text">Amount unavailable</span>
+              )}
             </div>
             <span className="non-editable-notice">Exact total calculated dynamically • Non-modifiable</span>
           </div>

@@ -3,17 +3,19 @@ import { Clock, Navigation, Zap } from 'lucide-react';
 import './ETAIndicator.scss';
 
 export const ETAIndicator = ({
-  etaMinutes = 10,
-  distanceKm = 1.4,
+  etaMinutes,
+  distanceKm,
   trackingState = 'TRACKING_ACTIVE'
 }) => {
   const getEtaHeadline = () => {
+    if (etaMinutes === undefined || etaMinutes === null) return 'Calculating ETA...';
     if (etaMinutes <= 2) return 'Arriving any moment!';
     if (etaMinutes <= 5) return `Arriving in ${etaMinutes} mins`;
     return `${etaMinutes} mins away`;
   };
 
   const getSubtext = () => {
+    if (etaMinutes === undefined || etaMinutes === null) return 'Waiting for rider location...';
     if (etaMinutes <= 2) return 'Your delivery partner has reached your gate';
     if (etaMinutes <= 5) return 'Approaching your location via fastest route';
     return 'Rider on the way from PMart Darkstore';
@@ -33,7 +35,7 @@ export const ETAIndicator = ({
 
       <div className="eta-distance-pill">
         <Navigation size={13} className="dist-icon" />
-        <span>{distanceKm} km away</span>
+        <span>{distanceKm !== undefined && distanceKm !== null ? `${distanceKm} km away` : 'Distance unavailable'}</span>
       </div>
     </div>
   );

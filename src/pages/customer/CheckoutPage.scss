@@ -385,3 +385,71 @@
     }
   }
 }
+
+.selected-addr-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #fff;
+  
+  .addr-top-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    
+    .tag-box {
+      display: flex;
+      align-items: center;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    .change-btn {
+      color: #F20D18;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  .addr-recipient {
+    font-size: 15px;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .addr-details {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  
+  .addr-phone {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+  }
+}
+
+.no-address-state {
+  text-align: center;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+  
+  p {
+    margin-bottom: 10px;
+    color: #666;
+  }
+}
+

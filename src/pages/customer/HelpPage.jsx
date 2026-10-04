@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockFaqs } from '@/data/mockFaqs';
+// FAQs will be fetched from API in the future
 import { LiveChatModal } from '@/components/common/LiveChatModal';
 import {
   HelpCircle,
@@ -83,7 +83,7 @@ export const HelpPage = () => {
           <h2 className="section-title">Frequently Asked Questions</h2>
 
           <div className="faq-categories-list">
-            {mockFaqs.map((cat, catIdx) => (
+            {[]?.map((cat, catIdx) => (
               <div key={catIdx} className="faq-category-block">
                 <h3 className="category-block-title">{cat.category}</h3>
                 <div className="questions-accordion">

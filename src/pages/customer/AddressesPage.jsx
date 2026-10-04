@@ -1,56 +1,62 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/context/LocationContext';
+import { AddressFormModal } from '@/components/common/AddressFormModal';
 import {
   MapPin,
   Home,
   Briefcase,
   Plus,
   Trash2,
-  Check,
-  Edit2,
-  X,
-  CheckCircle2
+  CheckCircle2,
 } from 'lucide-react';
+import { getFullAddressString } from '@/utils/addressUtils';
 import './AddressesPage.scss';
 
 export const AddressesPage = () => {
-  const { savedLocations, selectedLocation, selectLocation, addLocation } = useLocation();
+  const { savedLocations, selectedLocation, selectLocation, addLocation, updateLocation, deleteLocation, setDefaultAddress, addressLoading } = useLocation();
 
-  const [addresses, setAddresses] = useState(savedLocations);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newTag, setNewTag] = useState('Home');
-  const [newLine1, setNewLine1] = useState('');
-  const [newPincode, setNewPincode] = useState('201309');
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
 
-  const handleDelete = (id) => {
-    setAddresses(prev => prev.filter(a => a.id !== id));
+  const handleDelete = (e, id) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this address?')) {
+      deleteLocation(id);
+    }
   };
 
-  const handleSetDefault = (addr) => {
-    const updated = addresses.map(a => ({
-      ...a,
-      isDefault: a.id === addr.id
-    }));
-    setAddresses(updated);
-    selectLocation(addr);
+  const handleSetDefault = (e, id) => {
+    e.stopPropagation();
+    setDefaultAddress(id);
   };
 
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    if (!newLine1.trim()) return;
+  const openAddForm = () => {
+    setEditingAddress(null);
+    setFormModalOpen(true);
+  };
 
-    const newAddr = {
-      id: `addr-${Date.now()}`,
-      tag: newTag,
-      address: newLine1,
-      pincode: newPincode,
-      isDefault: false
-    };
+  const openEditForm = (addr) => {
+    setEditingAddress(addr);
+    setFormModalOpen(true);
+  };
 
-    setAddresses(prev => [newAddr, ...prev]);
-    addLocation(newAddr);
-    setIsAddModalOpen(false);
-    setNewLine1('');
+  const handleSaveForm = async (formData) => {
+    if (editingAddress) {
+      await updateLocation(editingAddress._id, formData);
+    } else {
+      await addLocation(formData);
+    }
+  };
+
+  const getTagIcon = (tag) => {
+    switch ((tag || '').toLowerCase()) {
+      case 'home':
+        return <Home size={15} />;
+      case 'work':
+        return <Briefcase size={15} />;
+      default:
+        return <MapPin size={15} />;
+    }
   };
 
   return (
@@ -61,117 +67,81 @@ export const AddressesPage = () => {
             <h1 className="page-title">Manage Delivery Addresses</h1>
             <p className="page-subtitle">Save your home, office, and frequent delivery locations</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+          <button className="btn btn-primary" onClick={openAddForm}>
             <Plus size={16} />
             <span>Add New Address</span>
           </button>
         </div>
 
+        {addressLoading && savedLocations.length === 0 && (
+          <div className="py-8 text-center text-gray-500">Loading addresses...</div>
+        )}
+
+        {!addressLoading && savedLocations.length === 0 && (
+          <div className="py-8 text-center">
+            <MapPin size={32} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-500">You haven't saved any addresses yet.</p>
+          </div>
+        )}
+
         {/* Addresses Grid */}
         <div className="addresses-cards-grid">
-          {addresses.map((addr) => {
-            const isSelected = selectedLocation?.id === addr.id;
+          {savedLocations.map((addr) => {
+            const isSelected = selectedLocation?._id === addr._id;
             return (
-              <div key={addr.id} className={`address-card ${isSelected ? 'active-delivery' : ''}`}>
+              <div 
+                key={addr._id} 
+                className={`address-card ${isSelected ? 'active-delivery' : ''}`}
+                onClick={() => selectLocation(addr._id)}
+              >
                 <div className="card-top-row">
                   <div className="tag-badge">
-                    {addr.tag === 'Home' ? <Home size={15} /> : <Briefcase size={15} />}
-                    <span>{addr.tag}</span>
+                    {getTagIcon(addr.tag || addr.label)}
+                    <span>{addr.tag || addr.label}</span>
                   </div>
                   {addr.isDefault && <span className="default-chip">Default</span>}
                 </div>
 
-                <div className="address-body-text">{addr.address}</div>
-                <div className="pincode-note">Pincode: {addr.pincode}</div>
+                <div className="address-body-text font-semibold">{addr.recipientName} ({addr.recipientPhone})</div>
+                <div className="address-body-text">{getFullAddressString(addr)}</div>
+                {addr.landmark && <div className="pincode-note">Landmark: {addr.landmark}</div>}
+                
+                {addr.location?.coordinates && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    GPS: {addr.location.coordinates[1].toFixed(4)}, {addr.location.coordinates[0].toFixed(4)}
+                  </div>
+                )}
 
                 <div className="card-actions-row">
                   {!addr.isDefault && (
-                    <button
-                      className="action-btn set-default"
-                      onClick={() => handleSetDefault(addr)}
-                    >
+                    <button className="action-btn set-default" onClick={(e) => handleSetDefault(e, addr._id)}>
                       Set as Default
                     </button>
                   )}
-                  {isSelected && (
-                    <span className="delivering-here-tag">
-                      <CheckCircle2 size={14} />
-                      <span>Current Location</span>
-                    </span>
-                  )}
-                  <button
-                    className="action-btn delete-btn"
-                    onClick={() => handleDelete(addr.id)}
-                    aria-label="Delete address"
-                  >
+                  <button className="action-btn edit-btn" onClick={(e) => { e.stopPropagation(); openEditForm(addr); }}>
+                    Edit
+                  </button>
+                  <button className="action-btn delete-btn" aria-label="Delete" onClick={(e) => handleDelete(e, addr._id)}>
                     <Trash2 size={15} />
                   </button>
                 </div>
+                
+                {isSelected && (
+                  <div className="absolute top-4 right-4 text-green-600">
+                    <CheckCircle2 size={24} />
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Add Address Modal */}
-        {isAddModalOpen && (
-          <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
-            <div className="modal-content add-address-modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>Add New Delivery Address</h3>
-                <button className="close-btn" onClick={() => setIsAddModalOpen(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddSubmit} className="add-addr-form">
-                <div className="form-group">
-                  <label>Address Type</label>
-                  <div className="tag-selector-row">
-                    {['Home', 'Work', 'Friends & Family', 'Other'].map(t => (
-                      <button
-                        key={t}
-                        type="button"
-                        className={`type-chip ${newTag === t ? 'active' : ''}`}
-                        onClick={() => setNewTag(t)}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>House / Flat / Building / Street</label>
-                  <textarea
-                    className="form-control"
-                    rows="3"
-                    placeholder="e.g. Flat 501, Tower C, Stellar Greens, Sector 62"
-                    value={newLine1}
-                    onChange={e => setNewLine1(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Pincode</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={newPincode}
-                    onChange={e => setNewPincode(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="modal-actions">
-                  <button type="submit" className="btn btn-primary btn-full">
-                    Save Delivery Address
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <AddressFormModal 
+          isOpen={formModalOpen} 
+          onClose={() => setFormModalOpen(false)} 
+          onSave={handleSaveForm}
+          initialData={editingAddress}
+        />
       </div>
     </div>
   );

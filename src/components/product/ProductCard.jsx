@@ -9,7 +9,7 @@ export const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const { getItemQuantity, addItem, updateQuantity } = useCart();
 
-  const quantity = getItemQuantity(product.id);
+  const quantity = getItemQuantity(product._id || product.id);
 
   const handleCardClick = () => {
     navigate(`/product/${product.slug}`);
@@ -22,12 +22,12 @@ export const ProductCard = ({ product }) => {
 
   const handleIncrement = (e) => {
     e.stopPropagation();
-    updateQuantity(product.id, quantity + 1);
+    updateQuantity(product._id || product.id, quantity + 1);
   };
 
   const handleDecrement = (e) => {
     e.stopPropagation();
-    updateQuantity(product.id, quantity - 1);
+    updateQuantity(product._id || product.id, quantity - 1);
   };
 
   return (
@@ -35,7 +35,7 @@ export const ProductCard = ({ product }) => {
       {/* Top Media & Badges */}
       <div className="card-media-wrapper">
         <img
-          src={product.image}
+          src={product.imageUrl || product.image}
           alt={product.name}
           loading="lazy"
           className="product-img"
@@ -75,13 +75,17 @@ export const ProductCard = ({ product }) => {
         <div className="card-bottom">
           <div className="price-block">
             <span className="selling-price">₹{product.price}</span>
-            {product.mrp > product.price && (
-              <span className="mrp-price">₹{product.mrp}</span>
+            {(product.mrp || product.discountPrice) && (product.mrp > product.price || product.discountPrice) && (
+              <span className="mrp-price">₹{product.mrp || (product.price + (product.price - product.discountPrice))}</span>
             )}
           </div>
 
           <div className="action-block">
-            {quantity === 0 ? (
+            {product.stockCount <= 0 ? (
+              <div className="out-of-stock-text" style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>
+                Out of stock
+              </div>
+            ) : quantity === 0 ? (
               <button
                 className="btn-add-to-cart"
                 onClick={handleAdd}
@@ -110,6 +114,7 @@ export const ProductCard = ({ product }) => {
                   className="step-btn"
                   onClick={handleIncrement}
                   aria-label="Increase quantity"
+                  disabled={quantity >= product.stockCount}
                 >
                   <Plus size={13} />
                 </button>

@@ -6,7 +6,8 @@ import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import {
   ORDER_STATUS,
   PAYMENT_STATUS,
-  normalizeOrderStatus
+  normalizeOrderStatus,
+  getCustomerOrderStatus
 } from '@/types/orderTypes';
 import {
   Package,
@@ -56,7 +57,7 @@ export const OrdersPage = () => {
   };
 
   const getStatusBadge = (order) => {
-    const norm = normalizeOrderStatus(order.orderStatus || order.status);
+    const norm = getCustomerOrderStatus(order.orderStatus || order.status);
     switch (norm) {
       case ORDER_STATUS.DELIVERED:
         return (
@@ -93,7 +94,7 @@ export const OrdersPage = () => {
             <span>Preparing</span>
           </span>
         );
-      case 'cancelled':
+      case ORDER_STATUS.CANCELLED:
         return (
           <span className="order-status-pill cancelled">
             <span className="dot red" />
@@ -146,8 +147,8 @@ export const OrdersPage = () => {
         ) : (
           <div className="orders-cards-list">
             {orders.map((order) => {
-              const norm = normalizeOrderStatus(order.orderStatus || order.status);
-              const isActive = norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED || norm === ORDER_STATUS.PREPARING || norm === ORDER_STATUS.READY_FOR_PICKUP;
+              const norm = getCustomerOrderStatus(order.orderStatus || order.status);
+              const isActive = norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED || norm === ORDER_STATUS.PREPARING || norm === ORDER_STATUS.READY || norm === ORDER_STATUS.ASSIGNED || norm === ORDER_STATUS.PICKED_UP;
 
               return (
                 <div key={order.id} className="order-history-card">
@@ -174,7 +175,7 @@ export const OrdersPage = () => {
                     <div className="item-thumbnails-group">
                       {order.items.slice(0, 4).map((item, idx) => (
                         <div key={idx} className="thumb-box" title={item.name}>
-                          <img src={item.image} alt={item.name} />
+                          <img src={item.imageUrl || item.image} alt={item.name} />
                         </div>
                       ))}
                       {order.items.length > 4 && (

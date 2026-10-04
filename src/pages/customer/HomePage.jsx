@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { mockCategories } from '@/data/mockCategories';
 import { productService } from '@/services/productService';
+import { categoryService } from '@/services/categoryService';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { ShieldCheck, ArrowRight, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './HomePage.scss';
 
 export const HomePage = () => {
+  const [categories, setCategories] = useState([]);
   const [dailyEssentials, setDailyEssentials] = useState([]);
   const [freshPicks, setFreshPicks] = useState([]);
   const [under99, setUnder99] = useState([]);
@@ -15,21 +16,29 @@ export const HomePage = () => {
   const [mostBought, setMostBought] = useState([]);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      const daily = await productService.getProductsByTag('daily-essentials', 8);
-      const fresh = await productService.getProductsByTag('fresh-picks', 8);
-      const u99 = await productService.getProductsByTag('under-99', 8);
-      const deals = await productService.getProductsByTag('best-deals', 8);
-      const popular = await productService.getProductsByTag('most-bought', 8);
-
-      setDailyEssentials(daily);
-      setFreshPicks(fresh);
-      setUnder99(u99);
-      setBestDeals(deals);
-      setMostBought(popular);
+    const loadData = async () => {
+      try {
+        const [cats, daily, fresh, u99, deals, popular] = await Promise.all([
+          categoryService.getCategories(),
+          productService.getProductsByTag('daily-essentials', 8),
+          productService.getProductsByTag('fresh-picks', 8),
+          productService.getProductsByTag('under-99', 8),
+          productService.getProductsByTag('best-deals', 8),
+          productService.getProductsByTag('most-bought', 8)
+        ]);
+        
+        setCategories(cats || []);
+        setDailyEssentials(daily || []);
+        setFreshPicks(fresh || []);
+        setUnder99(u99 || []);
+        setBestDeals(deals || []);
+        setMostBought(popular || []);
+      } catch (e) {
+        console.error("Failed to load home page data", e);
+      }
     };
 
-    loadProducts();
+    loadData();
   }, []);
 
   return (
@@ -78,20 +87,20 @@ export const HomePage = () => {
           <div className="section-header-row">
             <h2 className="section-heading">Explore Categories</h2>
             <Link to="/category/fruits-vegetables" className="view-all-link">
-              <span>View All 18 Categories</span>
+              <span>View All</span>
               <ChevronRight size={16} />
             </Link>
           </div>
 
           <div className="categories-grid-track">
-            {mockCategories.map((cat) => (
+            {categories.map((cat) => (
               <Link
-                key={cat.id}
+                key={cat._id || cat.id}
                 to={`/category/${cat.slug}`}
                 className="category-pill-card"
               >
                 <div className="cat-image-box">
-                  <img src={cat.image} alt={cat.name} loading="lazy" />
+                  <img src={cat.imageUrl || cat.image} alt={cat.name} loading="lazy" />
                 </div>
                 <span className="cat-name">{cat.name}</span>
               </Link>

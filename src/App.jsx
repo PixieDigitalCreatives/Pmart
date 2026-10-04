@@ -6,22 +6,25 @@ import { CartProvider } from '@/context/CartContext';
 import { ToastProvider } from '@/context/ToastContext';
 import { ScrollToTop } from '@/routes/ScrollToTop';
 import { AppRoutes } from '@/routes/AppRoutes';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import '@/styles/main.scss';
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <LocationProvider>
-          <CartProvider>
-            <ToastProvider>
-              <ScrollToTop />
-              <AppRoutes />
-            </ToastProvider>
-          </CartProvider>
-        </LocationProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <LocationProvider>
+            <CartProvider>
+              <ToastProvider>
+                <ScrollToTop />
+                <AppRoutes />
+              </ToastProvider>
+            </CartProvider>
+          </LocationProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

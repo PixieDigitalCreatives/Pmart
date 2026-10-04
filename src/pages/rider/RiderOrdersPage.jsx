@@ -35,7 +35,7 @@ export const RiderOrdersPage = () => {
           <div className="space-y-2 text-sm text-secondary mb-4">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="text-muted mt-0.5" />
-              <span>{activeOrder.deliveryAddress.line1}, {activeOrder.deliveryAddress.city}</span>
+              <span>{activeOrder.deliveryAddress?.street || 'Not available'}{activeOrder.deliveryAddress?.city ? `, ${activeOrder.deliveryAddress.city}` : ''}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-muted" />

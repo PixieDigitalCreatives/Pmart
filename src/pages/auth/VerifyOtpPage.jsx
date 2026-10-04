@@ -17,10 +17,12 @@ export const VerifyOtpPage = () => {
   const navigate = useNavigate();
   const { loginWithOtp } = useAuth();
 
-  const identifier = location.state?.identifier || '+91 98765 43210';
-  const demoOtp = location.state?.demoOtp || '1234';
+  const identifier = location.state?.identifier || '';
+  const demoOtp = location.state?.demoOtp || '';
 
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState(
+    demoOtp && demoOtp.length === 4 ? demoOtp.split('') : ['', '', '', '']
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -82,16 +84,16 @@ export const VerifyOtpPage = () => {
       setTimeout(() => {
         const userRole = res.user.role;
         switch (userRole) {
-          case 'shop_owner':
+          case 'SHOP_OWNER':
             navigate('/shop');
             break;
-          case 'rider':
+          case 'RIDER':
             navigate('/rider');
             break;
-          case 'admin':
+          case 'ADMIN':
             navigate('/admin');
             break;
-          case 'customer':
+          case 'CUSTOMER':
           default:
             navigate('/');
             break;
@@ -99,7 +101,8 @@ export const VerifyOtpPage = () => {
       }, 700);
     } catch (err) {
       setLoading(false);
-      setError(err.message || 'Invalid or expired OTP. Please try again.');
+      const serverMsg = err.response?.data?.message;
+      setError(serverMsg || err.message || 'Invalid or expired OTP. Please try again.');
     }
   };
 
@@ -120,11 +123,6 @@ export const VerifyOtpPage = () => {
             </p>
           </div>
 
-          <div className="demo-hint-box">
-            <strong>Demo Auto-Fill Tip:</strong>
-            <p>Any 4-digit code works (e.g. <code>1234</code>, <code>4829</code>).</p>
-            <p>Code <code>0000</code> triggers the invalid state test.</p>
-          </div>
         </div>
 
         {/* Right Side: OTP Card */}

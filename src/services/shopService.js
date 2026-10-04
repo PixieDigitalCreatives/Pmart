@@ -1,22 +1,25 @@
-import { mockShops } from '../data/mockShops';
+import apiClient from './apiClient';
 import { orderService } from './orderService';
-import { mockProducts } from '../data/mockProducts';
+import { productService } from './productService';
 
 export const shopService = {
   async getShopDetails(shopId = 'shop-101') {
-    return mockShops.find(s => s.id === shopId) || mockShops[0];
+    // If shopId is generic, just get the first shop for now
+    if (shopId === 'shop-101') {
+      const response = await apiClient.get('/shops');
+      return response.data.data[0] || null;
+    }
+    const response = await apiClient.get(`/shops/${shopId}`);
+    return response.data.data;
   },
 
   async getShopMetrics(shopId = 'shop-101') {
-    return {
-      todayOrders: 148,
-      pendingOrders: 12,
-      preparingOrders: 6,
-      outForDelivery: 18,
-      todayRevenue: 48920,
-      inventoryAlerts: 4,
-      activeRiders: 18
-    };
+    try {
+      const response = await apiClient.get(`/shops/${shopId}/metrics`);
+      return response.data?.data || null;
+    } catch {
+      return null;
+    }
   },
 
   async getShopOrders(status = 'all') {
@@ -24,17 +27,15 @@ export const shopService = {
   },
 
   async getInventory(category = null) {
-    let items = [...mockProducts];
-    if (category) {
-      items = items.filter(i => i.categorySlug === category);
-    }
-    return items;
+    const products = await productService.getProducts(category ? { category } : {});
+    return products.products;
   },
 
   async assignRider(orderId, riderId) {
+    const response = await apiClient.put(`/orders/${orderId}/status`, { status: 'OUT_FOR_DELIVERY' });
     return {
       success: true,
-      message: `Rider ${riderId} assigned to order ${orderId}`
+      message: `Rider assigned to order ${orderId}`
     };
   }
 };

@@ -7,7 +7,7 @@ export const RiderMarker = ({
   x,
   y,
   heading = 45,
-  riderName = 'Vikram Singh',
+  riderName = 'Delivery Partner',
   speed = '26 km/h',
   showLabel = true
 }) => {

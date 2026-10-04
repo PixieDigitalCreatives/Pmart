@@ -39,8 +39,8 @@ export const GoogleDeliveryMap = ({
   const deliveryAddress = order?.deliveryAddress?.line1
     ? `${order.deliveryAddress.line1}, ${order.deliveryAddress.line2 || ''}, ${order.deliveryAddress.city || 'Sasaram'}`
     : 'Gaurakshani Colony, Sasaram, Bihar 821115';
-  const riderName = order?.rider?.name || 'Vikram Singh';
-  const vehicleNumber = order?.rider?.vehicleNumber || 'BR 24 AX 4492';
+  const riderName = order?.rider?.name || 'Delivery Partner';
+  const vehicleNumber = order?.rider?.vehicleNumber || '';
 
   // Animate rider along the route
   useEffect(() => {
@@ -167,8 +167,8 @@ export const GoogleDeliveryMap = ({
       {/* Top Center: Floating Google Navigation Banner */}
       <div className="gmap-eta-banner">
         <div className="eta-badge">
-          <span className="eta-time">5-8 min</span>
-          <span className="eta-dist">1.4 km</span>
+          <span className="eta-time">{order?.tracking?.etaMinutes ? `~${order.tracking.etaMinutes} min` : 'Calculating...'}</span>
+          <span className="eta-dist">{order?.tracking?.distanceKm ? `${order.tracking.distanceKm} km` : ''}</span>
         </div>
         <div className="eta-subtext">
           <span className="live-dot" />
@@ -400,7 +400,7 @@ export const GoogleDeliveryMap = ({
                 <rect x="-58" y="-11" width="116" height="22" rx="11" fill="#202124" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
                 <circle cx="-46" cy="0" r="4" fill="#34a853" />
                 <text x="-36" y="3.5" fill="#ffffff" fontSize="9.5" fontWeight="600" fontFamily="Roboto, sans-serif">
-                  {riderName.split(' ')[0]} • 28 km/h
+                  {riderName.split(' ')[0]}
                 </text>
               </g>
             </g>

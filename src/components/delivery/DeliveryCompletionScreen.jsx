@@ -8,7 +8,7 @@ export const DeliveryCompletionScreen = ({
 }) => {
   if (!order) return null;
 
-  const grandTotal = order.billing?.grandTotal || 0;
+  const grandTotal = order.totalAmount || order.billing?.grandTotal || 0;
 
   return (
     <div className="pmart-delivery-completion-screen">
@@ -17,7 +17,7 @@ export const DeliveryCompletionScreen = ({
       </div>
 
       <h2 className="success-headline">Delivery Completed</h2>
-      <p className="order-id-label">Order #{order.id}</p>
+      <p className="order-id-label">Order #{order.id || order._id}</p>
 
       <div className="summary-cards-container">
         {/* Payment Summary */}

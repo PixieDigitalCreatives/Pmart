@@ -125,8 +125,10 @@
   // Tracking Grid
   .tracking-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 400px; // Fixed width for sidebar, flex for map
     gap: 28px;
+    align-items: start; // Prevents columns from stretching to match each other's height
+    margin-top: 24px;
 
     @include tablet-down {
       grid-template-columns: 1fr;
@@ -137,6 +139,14 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      width: 100%;
+      min-width: 0; // Fix grid overflow
+      
+      // Enforce map height responsive constraints
+      .pmart-live-tracking-map {
+        height: clamp(350px, 60dvh, 600px) !important;
+        min-height: auto !important;
+      }
 
       .rider-contact-card {
         background: $white;
@@ -905,3 +915,4 @@
   0% { transform: translate(0, 0); }
   100% { transform: translate(40px, 10px); }
 }
+

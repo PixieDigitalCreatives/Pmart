@@ -78,6 +78,15 @@
       }
     }
   }
+  
+  .gps-map-section-wrapper {
+    margin-bottom: 16px;
+    
+    .pmart-live-tracking-map {
+      height: clamp(240px, 45dvh, 400px) !important;
+      min-height: auto !important;
+    }
+  }
 
   .rider-info-card {
     background: $white;

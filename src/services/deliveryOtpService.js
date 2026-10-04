@@ -1,5 +1,4 @@
-import { orderService } from './orderService';
-import { DELIVERY_VERIFICATION_STATUS } from '../types/orderTypes';
+import apiClient from './apiClient';
 
 // In-memory cooldown tracker for resend requests
 const resendTimestamps = new Map(); // orderId -> timestamp
@@ -10,12 +9,11 @@ export const deliveryOtpService = {
    * Dispatches delivery OTP notification to customer (SMS/WhatsApp simulation)
    */
   async sendDeliveryOtp(orderId) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
+    // In a real system, you would call backend to generate/send OTP via SMS
+    // For now, it's just a mock that the UI calls.
     return {
       success: true,
-      message: `Delivery OTP sent securely to customer at ${order.customer?.phone || 'registered mobile'}.`,
+      message: `Delivery OTP sent securely to customer.`,
       channel: 'SMS/WhatsApp'
     };
   },
@@ -39,59 +37,40 @@ export const deliveryOtpService = {
       throw new Error(`Please wait ${remaining}s before requesting a new OTP.`);
     }
 
-    resendTimestamps.set(orderId, Date.now());
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
-    // In a real backend, a new OTP would be generated and sent via SMS.
-    // For local mock testing, keep the expected OTP or renewal
-    return {
-      success: true,
-      message: 'New Delivery OTP sent successfully to customer via SMS.',
-      cooldownSeconds: COOLDOWN_SECONDS
-    };
+    try {
+      const response = await apiClient.post(`/orders/${orderId}/resend-otp`);
+      resendTimestamps.set(orderId, Date.now());
+      
+      return {
+        success: true,
+        message: response.data.message || 'New Delivery OTP sent successfully.',
+        cooldownSeconds: COOLDOWN_SECONDS
+      };
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to resend OTP');
+    }
   },
 
   /**
    * Verify entered customer OTP.
-   * Do NOT expose the actual OTP value in the rider UI.
    */
   async verifyDeliveryOtp(orderId, otp) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
-    // Simulate backend network latency
-    await new Promise(r => setTimeout(r, 600));
-
     const cleanOtp = String(otp || '').trim();
-    if (!cleanOtp || cleanOtp.length !== 4) {
-      throw new Error('Please enter a complete 4-digit Delivery OTP.');
+    if (!cleanOtp) {
+      throw new Error('Please enter a complete Delivery OTP.');
     }
 
-    // Special test code for expired OTP simulation
-    if (cleanOtp === '9999') {
-      throw new Error('OTP expired. Request a new OTP.');
+    try {
+      const response = await apiClient.post(`/orders/${orderId}/verify-otp`, { otp: cleanOtp });
+      
+      return {
+        success: true,
+        order: response.data?.data || response.data,
+        message: response.data?.message || response.message || 'Delivery OTP Verified successfully.'
+      };
+    } catch (error) {
+      console.error('[OTP VERIFY ERROR]', error.response?.status, error.response?.data);
+      throw new Error(error.response?.data?.message || error.message || 'OTP verification failed');
     }
-
-    const expected = String(order.deliveryOtp || '5821');
-
-    // Strict OTP verification check
-    if (cleanOtp !== expected) {
-      throw new Error('Incorrect OTP. Please try again.');
-    }
-
-    // Success: mark deliveryVerificationStatus = OTP_VERIFIED and orderStatus = DELIVERED
-    const updated = await orderService.updateOrderData(orderId, {
-      deliveryVerificationStatus: DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED,
-      orderStatus: 'DELIVERED',
-      status: 'delivered',
-      paymentStatus: 'COLLECTED'
-    });
-
-    return {
-      success: true,
-      order: updated,
-      message: 'Delivery OTP Verified successfully.'
-    };
   }
 };

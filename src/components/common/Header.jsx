@@ -89,7 +89,11 @@ export const Header = () => {
               </div>
               <div className="location-address">
                 <span className="address-line">
-                  {selectedLocation ? `${selectedLocation.tag}: ${selectedLocation.address.slice(0, 24)}...` : 'Select Location'}
+                  {selectedLocation ? (
+                    <span className="address-formatted">
+                      <strong>{selectedLocation.tag}</strong> {selectedLocation.address ? `- ${selectedLocation.address.slice(0, 30)}...` : ''}
+                    </span>
+                  ) : 'Select Location'}
                 </span>
                 <ChevronDown size={14} className="chevron-icon" />
               </div>

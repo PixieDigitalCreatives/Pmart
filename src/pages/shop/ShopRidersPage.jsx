@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { mockRiders } from '@/data/mockRiders';
+import React, { useState, useEffect } from 'react';
+import { adminService } from '@/services/adminService';
 import { Bike, Phone, Star, CheckCircle, Clock } from 'lucide-react';
 
 export const ShopRidersPage = () => {
-  const [riders, setRiders] = useState(mockRiders);
+  const [riders, setRiders] = useState([]);
+
+  useEffect(() => {
+    adminService.getRiders().then(setRiders);
+  }, []);
 
   return (
     <div className="shop-riders-page">

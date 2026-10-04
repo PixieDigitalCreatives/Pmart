@@ -111,9 +111,9 @@ export const ShopDashboardPage = () => {
               <Bike size={18} />
             </div>
           </div>
-          <div className="kpi-metric">{metrics?.outForDelivery || 18}</div>
+          <div className="kpi-metric">{metrics?.outForDelivery || 0}</div>
           <div className="kpi-trend positive">
-            <span>18 fleet riders active</span>
+            <span>{metrics?.outForDelivery || 0} fleet riders active</span>
           </div>
         </div>
 
@@ -174,7 +174,7 @@ export const ShopDashboardPage = () => {
                   </td>
                   <td>{o.items.length} items</td>
                   <td>
-                    <span className="font-bold">₹{o.billing.grandTotal}</span>
+                    <span className="font-bold">₹{o.totalAmount || o.billing?.grandTotal || 0}</span>
                   </td>
                   <td>
                     <span className="text-secondary text-sm">{o.payment.method}</span>

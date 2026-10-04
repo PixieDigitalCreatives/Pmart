@@ -111,8 +111,8 @@ export const CartDrawer = () => {
               {/* Items List */}
               <div className="cart-items-scroll">
                 {items.map((item) => (
-                  <div key={item.id} className="cart-item-row">
-                    <img src={item.image} alt={item.name} className="item-thumb" />
+                  <div key={item._id || item.id} className="cart-item-row">
+                    <img src={item.imageUrl || item.image} alt={item.name} className="item-thumb" />
 
                     <div className="item-details">
                       <div className="item-name">{item.name}</div>
@@ -129,7 +129,7 @@ export const CartDrawer = () => {
                       <div className="qty-control-pill">
                         <button
                           className="qty-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item._id || item.id, item.quantity - 1)}
                           aria-label="Decrease quantity"
                         >
                           {item.quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
@@ -137,7 +137,7 @@ export const CartDrawer = () => {
                         <span className="qty-number">{item.quantity}</span>
                         <button
                           className="qty-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item._id || item.id, item.quantity + 1)}
                           aria-label="Increase quantity"
                         >
                           <Plus size={13} />

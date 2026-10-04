@@ -1,0 +1,522 @@
+
+--- PMart_Backend_PRD.docx ---
+
+PMart — Backend PRD
+Product Requirements Document • Backend Scope
+PMart • Version 1.0 • September 2026
+
+1. Backend Purpose
+The backend is the authoritative business layer for PMart. It manages identities, permissions, shops, products, orders, riders, payment state, delivery OTPs, notifications and audit history.
+2. Backend Actors
+Actor
+Backend capabilities
+Customer
+Auth, addresses, catalog access, cart/order creation, own orders, delivery OTP retrieval under policy.
+Shop Owner
+Own shop catalog, own orders, order processing, rider assignment.
+Rider
+Assigned deliveries, pickup/delivery status, OTP validation.
+Admin
+Cross-platform management, reporting and controlled overrides.
+Payment Provider
+Payment initiation/webhook events.
+Notification Provider
+SMS/email/WhatsApp delivery where configured.
+3. Core Backend Modules
+Authentication & session management
+Role-based access control
+Users and addresses
+Shops and shop ownership
+Categories and products
+Cart/checkout
+Orders and order state machine
+Rider profiles and assignments
+Payments/refunds
+Delivery OTP
+Notifications
+Audit events
+Admin reporting
+4. Core Business Requirements
+ID
+Requirement
+BE-01
+Server calculates final order totals from authoritative product data.
+BE-02
+Historical orders retain product/price snapshots.
+BE-03
+Only authorized roles can mutate a resource.
+BE-04
+Order status changes follow an explicit transition map.
+BE-05
+Rider assignment is recorded with actor and timestamp.
+BE-06
+Delivery completion requires valid server-side OTP validation.
+BE-07
+Payment status is independent of fulfillment status.
+BE-08
+Significant state changes generate audit events.
+BE-09
+Duplicate checkout requests must be safely handled.
+BE-10
+Customer PII access is restricted by role and resource ownership.
+5. Order Lifecycle
+PENDING → ACCEPTED → PREPARING → READY → ASSIGNED → PICKED_UP → OUT_FOR_DELIVERY → DELIVERED
+Alternative terminal/exception paths: PENDING → REJECTED/CANCELLED; OUT_FOR_DELIVERY → DELIVERY_FAILED → RETRY/CANCELLED.
+6. Payment Requirements
+Support configurable online payment and/or COD.
+Verify provider webhooks server-side.
+Persist transaction/reference identifiers.
+Maintain payment status independently.
+Support refund records without rewriting the original transaction.
+For COD, record collection state separately from OTP delivery confirmation.
+7. OTP Requirements
+Generate delivery OTP server-side.
+Set expiry and attempt limits.
+Store a secure representation rather than plaintext where feasible.
+Invalidate immediately after successful use.
+Log attempts without logging the plaintext OTP.
+Do not expose OTP to shop owner or unauthorized API consumers.
+8. Notifications
+Order placed
+Order accepted/rejected
+Order ready/assigned
+Out for delivery
+Delivery OTP availability
+Delivered/failed
+Payment success/failure
+9. Backend Acceptance Criteria
+Unauthorized requests return appropriate 401/403 responses.
+Invalid state transitions are rejected.
+Final totals cannot be client-manipulated.
+Duplicate checkout cannot create unintended duplicate orders.
+Expired/incorrect OTP cannot complete an order.
+Verified payment callbacks update payment state safely.
+Order timeline is auditable.
+Shop/rider data isolation is enforced.
+
+--- PMart_Backend_TRD.docx ---
+
+PMart — Backend TRD
+Technical Requirements Document • Backend Architecture
+PMart • Version 1.0 • September 2026
+
+1. Recommended Stack
+Layer
+Technology
+Runtime
+Node.js
+Framework
+Express.js
+Language
+TypeScript recommended
+Database
+MongoDB / MongoDB Atlas
+ODM
+Mongoose
+Auth
+JWT/session strategy with refresh mechanism
+Validation
+Zod/Joi/express-validator
+Security
+Helmet, CORS allowlist, rate limiting
+Process
+PM2
+Proxy
+Nginx
+API style
+REST/JSON
+2. Service Architecture
+Start as a modular monolith for MVP rather than prematurely splitting into microservices. Modules should have clear boundaries so payments, notifications and other components can later be extracted if scale requires it.
+3. Suggested Backend Structure
+src/
+├── config/
+├── middleware/
+├── modules/
+│   ├── auth/
+│   ├── users/
+│   ├── shops/
+│   ├── categories/
+│   ├── products/
+│   ├── carts/
+│   ├── orders/
+│   ├── riders/
+│   ├── payments/
+│   ├── otp/
+│   ├── notifications/
+│   └── admin/
+├── routes/
+├── services/
+├── jobs/
+├── utils/
+├── db/
+└── app.ts
+4. MongoDB Collections
+Collection
+Important fields
+users
+_id, phone, name, email, role, status, timestamps
+shops
+_id, ownerId, name, address, geo, serviceRadius, status
+products
+_id, shopId, categoryId, name, price, unit, imageUrl, status
+categories
+_id, name, imageUrl, status
+addresses
+_id, userId, addressLine, landmark, city, pincode, geo
+orders
+_id, orderNumber, customerId, shopId, riderId, items, totals, payment, addressSnapshot, status, timestamps
+order_events
+_id, orderId, actorId, role, fromStatus, toStatus, reason, metadata, createdAt
+rider_profiles
+_id, userId, shopId, availability, currentLocation, status
+payments
+_id, orderId, provider, transactionId, amount, status, metadata, timestamps
+notifications
+_id, userId, type, channel, status, providerId, timestamps
+5. API Contract
+Method
+Endpoint
+Auth
+POST
+/api/auth/send-otp
+Public/rate-limited
+POST
+/api/auth/verify-otp
+Public/rate-limited
+GET
+/api/products
+Public/authenticated
+POST
+/api/orders
+Customer
+GET
+/api/orders
+Customer
+GET
+/api/orders/:id
+Owner/admin
+PATCH
+/api/orders/:id/status
+Role-controlled
+POST
+/api/orders/:id/assign-rider
+Shop/Admin
+POST
+/api/orders/:id/pickup
+Assigned Rider
+POST
+/api/orders/:id/out-for-delivery
+Assigned Rider
+POST
+/api/orders/:id/verify-delivery-otp
+Assigned Rider
+GET
+/api/shop/orders
+Shop Owner
+GET
+/api/riders/orders
+Rider
+GET
+/api/admin/orders
+Admin
+POST
+/api/payments/create
+Customer
+POST
+/api/payments/webhook
+Payment Provider
+6. Authorization
+Customer: resource owner checks for own addresses/orders.
+Shop owner: shop ownership check before product/order operations.
+Rider: rider assignment check before delivery operations.
+Admin: explicit admin permission for cross-platform actions.
+Authorization must occur in backend middleware/service logic, not only route visibility.
+7. Order Concurrency & Idempotency
+Use conditional/atomic updates for state transitions.
+Use an idempotency key for order creation/payment-sensitive requests.
+Prevent two riders from simultaneously becoming the active assignee without a controlled transaction/update.
+Do not trust stale client status when applying mutations.
+8. Indexes
+Collection
+Index
+orders
+customerId + createdAt DESC
+orders
+shopId + status + createdAt DESC
+orders
+riderId + status + createdAt DESC
+orders
+orderNumber UNIQUE
+products
+shopId + status + categoryId
+order_events
+orderId + createdAt ASC
+payments
+orderId + createdAt DESC
+users
+phone UNIQUE
+9. Security
+HTTPS behind Nginx.
+Environment-based secrets.
+Strong password/session/token handling where passwords are used.
+OTP endpoint rate limits.
+Payload validation and size limits.
+MongoDB least-privilege credentials.
+Audit logging for admin overrides.
+PII minimization in API responses.
+Webhook signature verification.
+Do not log secrets, OTP plaintext, authorization headers or full payment credentials.
+10. Error Contract
+Use a consistent response structure such as:
+{ "success": false, "code": "INVALID_ORDER_STATE", "message": "Order cannot move to this state.", "requestId": "..." }
+HTTP status should reflect the category: 400 validation, 401 authentication, 403 authorization, 404 missing resource, 409 state/idempotency conflict, 422 business-rule failure, 429 rate limit, 500 unexpected error.
+11. Deployment
+Node.js backend behind Nginx.
+PM2 for process supervision.
+MongoDB Atlas or equivalent managed MongoDB.
+Separate dev/staging/prod configuration.
+CI/CD from GitHub.
+Automated database backups and restoration test.
+TLS certificate and secure headers.
+Health endpoint: GET /api/health.
+12. Testing
+Unit tests for totals, OTP and state transitions.
+Integration tests for database/API modules.
+Authorization matrix tests.
+Payment webhook verification tests.
+Idempotency tests.
+End-to-end order lifecycle test.
+Load tests for product listing and order creation.
+Security tests for injection, access-control bypass and rate limits.
+13. Observability
+Structured logs with requestId/orderId.
+Error tracking.
+API latency metrics.
+Order funnel metrics.
+OTP failure metrics.
+Payment failure metrics.
+Database connection/health monitoring.
+Alerts for repeated 5xx responses or payment/webhook failures.
+14. Backend Definition of Done
+All required modules are implemented behind tested APIs.
+RBAC and resource ownership are enforced.
+Order state machine is server-controlled.
+Payment and OTP workflows are verified server-side.
+Audit history exists for critical order changes.
+Indexes and backups are configured.
+Security/rate limits are enabled.
+Production deployment has health checks, logs and rollback capability.
+
+--- PMart_Frontend_PRD.docx ---
+
+PMart — Frontend PRD
+Product Requirements Document • Frontend Scope
+PMart • Version 1.0 • September 2026
+
+1. Purpose
+Define the customer, shop-owner, rider and admin frontend experiences required for the PMart MVP. The frontend consumes backend APIs and must never be the source of truth for pricing, authorization, payment or order-state transitions.
+2. Frontend Applications
+Application
+Primary users
+Core purpose
+Customer App/Web
+Customer
+Browse groceries, checkout, track orders, receive delivery OTP.
+Shop Dashboard
+Shop Owner
+Manage catalog and process/assign orders.
+Rider App
+Delivery Rider
+View assigned deliveries, pickup, navigate and validate delivery OTP.
+Admin Dashboard
+Admin
+Manage platform entities and monitor operations.
+3. Customer Requirements
+Landing/home screen with categories, search and featured products.
+Product listing with image, name, price, unit and availability.
+Product detail with quantity selector and add-to-cart.
+Persistent cart with subtotal and checkout summary.
+Address list, add/edit address and address selection.
+Payment-method selection.
+Order review before final submission.
+Order confirmation with order number.
+Order tracking timeline: Pending → Accepted → Preparing → Ready → Assigned → Picked Up → Out for Delivery → Delivered.
+Delivery OTP displayed only to the authenticated customer when applicable.
+Order history and order detail.
+Profile and basic account settings.
+4. Shop Dashboard Requirements
+Login and role-protected dashboard.
+Order queue separated by status.
+Order detail with items, customer delivery information, payment status and timeline.
+Accept/reject order.
+Move order through Preparing and Ready.
+View available riders and assign/reassign rider.
+Product CRUD: name, image, category, price, unit and availability.
+Basic daily order/revenue summary.
+5. Rider Requirements
+Secure rider login.
+Assigned-order list.
+Order detail and pickup information.
+Accept/acknowledge assignment.
+Mark Picked Up.
+Mark Out for Delivery.
+Open external map/navigation.
+Enter delivery OTP.
+Show clear OTP success/failure state.
+Delivery history and issue reporting.
+6. Admin Requirements
+Dashboard KPIs.
+Customer, shop and rider management.
+Category/product management.
+Order search, filtering and timeline.
+Operational status monitoring.
+Administrative override screens with mandatory reason.
+Basic reporting.
+7. Shared UX Requirements
+Responsive layouts for desktop and mobile where applicable.
+Loading, empty, success and error states for every data-driven screen.
+Form validation before API submission plus server-error handling.
+Confirmation dialogs for destructive actions.
+Accessible labels, keyboard navigation where relevant and readable contrast.
+Consistent status badges and order timeline components.
+Do not expose backend secrets, payment credentials or internal identifiers unnecessarily.
+8. Frontend Acceptance Criteria
+Each role can only see its permitted application features.
+Customer can complete checkout without manually manipulating order status.
+Shop can process and assign an order.
+Rider can complete delivery only after backend OTP validation.
+UI reflects backend order state after refresh/reconnect.
+Invalid/expired OTP produces an actionable error.
+Payment failure does not incorrectly show an order as paid.
+All critical screens have mobile-friendly error/loading/empty states.
+9. Screens / Routes
+Area
+Suggested routes
+Customer
+/ • /login • /products • /products/:id • /cart • /checkout • /orders • /orders/:id • /profile • /addresses
+Shop
+/shop • /shop/orders • /shop/orders/:id • /shop/products • /shop/products/new • /shop/products/:id
+Rider
+/rider • /rider/orders • /rider/orders/:id • /rider/delivery/:id
+Admin
+/admin • /admin/orders • /admin/users • /admin/shops • /admin/riders • /admin/products • /admin/reports
+
+--- PMart_Frontend_TRD.docx ---
+
+PMart — Frontend TRD
+Technical Requirements Document • Frontend Architecture
+PMart • Version 1.0 • September 2026
+
+1. Recommended Stack
+Layer
+Technology
+Framework
+React + Vite
+Language
+TypeScript
+Styling
+SCSS/SASS
+Routing
+React Router
+Server state
+TanStack Query or equivalent
+Forms
+React Hook Form + schema validation
+Icons
+Lucide React / react-icons
+Animation
+Framer Motion only where useful
+HTTP
+Axios or fetch wrapper
+Maps
+Google Maps/Mapbox deep-link or SDK
+Build
+Vite
+2. Frontend Architecture
+Use feature-based modules rather than one large components folder. Shared UI should contain reusable buttons, inputs, modals, tables, status badges, loaders and layout components. API calls must be centralized in typed service modules.
+3. Suggested Structure
+src/
+├── app/
+│   ├── router/
+│   ├── providers/
+│   └── guards/
+├── components/
+│   ├── ui/
+│   ├── forms/
+│   └── feedback/
+├── features/
+│   ├── auth/
+│   ├── catalog/
+│   ├── cart/
+│   ├── checkout/
+│   ├── orders/
+│   ├── shop/
+│   ├── rider/
+│   └── admin/
+├── services/
+├── hooks/
+├── types/
+├── utils/
+└── assets/
+4. API Integration Rules
+Centralize base URL and environment configuration.
+Attach authentication token/session using a single HTTP interceptor or fetch wrapper.
+Normalize API errors into a common UI error format.
+Use query caching for product/catalog/order reads.
+Invalidate/refetch order queries after status-changing mutations.
+Never calculate authoritative order totals from client-only data.
+Never permit a frontend control to bypass backend role checks.
+5. State Management
+State
+Recommended owner
+Authentication/session
+Auth provider/store + secure session mechanism
+Catalog
+Server state/query cache
+Cart
+Local/client state synchronized with backend if persistent cart is required
+Checkout form
+Form state
+Orders
+Server state/query cache
+UI modals/toasts
+Local UI state
+Role/permissions
+Backend-derived session claims + server authorization
+6. Frontend Security
+Use HTTPS in production.
+Do not store sensitive payment secrets in frontend environment variables.
+Do not treat hidden UI controls as authorization.
+Sanitize/escape user-generated content.
+Use strict allowed origins for API communication.
+Clear authenticated state on logout/expiry.
+Prevent accidental duplicate checkout using button locking and idempotency support from backend.
+7. Performance
+Lazy-load role-specific dashboard bundles.
+Paginate long product/order lists.
+Optimize and resize product images.
+Debounce catalog search.
+Use skeletons instead of blocking full-page loaders for normal fetches.
+Avoid unnecessary re-renders in cart and order tracking screens.
+8. Testing
+Unit test pricing display helpers, validation and status mapping.
+Component test checkout, cart, OTP and order timeline states.
+Integration test API error handling and auth guards.
+End-to-end test customer checkout and complete shop→rider→OTP flow.
+Test mobile viewport, slow network and expired session scenarios.
+9. Frontend Environment Variables
+Variable
+Purpose
+VITE_API_BASE_URL
+Backend API base URL
+VITE_MAPS_KEY
+Public map SDK key if required; restrict by domain
+VITE_APP_ENV
+development/staging/production
+10. Definition of Done
+All four role experiences compile and deploy independently or through a controlled monorepo.
+API contracts are typed.
+Protected routes enforce session presence and role-aware navigation.
+Critical flows work on mobile and desktop as applicable.
+Loading/error/empty states exist on all API-driven screens.
+Production build passes lint/type-check/test requirements.

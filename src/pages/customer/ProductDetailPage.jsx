@@ -35,11 +35,11 @@ export const ProductDetailPage = () => {
       try {
         const prod = await productService.getProductBySlug(slug);
         setProduct(prod);
-        setSelectedImage(prod.image);
+        setSelectedImage(prod.imageUrl || prod.image);
 
         // Fetch related products in the same category
         const rel = await productService.getProducts({ category: prod.categorySlug, limit: 6 });
-        setRelatedProducts(rel.products.filter(p => p.id !== prod.id));
+        setRelatedProducts(rel.products.filter(p => (p._id || p.id) !== (prod._id || prod.id)));
       } catch (err) {
         console.error(err);
       } finally {
@@ -68,7 +68,7 @@ export const ProductDetailPage = () => {
     );
   }
 
-  const currentCartQty = getItemQuantity(product.id);
+  const currentCartQty = getItemQuantity(product._id || product.id);
 
   const handleAddToCart = () => {
     addItem(product, 1);
@@ -115,10 +115,10 @@ export const ProductDetailPage = () => {
             {product.gallery && product.gallery.length > 1 && (
               <div className="thumbnail-row">
                 <button
-                  className={`thumb-btn ${selectedImage === product.image ? 'active' : ''}`}
-                  onClick={() => setSelectedImage(product.image)}
+                  className={`thumb-btn ${selectedImage === (product.imageUrl || product.image) ? 'active' : ''}`}
+                  onClick={() => setSelectedImage(product.imageUrl || product.image)}
                 >
-                  <img src={product.image} alt={product.name} />
+                  <img src={product.imageUrl || product.image} alt={product.name} />
                 </button>
                 {product.gallery.map((imgUrl, idx) => (
                   <button
@@ -177,7 +177,11 @@ export const ProductDetailPage = () => {
 
             {/* Quantity & CTA Buttons */}
             <div className="purchase-action-container">
-              {currentCartQty === 0 ? (
+              {product.stockCount <= 0 ? (
+                <div className="out-of-stock-alert" style={{ width: '100%', padding: '16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontWeight: 600, textAlign: 'center', marginBottom: '16px' }}>
+                  Out of Stock
+                </div>
+              ) : currentCartQty === 0 ? (
                 <button className="btn btn-primary btn-lg add-to-cart-cta" onClick={handleAddToCart}>
                   <ShoppingBag size={18} />
                   <span>ADD TO CART</span>
@@ -188,14 +192,15 @@ export const ProductDetailPage = () => {
                   <div className="stepper-controls">
                     <button
                       className="step-btn"
-                      onClick={() => updateQuantity(product.id, currentCartQty - 1)}
+                      onClick={() => updateQuantity(product._id || product.id, currentCartQty - 1)}
                     >
                       <Minus size={15} />
                     </button>
                     <span className="step-val">{currentCartQty}</span>
                     <button
                       className="step-btn"
-                      onClick={() => updateQuantity(product.id, currentCartQty + 1)}
+                      onClick={() => updateQuantity(product._id || product.id, currentCartQty + 1)}
+                      disabled={currentCartQty >= product.stockCount}
                     >
                       <Plus size={15} />
                     </button>
@@ -203,7 +208,11 @@ export const ProductDetailPage = () => {
                 </div>
               )}
 
-              <button className="btn btn-dark btn-lg buy-now-cta" onClick={handleBuyNow}>
+              <button 
+                className="btn btn-dark btn-lg buy-now-cta" 
+                onClick={handleBuyNow}
+                disabled={product.stockCount <= 0}
+              >
                 <span>BUY NOW</span>
                 <ArrowRight size={18} />
               </button>

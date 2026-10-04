@@ -1,0 +1,25 @@
+@import '../../styles/variables';
+
+.rider-onboarding {
+  .auth-brand-side {
+    background: linear-gradient(135deg, $pmart-red, darken($pmart-red, 15%));
+    
+    .brand-tagline {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+    
+    .flex-1 {
+      flex: 1;
+    }
+  }
+
+  .uppercase {
+    text-transform: uppercase;
+  }
+}

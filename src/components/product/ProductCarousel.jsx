@@ -51,7 +51,7 @@ export const ProductCarousel = ({ title, subtitle, viewAllLink, products = [] })
 
       <div className="carousel-track" ref={scrollRef}>
         {products.map((product) => (
-          <div key={product.id} className="carousel-slide">
+          <div key={product._id || product.id} className="carousel-slide">
             <ProductCard product={product} />
           </div>
         ))}

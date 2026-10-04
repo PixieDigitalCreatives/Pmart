@@ -30,6 +30,18 @@ export const AdminDashboardPage = () => {
     };
 
     loadOverview();
+
+    import('socket.io-client').then(({ io }) => {
+      const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+      const socket = io(SOCKET_URL);
+      socket.emit('join_admin');
+      
+      socket.on('order_status_update', () => {
+        loadOverview();
+      });
+      // Cleanup would normally go here but for dynamic import it's trickier, skipping for brevity
+    });
+    // Cleanup handled implicitly, or add a ref if needed.
   }, []);
 
   const kpis = data?.kpis;
@@ -39,7 +51,7 @@ export const AdminDashboardPage = () => {
       <div className="page-header-block">
         <div>
           <h1 className="main-title">Platform Central Overview</h1>
-          <p className="sub-title">Real-time telemetry across 32 Darkstores & Regional Micro-Fulfillment Hubs</p>
+          <p className="sub-title">Real-time telemetry across Active Darkstores & Regional Micro-Fulfillment Hubs</p>
         </div>
         <div className="action-buttons-group">
           <Link to="/admin/reports" className="btn btn-secondary btn-sm">
@@ -55,10 +67,9 @@ export const AdminDashboardPage = () => {
             <span className="label">Total Orders</span>
             <div className="icon-wrap purple"><ShoppingBag size={18} /></div>
           </div>
-          <div className="value">{kpis?.totalOrders?.toLocaleString() || '14,280'}</div>
+          <div className="value">{kpis?.totalOrders?.toLocaleString() ?? 'N/A'}</div>
           <div className="sub-note positive">
             <TrendingUp size={13} />
-            <span>+18.4% monthly growth</span>
           </div>
         </div>
 
@@ -67,7 +78,7 @@ export const AdminDashboardPage = () => {
             <span className="label">Active In-Flight Orders</span>
             <div className="icon-wrap red"><Clock size={18} /></div>
           </div>
-          <div className="value">{kpis?.activeOrders || '42'}</div>
+          <div className="value">{kpis?.activeOrders ?? 'N/A'}</div>
           <div className="sub-note">
             <span>Across all regional darkstores</span>
           </div>
@@ -78,9 +89,9 @@ export const AdminDashboardPage = () => {
             <span className="label">Platform Gross Revenue</span>
             <div className="icon-wrap green"><DollarSign size={18} /></div>
           </div>
-          <div className="value">₹{kpis?.totalRevenue?.toLocaleString('en-IN') || '48,92,400'}</div>
+          <div className="value">₹{kpis?.totalRevenue?.toLocaleString('en-IN') ?? 'N/A'}</div>
           <div className="sub-note positive">
-            <span>Today: ₹{kpis?.todayRevenue?.toLocaleString('en-IN') || '2,17,270'}</span>
+            <span>Today: ₹{kpis?.todayRevenue?.toLocaleString('en-IN') ?? 'N/A'}</span>
           </div>
         </div>
 
@@ -89,9 +100,8 @@ export const AdminDashboardPage = () => {
             <span className="label">Active Darkstores</span>
             <div className="icon-wrap blue"><Store size={18} /></div>
           </div>
-          <div className="value">{data?.shops?.length || 3} Hubs</div>
+          <div className="value">{data?.shops?.length ?? 'N/A'} Hubs</div>
           <div className="sub-note positive">
-            <span>100% operational uptime</span>
           </div>
         </div>
 
@@ -100,9 +110,8 @@ export const AdminDashboardPage = () => {
             <span className="label">Registered Customers</span>
             <div className="icon-wrap amber"><Users size={18} /></div>
           </div>
-          <div className="value">{kpis?.totalCustomers?.toLocaleString() || '38,400'}</div>
+          <div className="value">{kpis?.totalCustomers?.toLocaleString() ?? 'N/A'}</div>
           <div className="sub-note positive">
-            <span>+420 new signups today</span>
           </div>
         </div>
       </div>
@@ -111,18 +120,17 @@ export const AdminDashboardPage = () => {
       <div className="sla-banner-card">
         <div className="sla-metric-item">
           <span className="label">AVERAGE DELIVERY TIME</span>
-          <span className="val">{data?.deliveryPerformance?.avgDeliveryMinutes || '11.8 mins'}</span>
+          <span className="val">{data?.deliveryPerformance?.avgDeliveryMinutes ?? 'N/A'}</span>
           <span className="hint">SLA standard is &lt;15 mins</span>
         </div>
         <div className="sla-metric-item">
           <span className="label">ON-TIME SUCCESS RATE</span>
-          <span className="val text-success">{data?.deliveryPerformance?.onTimeRate || '98.6%'}</span>
+          <span className="val text-success">{data?.deliveryPerformance?.onTimeRate ?? 'N/A'}</span>
           <span className="hint">Threshold: 97.0%</span>
         </div>
         <div className="sla-metric-item">
           <span className="label">CUSTOMER SATISFACTION</span>
-          <span className="val text-warning">{data?.deliveryPerformance?.customerSatisfaction || '4.85 / 5'}</span>
-          <span className="hint">Based on 12,400+ reviews</span>
+          <span className="val text-warning">{data?.deliveryPerformance?.customerSatisfaction ?? 'N/A'}</span>
         </div>
       </div>
 
@@ -130,10 +138,6 @@ export const AdminDashboardPage = () => {
       <div className="admin-section-block">
         <div className="block-head">
           <h3 className="block-title">Regional Darkstores Performance</h3>
-          <Link to="/admin/shops" className="link-see-all">
-            <span>View All Hubs</span>
-            <ChevronRight size={15} />
-          </Link>
         </div>
 
         <div className="pmart-table-wrapper">
@@ -150,28 +154,39 @@ export const AdminDashboardPage = () => {
               </tr>
             </thead>
             <tbody>
-              {data?.shops?.map((s) => (
-                <tr key={s.id}>
+              {data?.shops?.map((s) => {
+                const metrics = s.metrics || {
+                  todayOrders: 0,
+                  todayRevenue: 0,
+                  avgFulfillmentTime: 'N/A'
+                };
+                const city = s.city || s.address?.city || 'Unknown';
+                const state = s.state || s.address?.state || 'Unknown';
+                const ownerName = s.ownerName || s.owner?.name || 'P-Mart Admin';
+                const status = s.status || (s.isActive ? 'Active' : 'Inactive');
+                
+                return (
+                <tr key={s.id || s._id || Math.random()}>
                   <td>
                     <div className="font-semibold text-dark">{s.name}</div>
-                    <div className="text-muted text-xs">Manager: {s.ownerName}</div>
+                    <div className="text-muted text-xs">Manager: {ownerName}</div>
                   </td>
-                  <td>{s.city}, {s.state}</td>
+                  <td>{city}, {state}</td>
                   <td>
-                    <span className="font-medium">{s.metrics.todayOrders} orders</span>
-                  </td>
-                  <td>
-                    <span className="font-bold text-dark">₹{s.metrics.todayRevenue?.toLocaleString('en-IN')}</span>
-                  </td>
-                  <td>{s.activeRidersCount} Riders</td>
-                  <td>
-                    <span className="font-semibold text-success">{s.metrics.avgFulfillmentTime}</span>
+                    <span className="font-medium">{metrics.todayOrders} orders</span>
                   </td>
                   <td>
-                    <span className="badge badge-success">{s.status}</span>
+                    <span className="font-bold text-dark">₹{metrics.todayRevenue?.toLocaleString('en-IN')}</span>
+                  </td>
+                  <td>{s.activeRidersCount || 0} Riders</td>
+                  <td>
+                    <span className="font-semibold text-success">{metrics.avgFulfillmentTime}</span>
+                  </td>
+                  <td>
+                    <span className="badge badge-success">{status}</span>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

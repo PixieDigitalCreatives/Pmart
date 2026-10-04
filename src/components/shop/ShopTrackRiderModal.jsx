@@ -29,7 +29,7 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
               <div>
                 <h3 className="modal-title">Operational Rider Tracking</h3>
                 <p className="modal-desc">
-                  Order #{order.id} • Assigned to {order.rider?.name || 'Vikram Singh'} ({order.rider?.vehicleNumber})
+                  Order #{order.id} • Assigned to {order.rider?.name || 'Delivery Partner'} ({order.rider?.vehicleNumber})
                 </p>
               </div>
             </div>
@@ -42,20 +42,20 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
           <div className="operational-metrics-strip">
             <div className="metric-cell">
               <span className="label">Order Status</span>
-              <span className="val text-success">OUT FOR DELIVERY</span>
+              <span className="val text-success">{order.status}</span>
             </div>
             <div className="metric-cell">
               <span className="label">Estimated Arrival</span>
-              <span className="val">On the way</span>
+              <span className="val">{order.tracking?.etaMinutes ? `~${order.tracking.etaMinutes} min` : 'Calculating'}</span>
             </div>
             <div className="metric-cell">
               <span className="label">Distance to Customer</span>
-              <span className="val">1.4 km</span>
+              <span className="val">{order.tracking?.distanceKm ? `${order.tracking.distanceKm} km` : 'Calculating'}</span>
             </div>
             <div className="metric-cell">
               <span className="label">Customer Phone</span>
               <a href={`tel:${order.customer?.phone}`} className="phone-link">
-                {order.customer?.phone || '+91 98765 43210'}
+                {order.customer?.phone || 'N/A'}
               </a>
             </div>
           </div>
@@ -66,9 +66,9 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
               riderLocation={order.rider?.location}
               customerLocation={order.deliveryAddress}
               hubLocation={order.shop}
-              etaMinutes={8}
-              distanceKm={1.4}
-              riderName={order.rider?.name || 'Vikram Singh'}
+              etaMinutes={order.tracking?.etaMinutes}
+              distanceKm={order.tracking?.distanceKm}
+              riderName={order.rider?.name || 'Delivery Partner'}
               height="380px"
               orderId={order.id}
             />

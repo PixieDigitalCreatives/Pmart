@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { deliveryService } from '@/services/deliveryService';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
-import { locationService } from '@/services/locationService';
+import { riderLocationService } from '@/services/riderLocationService';
 import { CollectPaymentSection } from '@/components/delivery/CollectPaymentSection';
 import { DeliveryVerificationSection } from '@/components/delivery/DeliveryVerificationSection';
 import { DeliveryCompletionScreen } from '@/components/delivery/DeliveryCompletionScreen';
@@ -61,21 +61,21 @@ export const RiderOrderDetailPage = () => {
   useEffect(() => {
     const norm = normalizeOrderStatus(order?.orderStatus || order?.status);
     if ((norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED) && isGpsActive) {
-      locationService.startLocationTracking(order.id, (loc) => {
+      riderLocationService.startBroadcasting(order.id || order._id || id, (loc) => {
         setLiveGpsCoords(loc);
       });
     } else {
-      locationService.stopLocationTracking();
+      riderLocationService.stopBroadcasting();
     }
 
-    return () => locationService.stopLocationTracking();
+    return () => riderLocationService.stopBroadcasting();
   }, [order?.status, order?.orderStatus, isGpsActive, order?.id]);
 
   const handleStageUpdate = async (stage) => {
     if (isProcessing) return;
     setIsProcessing(true);
     try {
-      const updated = await orderService.updateOrderStatus(order.id, stage);
+      const updated = await orderService.updateOrderStatus(order.id || order._id || id, stage);
       setOrder({ ...updated });
       setActionNotice(`Order status updated to "${stage.replace(/_/g, ' ')}"`);
       setTimeout(() => setActionNotice(''), 3000);
@@ -86,13 +86,32 @@ export const RiderOrderDetailPage = () => {
     }
   };
 
+  const handlePickup = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const updated = await deliveryService.pickupOrder(order.id || order._id || id);
+      setOrder({ ...updated.data || updated });
+      setActionNotice('Order picked up! Drive safely.');
+    } catch (err) {
+      console.error("Pickup order failed:", err.response?.data || err);
+      alert(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to pickup order. Please try again."
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Rider taps "Arrived at Customer"
   const handleArrivedAtCustomer = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
     try {
-      const updated = await deliveryService.arriveAtCustomer(order.id);
-      setOrder({ ...updated });
+      const updated = await deliveryService.arriveAtCustomer(order.id || order._id || id);
+      setOrder({ ...updated.data || updated });
       setActionNotice('Status updated to ARRIVED. Please collect payment from customer.');
     } catch (err) {
       console.error(err);
@@ -191,7 +210,7 @@ export const RiderOrderDetailPage = () => {
       )}
 
       {/* 3. LIVE GPS TELEMETRY & ROUTE MAP */}
-      <div className="gps-map-section-wrapper" style={{ marginBottom: '16px' }}>
+      <div className="gps-map-section-wrapper">
         <div
           style={{
             display: 'flex',
@@ -235,12 +254,12 @@ export const RiderOrderDetailPage = () => {
         </div>
 
         <LiveTrackingMap
-          riderLocation={order?.rider?.location}
+          riderLocation={liveGpsCoords || order?.rider?.location}
           customerLocation={order?.deliveryAddress}
           hubLocation={order?.shop}
           height="280px"
-          riderName={order?.rider?.name || 'You (Partner)'}
-          orderId={order?.id}
+          riderName="You (Partner)"
+          orderId={order?.id || order?._id}
         />
       </div>
 
@@ -269,7 +288,7 @@ export const RiderOrderDetailPage = () => {
           <PaymentStatusBadge
             paymentStatus={order.paymentStatus}
             paymentMethod={order.paymentMethod}
-            amount={order.billing?.grandTotal}
+            amount={order.totalAmount || order.billing?.grandTotal}
             compact={true}
           />
         </div>
@@ -291,14 +310,25 @@ export const RiderOrderDetailPage = () => {
 
       {/* 6. PRIMARY ACTION CONTROLS BAR (Mobile-First Sticky/Stacked) */}
       <div className="rider-action-bar">
-        {currentStatus === ORDER_STATUS.READY_FOR_PICKUP && (
+        {(currentStatus === ORDER_STATUS.READY_FOR_PICKUP || currentStatus === ORDER_STATUS.READY || currentStatus === ORDER_STATUS.ASSIGNED) && (
+          <button
+            className="btn btn-primary btn-lg btn-full"
+            onClick={handlePickup}
+            disabled={isProcessing}
+          >
+            <Navigation size={18} />
+            <span>Confirm Picked Up</span>
+          </button>
+        )}
+
+        {currentStatus === ORDER_STATUS.PICKED_UP && (
           <button
             className="btn btn-primary btn-lg btn-full"
             onClick={() => handleStageUpdate(ORDER_STATUS.OUT_FOR_DELIVERY)}
             disabled={isProcessing}
           >
             <Navigation size={18} />
-            <span>Confirm Picked Up & Start Run</span>
+            <span>Start Delivery Run</span>
           </button>
         )}
 
@@ -325,7 +355,7 @@ export const RiderOrderDetailPage = () => {
         {isArrived && !isCashCollected && (
           <div className="rider-guidance-pill warning">
             <Banknote size={16} />
-            <span>Collect ₹{order.billing?.grandTotal} cash from customer above</span>
+            <span>Collect ₹{order.totalAmount || order.billing?.grandTotal} cash from customer above</span>
           </div>
         )}
 

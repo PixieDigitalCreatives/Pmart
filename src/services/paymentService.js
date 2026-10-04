@@ -1,4 +1,4 @@
-import { orderService } from './orderService';
+import apiClient from './apiClient';
 import { PAYMENT_STATUS } from '../types/orderTypes';
 
 export const paymentService = {
@@ -6,14 +6,14 @@ export const paymentService = {
    * Fetch current payment status for an order
    */
   async getPaymentStatus(orderId) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
+    const response = await apiClient.get(`/orders/${orderId}`);
+    const order = response.data;
+    
     return {
-      orderId: order.id,
+      orderId: order._id,
       paymentMethod: order.paymentMethod || 'COD',
       paymentStatus: order.paymentStatus || PAYMENT_STATUS.PENDING,
-      amount: order.billing?.grandTotal || 0,
+      amount: order.totalAmount || 0,
       currency: 'INR'
     };
   },
@@ -23,22 +23,8 @@ export const paymentService = {
    * CRITICAL: Does NOT mark delivery as complete!
    */
   async markPaymentCollected(orderId) {
-    const order = await orderService.getOrderById(orderId);
-    if (!order) throw new Error(`Order ${orderId} not found`);
-
-    // Prevent duplicate events
-    if (order.paymentStatus === PAYMENT_STATUS.COLLECTED) {
-      return { success: true, order, alreadyCollected: true };
-    }
-
-    const updated = await orderService.updateOrderData(orderId, {
-      paymentStatus: PAYMENT_STATUS.COLLECTED,
-      payment: {
-        ...(order.payment || {}),
-        status: PAYMENT_STATUS.COLLECTED,
-        collectedAt: new Date().toISOString()
-      }
-    });
+    const response = await apiClient.put(`/orders/${orderId}/payment-status`, { paymentStatus: PAYMENT_STATUS.COLLECTED });
+    const updated = response.data?.data || response.data;
 
     return {
       success: true,

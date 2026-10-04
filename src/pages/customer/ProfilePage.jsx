@@ -52,7 +52,7 @@ export const ProfilePage = () => {
                   <User size={32} />
                 </div>
                 <h3 className="user-name">{name}</h3>
-                <div className="user-phone">{user?.phone || '+91 98765 43210'}</div>
+                <div className="user-phone">{user?.phone || 'Not available'}</div>
                 <span className="member-badge">PMart Silver Member</span>
               </div>
 
@@ -150,7 +150,7 @@ export const ProfilePage = () => {
                       <input
                         type="tel"
                         className="form-control"
-                        value={user?.phone || '+91 98765 43210'}
+                        value={user?.phone || 'Not available'}
                         disabled
                       />
                       <span className="verified-tag">

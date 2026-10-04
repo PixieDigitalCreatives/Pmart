@@ -86,8 +86,8 @@ export const CartPage = () => {
 
               <div className="items-table">
                 {items.map((item) => (
-                  <div key={item.id} className="cart-item-table-row">
-                    <img src={item.image} alt={item.name} className="product-thumb" />
+                  <div key={item._id || item.id} className="cart-item-table-row">
+                    <img src={item.imageUrl || item.image} alt={item.name} className="product-thumb" />
 
                     <div className="product-meta">
                       <h4 className="name">{item.name}</h4>
@@ -104,7 +104,7 @@ export const CartPage = () => {
                       <div className="cart-page-stepper">
                         <button
                           className="step-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item._id || item.id, item.quantity - 1)}
                           aria-label="Decrease"
                         >
                           {item.quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
@@ -112,7 +112,7 @@ export const CartPage = () => {
                         <span className="step-val">{item.quantity}</span>
                         <button
                           className="step-btn"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item._id || item.id, item.quantity + 1)}
                           aria-label="Increase"
                         >
                           <Plus size={13} />

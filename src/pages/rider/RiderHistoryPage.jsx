@@ -22,21 +22,29 @@ export const RiderHistoryPage = () => {
       </div>
 
       <div className="space-y-3">
+        {history.length === 0 && (
+          <div className="pmart-card text-center py-8">
+            <p className="text-muted">No completed deliveries yet.</p>
+          </div>
+        )}
         {history.map((order) => (
           <div key={order.id} className="pmart-card">
             <div className="flex justify-between items-center mb-2">
-              <span className="font-bold text-dark text-sm">#{order.id}</span>
+              <span className="font-bold text-dark text-sm">#{order.orderNumber || order.id}</span>
               <span className="badge badge-success">Completed</span>
             </div>
             <div className="text-xs text-secondary mb-1">
-              Customer: {order.customer.name} • {order.items.length} items
+              Customer: {order.customer?.name || 'N/A'} • {order.items?.length || 0} items
             </div>
             <div className="text-xs text-muted mb-2">
-              {order.deliveryAddress.line1}
+              {order.deliveryAddress?.street || 'Address not available'}
             </div>
             <div className="flex justify-between items-center border-t pt-2 text-xs">
-              <span className="text-muted">Earned: ₹65 + ₹10 Tip</span>
-              <span className="font-bold text-dark">Total: ₹{order.billing.grandTotal}</span>
+              <span className="text-muted">
+                Earned: {order.deliveryFee != null ? `₹${order.deliveryFee}` : 'Not available'}
+                {order.tip != null ? ` + ₹${order.tip} Tip` : ''}
+              </span>
+              <span className="font-bold text-dark">Total: ₹{order.totalAmount || 0}</span>
             </div>
           </div>
         ))}

@@ -5,7 +5,6 @@ import { CustomerLayout } from '@/components/common/CustomerLayout';
 import { ShopLayout } from '@/components/shop/ShopLayout';
 import { RiderLayout } from '@/components/rider/RiderLayout';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { DemoRoleBar } from '@/components/common/DemoRoleBar';
 import { RoleGuard } from './RoleGuard';
 
 // Customer Pages
@@ -24,7 +23,9 @@ import { HelpPage } from '@/pages/customer/HelpPage';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
-import { VerifyOtpPage } from '@/pages/auth/VerifyOtpPage';
+import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { SetPasswordPage } from '@/pages/auth/SetPasswordPage';
+import { RiderEnrollPage } from '@/pages/auth/RiderEnrollPage';
 
 // Shop Pages
 import { ShopDashboardPage } from '@/pages/shop/ShopDashboardPage';
@@ -43,13 +44,14 @@ import { RiderOrdersPage } from '@/pages/rider/RiderOrdersPage';
 import { RiderOrderDetailPage } from '@/pages/rider/RiderOrderDetailPage';
 import { RiderHistoryPage } from '@/pages/rider/RiderHistoryPage';
 import { RiderProfilePage } from '@/pages/rider/RiderProfilePage';
+import { RiderOnboardingPage } from '@/pages/rider/RiderOnboardingPage';
 
 // Admin Pages
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminLiveDeliveriesPage } from '@/pages/admin/AdminLiveDeliveriesPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
-import { AdminShopsPage } from '@/pages/admin/AdminShopsPage';
+
 import { AdminReportsPage } from '@/pages/admin/AdminReportsPage';
 import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
@@ -101,41 +103,51 @@ export const AppRoutes = () => {
       <Route
         path="/checkout"
         element={
-          <CustomerLayout>
-            <CheckoutPage />
-          </CustomerLayout>
+          <RoleGuard allowedRoles={['CUSTOMER']}>
+            <CustomerLayout>
+              <CheckoutPage />
+            </CustomerLayout>
+          </RoleGuard>
         }
       />
       <Route
         path="/orders"
         element={
-          <CustomerLayout>
-            <OrdersPage />
-          </CustomerLayout>
+          <RoleGuard allowedRoles={['CUSTOMER']}>
+            <CustomerLayout>
+              <OrdersPage />
+            </CustomerLayout>
+          </RoleGuard>
         }
       />
       <Route
         path="/orders/:id"
         element={
-          <CustomerLayout>
-            <OrderTrackingPage />
-          </CustomerLayout>
+          <RoleGuard allowedRoles={['CUSTOMER']}>
+            <CustomerLayout>
+              <OrderTrackingPage />
+            </CustomerLayout>
+          </RoleGuard>
         }
       />
       <Route
         path="/profile"
         element={
-          <CustomerLayout>
-            <ProfilePage />
-          </CustomerLayout>
+          <RoleGuard allowedRoles={['CUSTOMER']}>
+            <CustomerLayout>
+              <ProfilePage />
+            </CustomerLayout>
+          </RoleGuard>
         }
       />
       <Route
         path="/addresses"
         element={
-          <CustomerLayout>
-            <AddressesPage />
-          </CustomerLayout>
+          <RoleGuard allowedRoles={['CUSTOMER']}>
+            <CustomerLayout>
+              <AddressesPage />
+            </CustomerLayout>
+          </RoleGuard>
         }
       />
       <Route
@@ -155,32 +167,30 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* Unified Authentication Routes */}
+      {/* Authentication Routes */}
       <Route
         path="/login"
-        element={
-          <>
-            <DemoRoleBar />
-            <LoginPage />
-          </>
-        }
+        element={<LoginPage />}
       />
       <Route
-        path="/verify-otp"
-        element={
-          <>
-            <DemoRoleBar />
-            <VerifyOtpPage />
-          </>
-        }
+        path="/register"
+        element={<RegisterPage />}
+      />
+      <Route
+        path="/set-password"
+        element={<SetPasswordPage />}
+      />
+      <Route
+        path="/rider/enroll"
+        element={<RiderEnrollPage />}
       />
 
       {/* Shop Owner Portal Routes */}
       <Route
         path="/shop"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopDashboardPage />
             </ShopLayout>
@@ -190,8 +200,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/orders"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopOrdersPage />
             </ShopLayout>
@@ -201,8 +211,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/orders/:id"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopOrderDetailPage />
             </ShopLayout>
@@ -212,8 +222,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/products"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopProductsPage />
             </ShopLayout>
@@ -223,8 +233,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/products/new"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopProductNewPage />
             </ShopLayout>
@@ -234,8 +244,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/products/:id"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopProductNewPage />
             </ShopLayout>
@@ -245,8 +255,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/categories"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopCategoriesPage />
             </ShopLayout>
@@ -256,8 +266,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/riders"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopRidersPage />
             </ShopLayout>
@@ -267,8 +277,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/analytics"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopAnalyticsPage />
             </ShopLayout>
@@ -278,8 +288,8 @@ export const AppRoutes = () => {
       <Route
         path="/shop/settings"
         element={
-          <RoleGuard allowedRoles={['shop_owner', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
+            
             <ShopLayout>
               <ShopSettingsPage />
             </ShopLayout>
@@ -289,10 +299,19 @@ export const AppRoutes = () => {
 
       {/* Delivery Rider Portal Routes */}
       <Route
+        path="/rider/onboarding"
+        element={
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
+            <RiderOnboardingPage />
+          </RoleGuard>
+        }
+      />
+      <Route
         path="/rider"
         element={
-          <RoleGuard allowedRoles={['rider', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
             <RiderLayout>
               <RiderDashboardPage />
             </RiderLayout>
@@ -302,8 +321,8 @@ export const AppRoutes = () => {
       <Route
         path="/rider/orders"
         element={
-          <RoleGuard allowedRoles={['rider', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
             <RiderLayout>
               <RiderOrdersPage />
             </RiderLayout>
@@ -313,8 +332,8 @@ export const AppRoutes = () => {
       <Route
         path="/rider/orders/:id"
         element={
-          <RoleGuard allowedRoles={['rider', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
             <RiderLayout>
               <RiderOrderDetailPage />
             </RiderLayout>
@@ -324,8 +343,8 @@ export const AppRoutes = () => {
       <Route
         path="/rider/history"
         element={
-          <RoleGuard allowedRoles={['rider', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
             <RiderLayout>
               <RiderHistoryPage />
             </RiderLayout>
@@ -335,8 +354,8 @@ export const AppRoutes = () => {
       <Route
         path="/rider/profile"
         element={
-          <RoleGuard allowedRoles={['rider', 'admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            
             <RiderLayout>
               <RiderProfilePage />
             </RiderLayout>
@@ -348,8 +367,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminDashboardPage />
             </AdminLayout>
@@ -359,8 +378,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/live-deliveries"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminLiveDeliveriesPage />
             </AdminLayout>
@@ -370,8 +389,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/orders"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminOrdersPage />
             </AdminLayout>
@@ -381,8 +400,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/orders/:id"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminOrdersPage />
             </AdminLayout>
@@ -392,8 +411,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/users"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminUsersPage />
             </AdminLayout>
@@ -403,41 +422,20 @@ export const AppRoutes = () => {
       <Route
         path="/admin/customers"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminUsersPage />
             </AdminLayout>
           </RoleGuard>
         }
       />
-      <Route
-        path="/admin/shops"
-        element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
-            <AdminLayout>
-              <AdminShopsPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/riders"
-        element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
-            <AdminLayout>
-              <AdminUsersPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
+
       <Route
         path="/admin/products"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <ShopProductsPage />
             </AdminLayout>
@@ -447,8 +445,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/categories"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <ShopCategoriesPage />
             </AdminLayout>
@@ -458,8 +456,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/payments"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminPaymentsPage />
             </AdminLayout>
@@ -469,8 +467,8 @@ export const AppRoutes = () => {
       <Route
         path="/admin/reports"
         element={
-          <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+          <RoleGuard allowedRoles={['ADMIN']}>
+            
             <AdminLayout>
               <AdminReportsPage />
             </AdminLayout>
@@ -481,7 +479,7 @@ export const AppRoutes = () => {
         path="/admin/settings"
         element={
           <RoleGuard allowedRoles={['admin']}>
-            <DemoRoleBar />
+            
             <AdminLayout>
               <AdminSettingsPage />
             </AdminLayout>

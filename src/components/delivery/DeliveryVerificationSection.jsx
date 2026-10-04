@@ -21,12 +21,13 @@ export const DeliveryVerificationSection = ({
 
   // Check cooldown on mount
   useEffect(() => {
-    if (order?.id) {
-      deliveryOtpService.getResendCooldown(order.id).then(sec => {
+    const orderId = order?.id || order?._id;
+    if (orderId) {
+      deliveryOtpService.getResendCooldown(orderId).then(sec => {
         setCooldownRemaining(sec);
       });
     }
-  }, [order?.id]);
+  }, [order?.id, order?._id]);
 
   // Cooldown countdown timer
   useEffect(() => {
@@ -82,13 +83,14 @@ export const DeliveryVerificationSection = ({
 
     setVerifying(true);
     setErrorMessage('');
+    const orderId = order.id || order._id;
 
     try {
       // 1. Verify OTP with deliveryOtpService
-      await deliveryOtpService.verifyDeliveryOtp(order.id, fullOtp);
+      await deliveryOtpService.verifyDeliveryOtp(orderId, fullOtp);
 
       // 2. Finalize delivery completion via deliveryService
-      const result = await deliveryService.completeDelivery(order.id);
+      const result = await deliveryService.completeDelivery(orderId);
 
       setSuccessNotice(true);
 
@@ -109,9 +111,10 @@ export const DeliveryVerificationSection = ({
     setResending(true);
     setErrorMessage('');
     setResendNotice('');
+    const orderId = order.id || order._id;
 
     try {
-      const res = await deliveryOtpService.resendDeliveryOtp(order.id);
+      const res = await deliveryOtpService.resendDeliveryOtp(orderId);
       setCooldownRemaining(res.cooldownSeconds || 30);
       setResendNotice(res.message || 'New OTP sent to customer mobile.');
       setDigits(['', '', '', '']);
@@ -137,7 +140,7 @@ export const DeliveryVerificationSection = ({
             <CheckCircle2 size={18} className="check-svg" />
             <span className="banner-text">Payment Received</span>
           </div>
-          <span className="amount-pill">₹{order?.billing?.grandTotal} Cash</span>
+          <span className="amount-pill">₹{order?.totalAmount || order?.billing?.grandTotal} Cash</span>
         </div>
 
         <p className="verification-instruction">

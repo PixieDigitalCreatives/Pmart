@@ -1,30 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
-import { Users, UserCheck, Shield, Bike, Store, Search } from 'lucide-react';
+import { Users, UserCheck, Shield, Bike, Store, Search, Plus } from 'lucide-react';
+import { AddRiderModal } from '../../components/admin/AddRiderModal';
+import { EditRiderModal } from '../../components/admin/EditRiderModal';
 
 export const AdminUsersPage = () => {
   const [activeTab, setActiveTab] = useState('customers');
   const [customers, setCustomers] = useState([]);
   const [shops, setShops] = useState([]);
   const [riders, setRiders] = useState([]);
+  const [isAddRiderOpen, setIsAddRiderOpen] = useState(false);
+  const [isEditRiderOpen, setIsEditRiderOpen] = useState(false);
+  const [selectedRider, setSelectedRider] = useState(null);
+
+  const loadData = async () => {
+    const c = await adminService.getCustomers();
+    const s = await adminService.getShops();
+    const r = await adminService.getRiders();
+    setCustomers(c);
+    setShops(s);
+    setRiders(r);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      const c = await adminService.getCustomers();
-      const s = await adminService.getShops();
-      const r = await adminService.getRiders();
-      setCustomers(c);
-      setShops(s);
-      setRiders(r);
-    };
-    load();
+    loadData();
   }, []);
 
   return (
     <div className="admin-users-page">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-dark">Platform User Directory</h1>
-        <p className="text-muted text-sm">Central identity directory across all 4 system roles</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-dark">Platform User Directory</h1>
+          <p className="text-muted text-sm">Central identity directory across all 4 system roles</p>
+        </div>
+        {activeTab === 'riders' && (
+          <button className="btn btn-primary" onClick={() => setIsAddRiderOpen(true)}>
+            <Plus size={16} /> Add Rider
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -106,32 +119,107 @@ export const AdminUsersPage = () => {
       {/* Riders Tab */}
       {activeTab === 'riders' && (
         <div className="pmart-table-wrapper">
-          <table className="pmart-table">
-            <thead>
-              <tr>
-                <th>Rider Name</th>
-                <th>Phone</th>
-                <th>Vehicle</th>
-                <th>Assigned Hub</th>
-                <th>Deliveries</th>
-                <th>Rating</th>
-              </tr>
-            </thead>
-            <tbody>
-              {riders.map(r => (
-                <tr key={r.id}>
-                  <td className="font-semibold text-dark">{r.name}</td>
-                  <td>{r.phone}</td>
-                  <td>{r.vehicleType} ({r.vehicleNumber})</td>
-                  <td>{r.assignedShopName}</td>
-                  <td>{r.totalDeliveries} completed</td>
-                  <td className="font-bold text-dark">★ {r.rating}</td>
+          {riders.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-gray-500 mb-4">No riders found.</p>
+              <button className="btn btn-primary" onClick={() => setIsAddRiderOpen(true)}>
+                <Plus size={16} /> Add Rider
+              </button>
+            </div>
+          ) : (
+            <table className="pmart-table">
+              <thead>
+                <tr>
+                  <th>Rider Name</th>
+                  <th>Phone</th>
+                  <th>Vehicle</th>
+                  <th>Assigned Hub</th>
+                  <th>Deliveries</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {riders.map(r => (
+                  <tr key={r.id}>
+                    <td className="font-semibold text-dark">{r.name}</td>
+                    <td>{r.phone}</td>
+                    <td>{r.vehicleType} ({r.vehicleNumber})</td>
+                    <td>{r.assignedShopName || 'Unassigned'}</td>
+                    <td>{r.totalDeliveries || 0} completed</td>
+                    <td className="font-bold text-dark">★ {r.rating || '5.0'}</td>
+                    <td><span className={`badge ${r.isActive ? 'badge-success' : 'badge-danger'}`}>{r.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                      <button 
+                        className="btn btn-sm btn-secondary mr-2"
+                        onClick={() => {
+                          setSelectedRider(r);
+                          setIsEditRiderOpen(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className={`btn btn-sm ${r.isActive ? 'btn-danger' : 'btn-success'} mr-2`}
+                        onClick={async () => {
+                          if (r.status === 'BUSY' && r.isActive) {
+                            alert('Cannot deactivate a rider with an active delivery.');
+                            return;
+                          }
+                          try {
+                            await adminService.updateRiderStatus(r.id, !r.isActive);
+                            loadData();
+                          } catch(err) {
+                            alert(err.response?.data?.message || 'Failed to update rider status');
+                          }
+                        }}
+                      >
+                        {r.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={async () => {
+                          if (r.status === 'BUSY') {
+                            alert('Cannot delete a rider with an active delivery.');
+                            return;
+                          }
+                          if (!window.confirm(`Are you sure you want to delete rider ${r.name}? This cannot be undone.`)) {
+                            return;
+                          }
+                          try {
+                            await adminService.deleteRider(r.id);
+                            loadData();
+                          } catch(err) {
+                            alert(err.response?.data?.message || 'Failed to delete rider');
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
+
+      {/* Add Rider Modal */}
+      <AddRiderModal 
+        isOpen={isAddRiderOpen} 
+        onClose={() => setIsAddRiderOpen(false)} 
+        onSuccess={loadData} 
+      />
+
+      {/* Edit Rider Modal */}
+      <EditRiderModal 
+        isOpen={isEditRiderOpen} 
+        onClose={() => { setIsEditRiderOpen(false); setSelectedRider(null); }}
+        onSuccess={loadData} 
+        rider={selectedRider}
+      />
 
       {/* Admins Tab */}
       {activeTab === 'admins' && (
@@ -145,14 +233,8 @@ export const AdminUsersPage = () => {
                 <th>Access Level</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td className="font-semibold text-dark">Ananya Saxena</td>
-                <td>+91 98100 11223</td>
-                <td>Central Logistics Operations</td>
-                <td><span className="badge badge-primary">Super Admin</span></td>
-              </tr>
-            </tbody>
+              {/* Admins will be fetched from API. For now, empty state. */}
+              {/* If you add admin fetch, map over it here. */}
           </table>
         </div>
       )}

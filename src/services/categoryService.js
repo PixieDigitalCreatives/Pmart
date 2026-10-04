@@ -1,23 +1,21 @@
-import { mockCategories } from '../data/mockCategories';
+import apiClient from './apiClient';
 
 export const categoryService = {
   // Get all categories
   async getCategories() {
-    return [...mockCategories];
+    const response = await apiClient.get('/categories');
+    return response.data.data;
   },
 
   // Get single category by slug
   async getCategoryBySlug(slug) {
-    const category = mockCategories.find(c => c.slug === slug);
-    if (!category) {
-      throw new Error(`Category not found with slug: ${slug}`);
-    }
-    return category;
+    const response = await apiClient.get(`/categories/${slug}`);
+    return response.data.data;
   },
 
   // Get subcategories for a given category
   async getSubcategories(slug) {
-    const category = mockCategories.find(c => c.slug === slug);
-    return category ? category.subcategories : [];
+    const response = await apiClient.get(`/categories/${slug}`);
+    return response.data.data.subcategories || [];
   }
 };

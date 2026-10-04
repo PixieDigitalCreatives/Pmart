@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productService } from '@/services/productService';
-import { mockCategories } from '@/data/mockCategories';
+import { categoryService } from '@/services/categoryService';
 import { ProductCard } from '@/components/product/ProductCard';
 import { Search, X, SlidersHorizontal, ArrowUpDown, Clock } from 'lucide-react';
 import './SearchPage.scss';
@@ -12,6 +12,7 @@ export const SearchPage = () => {
 
   const [query, setQuery] = useState(queryParam);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
@@ -24,6 +25,18 @@ export const SearchPage = () => {
   useEffect(() => {
     setQuery(queryParam);
   }, [queryParam]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await categoryService.getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchFiltered = async () => {
@@ -113,9 +126,9 @@ export const SearchPage = () => {
                 >
                   All Categories
                 </button>
-                {mockCategories.map((c) => (
+                {categories.map((c) => (
                   <button
-                    key={c.id}
+                    key={c.id || c._id}
                     className={`cat-filter-option ${selectedCategory === c.slug ? 'active' : ''}`}
                     onClick={() => setSelectedCategory(c.slug)}
                   >
