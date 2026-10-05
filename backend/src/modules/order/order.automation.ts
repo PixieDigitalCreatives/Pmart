@@ -6,13 +6,93 @@ import { RiderProfile, RiderAvailability } from '../rider/rider.model';
 import { env } from '../../config/env';
 import { getIO } from '../../config/socket';
 import { encryptOtp } from '../../utils/encryption';
+import { OrderProgressionJob, ProgressionJobType, ProgressionJobStatus } from './order.progression.model';
 
 export class OrderAutomation {
-  static async scheduleRiderProgression(orderId: string | mongoose.Types.ObjectId, riderId: string | mongoose.Types.ObjectId) {
+  private static sweeperInterval: NodeJS.Timeout | null = null;
+
+  static async scheduleRiderProgression(orderId: string | mongoose.Types.ObjectId, riderId: string | mongoose.Types.ObjectId, session?: mongoose.ClientSession) {
     if (env.RIDER_PICKUP_DELAY_MS) {
+      const executeAt = new Date(Date.now() + env.RIDER_PICKUP_DELAY_MS);
+      const job = new OrderProgressionJob({
+        order: orderId,
+        rider: riderId,
+        type: ProgressionJobType.PICKUP,
+        status: ProgressionJobStatus.PENDING,
+        executeAt
+      });
+
+      if (session) {
+        await job.save({ session });
+      } else {
+        await job.save();
+      }
+
+      // Fast-path execution
       setTimeout(() => {
-        this.processPickup(orderId, riderId).catch(err => console.error('Auto-pickup failed:', err));
+        this.executeJob(job._id as mongoose.Types.ObjectId).catch(err => {
+          if (process.env.NODE_ENV !== 'test') console.error('Auto-pickup fast-path failed:', err);
+        });
       }, env.RIDER_PICKUP_DELAY_MS);
+    }
+  }
+
+  static async executeJob(jobId: mongoose.Types.ObjectId) {
+    const job = await OrderProgressionJob.findOneAndUpdate(
+      { _id: jobId, status: ProgressionJobStatus.PENDING },
+      { $set: { status: ProgressionJobStatus.PROCESSING, lockedAt: new Date() } },
+      { new: true }
+    );
+    
+    if (!job) return; // Already picked up by another worker or completed/failed
+
+    try {
+      if (job.type === ProgressionJobType.PICKUP) {
+        await this.processPickup(job.order, job.rider);
+      } else if (job.type === ProgressionJobType.OUT_FOR_DELIVERY) {
+        await this.processOutForDelivery(job.order, job.rider);
+      }
+      
+      job.status = ProgressionJobStatus.COMPLETED;
+      await job.save();
+    } catch (err: any) {
+      job.attempts += 1;
+      job.lastError = err.message;
+      if (job.attempts >= 3) {
+        job.status = ProgressionJobStatus.FAILED;
+      } else {
+        job.status = ProgressionJobStatus.PENDING;
+      }
+      await job.save();
+    }
+  }
+
+  static startRecoverySweeper() {
+    if (this.sweeperInterval) return;
+    
+    // Sweeper polls jobs table every 5 seconds to pick up any missed jobs (e.g. from restarts)
+    this.sweeperInterval = setInterval(async () => {
+      try {
+        const jobs = await OrderProgressionJob.find({
+          status: ProgressionJobStatus.PENDING,
+          executeAt: { $lte: new Date() }
+        }).limit(50);
+        
+        for (const job of jobs) {
+           this.executeJob(job._id as mongoose.Types.ObjectId).catch(e => {
+              if (process.env.NODE_ENV !== 'test') console.error('Error in executeJob:', e);
+           });
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'test') console.error('Rider progression recovery sweeper failed:', err);
+      }
+    }, process.env.NODE_ENV === 'test' ? 100 : 5000); // Poll every 5 seconds (100ms in test)
+  }
+  
+  static stopRecoverySweeper() {
+    if (this.sweeperInterval) {
+      clearInterval(this.sweeperInterval);
+      this.sweeperInterval = null;
     }
   }
 
@@ -48,7 +128,7 @@ export class OrderAutomation {
       });
       await event.save({ session });
 
-      await session.commitTransaction();
+      // Don't commit yet, we need to save the next job in the same transaction
 
       // Emit socket event
       try {
@@ -67,14 +147,33 @@ export class OrderAutomation {
           status: OrderStatus.PICKED_UP,
         });
       } catch (e) {
-        console.error('Socket emission failed in processPickup:', e);
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('Socket emission failed in processPickup:', e);
+        }
       }
 
       // Schedule next phase
       if (env.RIDER_OUT_FOR_DELIVERY_DELAY_MS) {
+        const executeAt = new Date(Date.now() + env.RIDER_OUT_FOR_DELIVERY_DELAY_MS);
+        const nextJob = new OrderProgressionJob({
+          order: orderId,
+          rider: riderId,
+          type: ProgressionJobType.OUT_FOR_DELIVERY,
+          status: ProgressionJobStatus.PENDING,
+          executeAt
+        });
+        await nextJob.save({ session });
+        
+        await session.commitTransaction();
+        
+        // Fast-path execution
         setTimeout(() => {
-          this.processOutForDelivery(orderId, riderId).catch(err => console.error('Auto-out-for-delivery failed:', err));
+          this.executeJob(nextJob._id as mongoose.Types.ObjectId).catch(err => {
+            if (process.env.NODE_ENV !== 'test') console.error('Auto-out-for-delivery fast-path failed:', err);
+          });
         }, env.RIDER_OUT_FOR_DELIVERY_DELAY_MS);
+      } else {
+        await session.commitTransaction();
       }
 
     } catch (error) {
@@ -164,7 +263,9 @@ export class OrderAutomation {
           status: OrderStatus.OUT_FOR_DELIVERY,
         });
       } catch (e) {
-        console.error('Socket emission failed in processOutForDelivery:', e);
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('Socket emission failed in processOutForDelivery:', e);
+        }
       }
 
     } catch (error) {
