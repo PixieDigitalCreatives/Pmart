@@ -21,6 +21,7 @@ import {
   Navigation
 } from 'lucide-react';
 import './AdminLayout.scss';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 export const AdminLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -137,7 +138,9 @@ export const AdminLayout = ({ children }) => {
 
         {/* Content View */}
         <main className="admin-content-view">
-          {children}
+          <ErrorBoundary fallbackMessage="An error occurred in the Admin Portal.">
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

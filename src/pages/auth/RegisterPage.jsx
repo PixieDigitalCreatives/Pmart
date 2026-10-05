@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldCheck, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
 import { auth, googleProvider, signInWithPopup } from '@/config/firebase';
+import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
 import './LoginPage.scss';
 
 // Validates a mobile number — must be digits only (with optional leading +/country code).
@@ -155,12 +156,7 @@ export const RegisterPage = () => {
           </div>
 
           {/* Error banner */}
-          {error && (
-            <div className="auth-error-alert">
-              <AlertCircle size={16} />
-              <span>{error}</span>
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           {!isProfileCompletionRequired ? (
             /* STEP 1: Google Registration */
@@ -185,7 +181,7 @@ export const RegisterPage = () => {
               <div className="auth-footer" style={{ marginTop: 'auto' }}>
                 <p>
                   Already have an account?{' '}
-                  <Link to="/login" className="auth-toggle-btn" style={{ textDecoration: 'none', display: 'inline' }}>
+                  <Link to="/login" className="auth-toggle-btn" style={{ textDecoration: 'none', display: 'inline', color: '#F20D18', fontWeight: 600 }}>
                     Sign In
                   </Link>
                 </p>
@@ -194,12 +190,10 @@ export const RegisterPage = () => {
           ) : (
             /* STEP 2: Profile Completion */
             <form onSubmit={handleCompleteRegistration} className="auth-form" noValidate>
-              <div className="form-group">
-                <label htmlFor="auth-name">Full Name</label>
-                <input
+              <FormField label="Full Name">
+                <Input
                   id="auth-name"
                   type="text"
-                  className="auth-input"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -207,14 +201,12 @@ export const RegisterPage = () => {
                   autoComplete="name"
                   disabled={loading}
                 />
-              </div>
+              </FormField>
 
-              <div className="form-group">
-                <label htmlFor="auth-phone">Mobile Number</label>
-                <input
+              <FormField label="Mobile Number" hint="Enter digits only. This number will not be verified by OTP.">
+                <Input
                   id="auth-phone"
                   type="tel"
-                  className="auth-input"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
@@ -223,17 +215,12 @@ export const RegisterPage = () => {
                   inputMode="tel"
                   disabled={loading}
                 />
-                <span className="field-hint">
-                  Enter digits only. This number will not be verified by OTP.
-                </span>
-              </div>
+              </FormField>
 
-              <div className="form-group">
-                <label htmlFor="auth-password">Password</label>
-                <input
+              <FormField label="Password">
+                <Input
                   id="auth-password"
                   type="password"
-                  className="auth-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -242,14 +229,12 @@ export const RegisterPage = () => {
                   minLength={6}
                   disabled={loading}
                 />
-              </div>
+              </FormField>
 
-              <div className="form-group">
-                <label htmlFor="auth-confirm-password">Confirm Password</label>
-                <input
+              <FormField label="Confirm Password">
+                <Input
                   id="auth-confirm-password"
                   type="password"
-                  className="auth-input"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -258,20 +243,17 @@ export const RegisterPage = () => {
                   minLength={6}
                   disabled={loading}
                 />
-              </div>
+              </FormField>
 
-              <button
+              <Button
                 id="signup-submit-btn"
                 type="submit"
-                className="auth-submit-btn"
-                disabled={loading}
+                size="full"
+                isLoading={loading}
+                style={{ marginTop: '16px' }}
               >
-                {loading ? (
-                  <Loader2 size={18} className="spinner" />
-                ) : (
-                  <span>Sign Up</span>
-                )}
-              </button>
+                Sign Up
+              </Button>
             </form>
           )}
         </div>

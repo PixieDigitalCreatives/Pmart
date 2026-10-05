@@ -99,7 +99,7 @@ async function runAudit() {
         street: '123 Test St', 
         city: 'Test City', 
         state: 'Test State', 
-        zipCode: '12345', 
+        pincode: '123456', 
         coordinates: { lat: 10, lng: 10 } 
       },
       paymentMethod: 'COD'

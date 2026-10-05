@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { ShieldCheck, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
 import { auth, googleProvider, signInWithPopup } from '@/config/firebase';
+import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
 import './LoginPage.scss';
 
 // Validates a mobile number — must be digits only (with optional leading +/country code).
@@ -117,12 +118,7 @@ export const LoginPage = () => {
           </div>
 
           {/* Error banner */}
-          {error && (
-            <div className="auth-error-alert">
-              <AlertCircle size={16} />
-              <span>{error}</span>
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           {/* ① Google button */}
           <button
@@ -132,6 +128,7 @@ export const LoginPage = () => {
             onClick={handleGoogleSignIn}
             disabled={loading}
             aria-label="Continue with Google"
+            style={{ marginTop: error ? '16px' : '0' }}
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -151,12 +148,10 @@ export const LoginPage = () => {
           {/* ③ Manual Login Form */}
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             {/* Mobile Number */}
-            <div className="form-group">
-              <label htmlFor="auth-phone">Mobile Number</label>
-              <input
+            <FormField label="Mobile Number">
+              <Input
                 id="auth-phone"
                 type="tel"
-                className="auth-input"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
@@ -165,15 +160,13 @@ export const LoginPage = () => {
                 inputMode="tel"
                 disabled={loading}
               />
-            </div>
+            </FormField>
 
             {/* Password */}
-            <div className="form-group">
-              <label htmlFor="auth-password">Password</label>
-              <input
+            <FormField label="Password">
+              <Input
                 id="auth-password"
                 type="password"
-                className="auth-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -182,28 +175,25 @@ export const LoginPage = () => {
                 minLength={6}
                 disabled={loading}
               />
-            </div>
+            </FormField>
 
             {/* Submit */}
-            <button
+            <Button
               id="signin-submit-btn"
               type="submit"
-              className="auth-submit-btn"
-              disabled={loading}
+              size="full"
+              isLoading={loading}
+              style={{ marginTop: '16px' }}
             >
-              {loading ? (
-                <Loader2 size={18} className="spinner" />
-              ) : (
-                <span>Sign In</span>
-              )}
-            </button>
+              Sign In
+            </Button>
           </form>
 
           {/* ④ Toggle link */}
           <div className="auth-footer">
             <p>
               Don't have an account?{' '}
-              <Link to="/register" className="auth-toggle-btn" style={{ textDecoration: 'none', display: 'inline' }}>
+              <Link to="/register" className="auth-toggle-btn" style={{ textDecoration: 'none', display: 'inline', color: '#F20D18', fontWeight: 600 }}>
                 Sign Up
               </Link>
             </p>

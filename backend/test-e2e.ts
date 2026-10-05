@@ -107,7 +107,7 @@ async function runE2E() {
         subTotal: product.price,
         deliveryFee: 10,
         totalAmount: product.price + 10,
-        deliveryAddress: { street: '123 Test St', city: 'Test City', state: 'TS', zipCode: '123456', coordinates: { lat: 0, lng: 0 } },
+        deliveryAddress: { street: '123 Test St', city: 'Test City', state: 'TS', pincode: '123456', coordinates: { lat: 0, lng: 0 } },
         paymentMethod: 'COD'
       }, { headers: { Authorization: `Bearer ${customerToken}` } });
       orderId = orderRes.data.data._id || orderRes.data.data.id;

@@ -39,7 +39,7 @@ async function seedCatalog() {
       { owner: shopOwner._id },
       {
         name: 'P Mart Seeded Shop',
-        address: { street: 'Main', city: 'City', state: 'State', zipCode: '000', coordinates: { lat: 0, lng: 0 } },
+        address: { street: 'Main', city: 'City', state: 'State', pincode: '000000', coordinates: { lat: 0, lng: 0 } },
         openTime: '08:00',
         closeTime: '22:00'
       },

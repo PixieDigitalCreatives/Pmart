@@ -25,12 +25,18 @@ import { RiderProfile, RiderAvailability } from '../modules/rider/rider.model';
 import { CustomerProfile } from '../modules/users/user.model';
 import { env } from '../config/env';
 
+import { OtpReservation } from '../modules/order/otp.service';
+
 let mongoServer: MongoMemoryReplSet;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
+  
+  // Ensure OtpReservation collection is created before transactions to prevent WriteConflict
+  await OtpReservation.createCollection();
+  
   env.RIDER_PICKUP_DELAY_MS = 100;
   env.RIDER_OUT_FOR_DELIVERY_DELAY_MS = 100;
 });
@@ -71,7 +77,7 @@ describe('Rider Auto Progression and Delivery OTP Flow', () => {
     riderId = (rider as any)._id.toString();
     await RiderProfile.create({ user: rider._id, fullName: 'Test Rider', vehicleType: 'Bike', vehicleNumber: 'XX-1234', licenseNumber: 'LIC-123', availabilityStatus: RiderAvailability.AVAILABLE });
 
-    const shop = await Shop.create({ name: 'Test Shop', owner: admin._id, address: { street: '1', city: 'Sasaram', state: 'BR', zipCode: '821115', coordinates: { lat: 1, lng: 1 } }, isActive: true, openTime: '09:00', closeTime: '21:00' });
+    const shop = await Shop.create({ name: 'Test Shop', owner: admin._id, address: { street: '1', city: 'Sasaram', state: 'BR', pincode: '821115', coordinates: { lat: 1, lng: 1 } }, isActive: true, openTime: '09:00', closeTime: '21:00' });
     shopId = (shop as any)._id.toString();
 
     const product = await Product.create({ shop: shop._id, name: 'Apple', description: 'Fresh', price: 50, category: new mongoose.Types.ObjectId(), isActive: true, stockQuantity: 10, stockCount: 10, unit: 'kg', slug: 'apple-1', categorySlug: 'fruits' });
@@ -94,7 +100,7 @@ describe('Rider Auto Progression and Delivery OTP Flow', () => {
       subTotal: 100,
       deliveryFee: 10,
       totalAmount: 110,
-      deliveryAddress: { street: '1', city: 'Sasaram', state: 'BR', zipCode: '821115', coordinates: { lat: 1, lng: 1 } },
+      deliveryAddress: { street: '1', city: 'Sasaram', state: 'BR', pincode: '821115', coordinates: { lat: 1, lng: 1 } },
       paymentMethod: 'COD',
       paymentStatus: 'PENDING',
       status: OrderStatus.PENDING
@@ -131,7 +137,8 @@ describe('Rider Auto Progression and Delivery OTP Flow', () => {
 
   it('OTP is visible to CUSTOMER but not ADMIN or RIDER before delivery', async () => {
     const custRes = await request(app).get(`/api/orders/${orderId}/otp`).set('Authorization', `Bearer ${customerToken}`);
-    expect(custRes.body.data.deliveryOtp).toBeDefined(); 
+    console.log('custRes.body:', custRes.body);
+    expect(custRes.body.data?.deliveryOtp).toBeDefined(); 
     expect(custRes.body.data.deliveryOtp.length).toBe(4);
 
     const adminRes = await request(app).get(`/api/orders/${orderId}/otp`).set('Authorization', `Bearer ${adminToken}`);

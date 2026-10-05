@@ -5,11 +5,11 @@ import { authService } from '@/services/authService';
 import {
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
   ArrowRight,
   ArrowLeft,
   RotateCcw
 } from 'lucide-react';
+import { Button, ErrorMessage } from '@/components/ui';
 import './LoginPage.scss';
 
 export const VerifyOtpPage = () => {
@@ -140,12 +140,7 @@ export const VerifyOtpPage = () => {
               </p>
             </div>
 
-            {error && (
-              <div className="auth-error-alert">
-                <AlertCircle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
+            {error && <ErrorMessage message={error} />}
 
             {success && (
               <div className="auth-success-alert">
@@ -183,14 +178,15 @@ export const VerifyOtpPage = () => {
                 )}
               </div>
 
-              <button
+              <Button
                 type="submit"
-                className="btn btn-primary btn-lg btn-full"
-                disabled={loading || otp.join('').length < 4}
+                size="full"
+                isLoading={loading}
+                disabled={otp.join('').length < 4}
               >
-                <span>{loading ? 'Verifying OTP...' : 'Verify & Sign In'}</span>
+                <span>Verify & Sign In</span>
                 <ArrowRight size={18} />
-              </button>
+              </Button>
             </form>
           </div>
         </div>

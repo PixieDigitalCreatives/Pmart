@@ -30,7 +30,7 @@ async function run() {
       subTotal: product!.price,
       deliveryFee: 10,
       totalAmount: product!.price + 10,
-      deliveryAddress: { street: '123 Test St', city: 'Test City', state: 'TS', zipCode: '123456', coordinates: { lat: 28, lng: 77 } },
+      deliveryAddress: { street: '123 Test St', city: 'Test City', state: 'TS', pincode: '123456', coordinates: { lat: 28, lng: 77 } },
       paymentMethod: 'COD'
     }, { headers: { Authorization: `Bearer ${customerToken}` } });
     

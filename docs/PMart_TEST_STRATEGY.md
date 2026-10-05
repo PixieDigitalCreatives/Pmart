@@ -18,8 +18,8 @@ Ensure functional completeness, real-time synchronization, and security isolatio
 ## 3. Types of Testing
 ### Unit Testing (Backend)
 - Tool: Jest
-- Focus: Models, Validation schemas, Utility functions (e.g., OTP generation).
-- Known Status: Limited unit test coverage; mostly integration level scripts (`test_*.js`).
+- Focus: Models, Validation schemas, Utility functions (e.g., OTP generation), Routing Service (caching, deduplication).
+- Known Status: Limited unit test coverage; mostly integration level scripts (`test_*.js`). Added comprehensive tests for `RoutingService` in `src/modules/routing/__tests__/`.
 
 ### Integration Testing (Backend)
 - Focus: API boundaries, JWT validation, database queries.

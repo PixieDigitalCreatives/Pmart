@@ -21,6 +21,7 @@ const envSchema = z.object({
   MARG_INTEGRATION_ENABLED: z.string().default('false').transform(v => v === 'true'),
   RIDER_PICKUP_DELAY_MS: z.string().optional().transform(v => v ? parseInt(v) : undefined),
   RIDER_OUT_FOR_DELIVERY_DELAY_MS: z.string().optional().transform(v => v ? parseInt(v) : undefined),
+  OSRM_CACHE_TTL: z.string().default('3600').transform(Number),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -342,8 +342,13 @@ export class OrderController {
       const originalStatus = order.status;
 
       // Role isolation
-      if (req.user.role === 'CUSTOMER' && status !== OrderStatus.CANCELLED) {
-        return res.status(403).json({ success: false, message: 'Customers can only cancel orders' });
+      if (req.user.role === 'CUSTOMER') {
+        if (order.customer.toString() !== (req.user as any)._id.toString()) {
+          return res.status(403).json({ success: false, message: 'Not authorized for this order' });
+        }
+        if (status !== OrderStatus.CANCELLED) {
+          return res.status(403).json({ success: false, message: 'Customers can only cancel orders' });
+        }
       }
 
       if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {

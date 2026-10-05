@@ -139,7 +139,12 @@ export class OrderAutomation {
       });
       await event.save({ session });
 
-      await session.commitTransaction();
+      try {
+        await session.commitTransaction();
+      } catch (commitErr) {
+        console.error('commitTransaction threw error:', commitErr);
+        throw commitErr;
+      }
 
       // Emit socket event
       try {
@@ -163,7 +168,12 @@ export class OrderAutomation {
       }
 
     } catch (error) {
-      await session.abortTransaction();
+      console.error('Original error in processOutForDelivery:', error);
+      try {
+        await session.abortTransaction();
+      } catch (abortErr) {
+        console.error('abortTransaction threw error:', abortErr);
+      }
       throw error;
     } finally {
       session.endSession();

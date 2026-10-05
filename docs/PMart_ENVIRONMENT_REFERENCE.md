@@ -28,3 +28,4 @@
 | `MARG_INTEGRATION_ENABLED`| ERP Service | No | Feature flag for Marg ERP integration | Yes | `true` / `false` |
 | `RIDER_PICKUP_DELAY_MS`| Order Automation | No | Simulation delay for ASSIGNED -> PICKED_UP auto-transition (used in E2E tests) | Yes | `2000` |
 | `RIDER_OUT_FOR_DELIVERY_DELAY_MS`| Order Automation | No | Simulation delay for PICKED_UP -> OUT_FOR_DELIVERY auto-transition (used in E2E tests) | Yes | `2000` |
+| `OSRM_CACHE_TTL` | Routing Service | No | TTL in seconds for backend OSRM routing cache | Yes | `3600` |

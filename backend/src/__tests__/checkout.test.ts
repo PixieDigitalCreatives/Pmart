@@ -93,7 +93,7 @@ describe('Checkout Flow', () => {
     shop = await Shop.create({
       name: 'Test Shop',
       owner: new mongoose.Types.ObjectId(),
-      address: { street: 'Main St', city: 'City', state: 'State', zipCode: '12345', coordinates: { lat: 1, lng: 1 } },
+      address: { street: 'Main St', city: 'City', state: 'State', pincode: '123456', coordinates: { lat: 1, lng: 1 } },
       isActive: true,
       openTime: '09:00',
       closeTime: '21:00'
@@ -103,7 +103,7 @@ describe('Checkout Flow', () => {
       name: 'Test Product',
       shop: shop._id,
       price: 100,
-      stockQuantity: 10,
+      stockCount: 10,
       isActive: true,
       unit: 'kg',
       sku: 'TEST-SKU-123',
@@ -122,7 +122,7 @@ describe('Checkout Flow', () => {
         street: 'Delivery St',
         city: 'Del City',
         state: 'DS',
-        zipCode: '54321',
+        pincode: '543210',
         coordinates: { lat: 10, lng: 10 }
       },
       paymentMethod: 'COD'
@@ -132,7 +132,10 @@ describe('Checkout Flow', () => {
       .post('/api/orders/checkout')
       .set('Authorization', `Bearer ${customerToken}`)
       .send(orderPayload);
-
+    
+    if (checkoutRes.status !== 201) {
+      console.log('Checkout Error Response:', checkoutRes.body);
+    }
     expect(checkoutRes.status).toBe(201);
     expect(checkoutRes.body.success).toBe(true);
     expect(checkoutRes.body.data.subTotal).toBe(200); // 100 * 2
@@ -142,7 +145,7 @@ describe('Checkout Flow', () => {
 
     // Check inventory update
     const updatedProduct = await Product.findById(product._id);
-    expect(updatedProduct?.stockQuantity).toBe(8); // 10 - 2
+    expect(updatedProduct?.stockCount).toBe(8); // 10 - 2
 
     // Create admin user for status updates
     const adminUser = await User.create({
@@ -180,21 +183,32 @@ describe('Checkout Flow', () => {
     await request(app).put(`/api/orders/${orderId}/status`).set('Authorization', `Bearer ${adminToken}`).send({ status: OrderStatus.ARRIVED });
 
     // 6. OTP Verification
-    // Need to get the plaintext OTP for testing. In production it's hashed, but since we use bcrypt, we can't reverse it.
-    // For test purposes, let's reset the hash to a known OTP hash.
-    const bcrypt = require('bcryptjs');
-    const knownOtphash = await bcrypt.hash('123456', 10);
-    if(order) {
-        await Order.findByIdAndUpdate(orderId, { deliveryOtpHash: knownOtphash });
+    // Use the customer endpoint to retrieve the plaintext OTP
+    const customerOtpRes = await request(app)
+      .get(`/api/orders/${orderId}/otp`)
+      .set('Authorization', `Bearer ${customerToken}`);
+      
+    if (customerOtpRes.status !== 200) {
+      console.error('Failed to fetch OTP:', customerOtpRes.body);
     }
+    const realOtp = customerOtpRes.body.data?.deliveryOtp;
 
     const otpRes = await request(app)
       .post(`/api/orders/${orderId}/verify-otp`)
       .set('Authorization', `Bearer ${riderToken}`)
-      .send({ otp: '123456' });
+      .send({ otp: realOtp });
 
+    if (otpRes.status !== 200) {
+      console.error('OTP Verification Failed:', otpRes.body);
+    }
     expect(otpRes.status).toBe(200);
     expect(otpRes.body.success).toBe(true);
+
+    // 6.5 Update Payment Status
+    await request(app)
+      .put(`/api/orders/${orderId}/payment-status`)
+      .set('Authorization', `Bearer ${riderToken}`)
+      .send({ paymentStatus: 'COLLECTED' });
 
     // 7. Deliver
     const deliverRes = await request(app)
@@ -211,7 +225,7 @@ describe('Checkout Flow', () => {
   it('should handle concurrent checkout correctly and prevent overselling', async () => {
     const orderPayload = {
       items: [{ product: product._id, quantity: 6, shop: shop._id }],
-      deliveryAddress: { street: 'St', city: 'C', state: 'S', zipCode: '1', coordinates: { lat: 1, lng: 1 } },
+      deliveryAddress: { street: 'St', city: 'C', state: 'S', pincode: '100001', coordinates: { lat: 1, lng: 1 } },
       paymentMethod: 'COD'
     };
 
@@ -228,6 +242,6 @@ describe('Checkout Flow', () => {
     
     // Final stock should be 4
     const finalProduct = await Product.findById(product._id);
-    expect(finalProduct?.stockQuantity).toBe(4);
+    expect(finalProduct?.stockCount).toBe(4);
   });
 });

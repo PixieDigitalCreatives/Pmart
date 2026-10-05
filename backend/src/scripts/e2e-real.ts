@@ -52,7 +52,7 @@ async function runE2E() {
 
     const shop = await Shop.create({
       owner: owner._id, name: 'E2E Mart', openTime: '00:00', closeTime: '23:59',
-      address: { street: '123', city: 'City', state: 'State', zipCode: '111', coordinates: { lat: 1, lng: 1 } }
+      address: { street: '123', city: 'City', state: 'State', pincode: '111111', coordinates: { lat: 1, lng: 1 } }
     });
     const category = await Category.create({ name: 'E2E Cat', slug: 'e2e-cat' });
     const product = await Product.create({
@@ -66,7 +66,7 @@ async function runE2E() {
       .set('Cookie', [`accessToken=${customerToken}`])
       .send({
         items: [{ product: product.id, shop: shop.id, quantity: 2 }],
-        deliveryAddress: { street: '456', city: 'C', state: 'S', zipCode: '1', coordinates: { lat: 2, lng: 2 } },
+        deliveryAddress: { street: '456', city: 'C', state: 'S', pincode: '100001', coordinates: { lat: 2, lng: 2 } },
         paymentMethod: 'COD'
       });
     

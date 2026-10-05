@@ -66,7 +66,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
     const shop = await Shop.create({
       owner: shopOwnerId,
       name: 'Fresh Mart',
-      address: { street: '123 Main', city: 'City', state: 'State', zipCode: '10001', pincode: '100001', coordinates: { lat: 1, lng: 1 } },
+      address: { street: '123 Main', city: 'City', state: 'State', pincode: '100001', coordinates: { lat: 1, lng: 1 } },
       openTime: '08:00',
       closeTime: '22:00'
     });
@@ -94,7 +94,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
     await CustomerProfile.create({
       user: customerId,
       fullName: 'John Doe',
-      addresses: [{ label: 'Home', street: '456 Elm', city: 'City', state: 'State', zipCode: '10001', pincode: '100001', coordinates: { lat: 1, lng: 1 } }]
+      addresses: [{ label: 'Home', street: '456 Elm', city: 'City', state: 'State', pincode: '100001', coordinates: { lat: 1, lng: 1 } }]
     });
 
     await Address.create({
@@ -134,7 +134,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
     it('should not allow rider to add customer address', async () => {
       const res = await request(app).post('/api/addresses')
         .set('Cookie', [`accessToken=${riderToken}`])
-        .send({ label: 'Work', street: '789 Pine', city: 'City', state: 'State', zipCode: '10001', coordinates: { lat: 2, lng: 2 } });
+        .send({ label: 'Work', street: '789 Pine', city: 'City', state: 'State', pincode: '100001', coordinates: { lat: 2, lng: 2 } });
       expect(res.status).toBe(403);
     });
   });
@@ -175,7 +175,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
     it('should process checkout atomically and deduct stock', async () => {
       const checkoutData = {
         items: [{ product: productId, shop: shopId, quantity: 5 }],
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
         paymentMethod: 'COD',
         idempotencyKey: 'idemp-123'
       };
@@ -205,7 +205,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
     it('should reject checkout if stock is insufficient', async () => {
       const checkoutData = {
         items: [{ product: productId, shop: shopId, quantity: 200 }], // Only 100 in stock
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } }
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } }
       };
 
       const res = await request(app).post('/api/orders/checkout')
@@ -221,14 +221,14 @@ describe('Phase 3 & 4 Integration Tests', () => {
 
       const checkoutData1 = {
         items: [{ product: productId, shop: shopId, quantity: 1 }],
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
         paymentMethod: 'COD',
         idempotencyKey: 'idemp-concurrent-1'
       };
       
       const checkoutData2 = {
         items: [{ product: productId, shop: shopId, quantity: 1 }],
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
         paymentMethod: 'COD',
         idempotencyKey: 'idemp-concurrent-2'
       };
@@ -266,7 +266,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
         deliveryFee: 5,
         totalAmount: 15,
         status: OrderStatus.PENDING,
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
         paymentMethod: 'COD',
         paymentStatus: 'PENDING',
         deliveryOtpHash: 'hashedotp', // fake hash
@@ -333,7 +333,7 @@ describe('Phase 3 & 4 Integration Tests', () => {
         deliveryFee: 5,
         totalAmount: 15,
         status: OrderStatus.OUT_FOR_DELIVERY,
-        deliveryAddress: { street: '1', city: '2', state: '3', zipCode: '4', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
+        deliveryAddress: { street: '1', city: '2', state: '3', pincode: '400001', coordinates: { lat: 1, lng: 1 } },
         paymentMethod: 'COD',
         paymentStatus: 'PENDING',
         deliveryOtpHash: 'hashedotp', // fake hash

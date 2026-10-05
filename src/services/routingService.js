@@ -1,10 +1,7 @@
-/**
- * PMart Routing Service
- * Connects to OSRM (Open Source Routing Machine) public API to fetch real road geometries.
- */
+import api from './apiClient';
 
 /**
- * Fetch a driving route between two points.
+ * Fetch a driving route between two points using the backend proxy cache.
  * 
  * @param {Array<Number>} origin - [lng, lat]
  * @param {Array<Number>} destination - [lng, lat]
@@ -22,25 +19,20 @@ export const getRoute = async (origin, destination) => {
   if (oLng === dLng && oLat === dLat) return null;
 
   try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${oLng},${oLat};${dLng},${dLat}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Routing API failed with status ${res.status}`);
+    const res = await api.get('/routing', {
+      params: {
+        origin: `${oLng},${oLat}`,
+        destination: `${dLng},${dLat}`,
+        profile: 'driving'
+      }
+    });
+
+    if (res.data.success && res.data.data) {
+      return res.data.data;
     }
-    const data = await res.json();
-    
-    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
-      throw new Error('No route found');
-    }
-    
-    const route = data.routes[0];
-    return {
-      geometry: route.geometry, // GeoJSON LineString { type: "LineString", coordinates: [[lng, lat], ...] }
-      distanceMeters: route.distance,
-      durationSeconds: route.duration
-    };
+    return null;
   } catch (error) {
-    console.error('[RoutingService] Failed to fetch route:', error);
+    console.error('[RoutingService] Failed to fetch route from backend proxy:', error);
     return null;
   }
 };

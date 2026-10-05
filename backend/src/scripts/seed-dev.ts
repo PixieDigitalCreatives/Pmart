@@ -23,7 +23,7 @@ async function setup() {
   const customer = await User.findOneAndUpdate({ phone: '+919999999999' }, { role: UserRole.CUSTOMER, isActive: true }, { upsert: true, new: true });
   await CustomerProfile.findOneAndUpdate(
     { user: customer._id },
-    { fullName: 'Test Customer', addresses: [{ label: 'Home', street: '123 Main St', city: 'Sasaram', state: 'Bihar', zipCode: '821115', coordinates: { lat: 24.95, lng: 84.02 } }] },
+    { fullName: 'Test Customer', addresses: [{ label: 'Home', street: '123 Main St', city: 'Sasaram', state: 'Bihar', pincode: '821115', coordinates: { lat: 24.95, lng: 84.02 } }] },
     { upsert: true }
   );
 
@@ -39,7 +39,7 @@ async function setup() {
   const shopOwner = await User.findOneAndUpdate({ phone: '+917777777777' }, { role: UserRole.SHOP_OWNER, isActive: true }, { upsert: true, new: true });
   const shop = await Shop.findOneAndUpdate(
     { owner: shopOwner._id },
-    { name: 'P Mart Sasaram', address: { street: 'Panjar Colony', city: 'Sasaram', state: 'Bihar', zipCode: '821115', coordinates: { lat: 24.9588, lng: 84.0155 } }, openTime: '08:00', closeTime: '22:00' },
+    { name: 'P Mart Sasaram', address: { street: 'Panjar Colony', city: 'Sasaram', state: 'Bihar', pincode: '821115', coordinates: { lat: 24.9588, lng: 84.0155 } }, openTime: '08:00', closeTime: '22:00' },
     { upsert: true, new: true }
   );
 
@@ -54,7 +54,7 @@ async function setup() {
   // Order
   const order = await Order.findOneAndUpdate(
     { orderNumber: 'ORD-TEST-123' },
-    { customer: customer._id, shop: shop._id, rider: rider._id, items: [{ product: product._id, name: product.name, price: product.price, quantity: 1 }], subTotal: 250, deliveryFee: 10, totalAmount: 260, status: OrderStatus.OUT_FOR_DELIVERY, deliveryAddress: { street: '123 Main St', city: 'Sasaram', state: 'Bihar', zipCode: '821115', coordinates: { lat: 24.95, lng: 84.02 } }, paymentMethod: 'COD', paymentStatus: 'PENDING', deliveryOtpHash: 'hashedotp', deliveryOtpAttempts: 0 },
+    { customer: customer._id, shop: shop._id, rider: rider._id, items: [{ product: product._id, name: product.name, price: product.price, quantity: 1 }], subTotal: 250, deliveryFee: 10, totalAmount: 260, status: OrderStatus.OUT_FOR_DELIVERY, deliveryAddress: { street: '123 Main St', city: 'Sasaram', state: 'Bihar', pincode: '821115', coordinates: { lat: 24.95, lng: 84.02 } }, paymentMethod: 'COD', paymentStatus: 'PENDING', deliveryOtpHash: 'hashedotp', deliveryOtpAttempts: 0 },
     { upsert: true, new: true }
   );
 

@@ -111,6 +111,7 @@ export class AddressController {
         }
       }
 
+      delete req.body.user;
       const address = await Address.findOneAndUpdate(
         { _id: req.params.id, user: userId, isActive: true },
         { $set: req.body },

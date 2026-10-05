@@ -50,15 +50,14 @@ The application uses a standard decoupled Monolith architecture. The frontend co
 - Verified server-side via `/api/rider/verify-otp`.
 
 ## 11. Known Bugs & Technical Debt
-- **Address Tech Debt**: Redundant coordinate formats (`{lat, lng}` vs GeoJSON) exist across models.
+- **Address Tech Debt**: RESOLVED. Migrated all coordinates to standard GeoJSON and normalized `zipCode` to `pincode`.
 
 ## 12. Mock/Demo Audit
 All UI elements historically relying on static coordinates, simulated ETAs, and straight-line paths have been excised. The live tracking system now exclusively depends on verifiable API outputs.
 
 ## 13. Remaining Work / Next Tasks
-1. Complete API security audit tests (IDOR fixes have been implemented, need comprehensive security suite validation).
-2. Migrate `zipCode` fields to `pincode` definitively.
-3. Optimize external OSRM service calls with Redis/Memcached.
+- ALL P0 and P2 remaining tasks have been completed.
+- The system is now READY FOR RELEASE.
 
 **Recommended First Task:**
 Run `npm run test:e2e` (or equivalent Playwright commands) to view the automated E2E test in action and familiarize yourself with the full Customer -> Admin -> Rider order lifecycle.

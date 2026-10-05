@@ -12,6 +12,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import './RiderLayout.scss';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 export const RiderLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -42,7 +43,9 @@ export const RiderLayout = ({ children }) => {
 
       {/* Main Body */}
       <main className="rider-main-body">
-        {children}
+        <ErrorBoundary fallbackMessage="An error occurred in the Rider App.">
+          {children}
+        </ErrorBoundary>
       </main>
 
       {/* Mobile-First Bottom Nav */}

@@ -40,8 +40,14 @@ export class ShopController {
       if (!shop) return res.status(404).json({ success: false, message: 'Shop not found' });
 
       // Role isolation
-      if (req.user.role === 'SHOP_OWNER' && shop.owner.toString() !== (req.user as any)._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Forbidden: You do not own this shop' });
+      if (req.user.role === 'SHOP_OWNER') {
+        if (shop.owner.toString() !== (req.user as any)._id.toString()) {
+          return res.status(403).json({ success: false, message: 'Forbidden: You do not own this shop' });
+        }
+        // Prevent mass assignment
+        delete req.body.owner;
+        delete req.body.isActive;
+        delete req.body.rating;
       }
 
       shop = await Shop.findByIdAndUpdate(req.params.id, req.body, { new: true });

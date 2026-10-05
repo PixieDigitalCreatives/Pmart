@@ -55,6 +55,8 @@ export class UserController {
       if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
 
       let profile;
+      delete req.body.user;
+      
       if (req.user.role === 'CUSTOMER') {
         profile = await CustomerProfile.findOneAndUpdate(
           { user: (req.user as any)._id },

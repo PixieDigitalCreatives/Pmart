@@ -1,3 +1,9 @@
+/**
+ * @deprecated — This script is superseded by normalize-addresses.ts.
+ * It uses raw $rename operations without validation, conflict detection,
+ * or dry-run mode. Retained for reference until the replacement has been
+ * reviewed and tested. Do NOT run this against production data.
+ */
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();

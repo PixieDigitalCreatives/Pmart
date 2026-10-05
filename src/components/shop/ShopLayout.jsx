@@ -20,6 +20,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import './ShopLayout.scss';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 export const ShopLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -140,7 +141,9 @@ export const ShopLayout = ({ children }) => {
 
         {/* Content Body */}
         <main className="shop-content-area">
-          {children}
+          <ErrorBoundary fallbackMessage="An error occurred in the Shop Dashboard.">
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

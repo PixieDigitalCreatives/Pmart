@@ -32,6 +32,7 @@ import orderRoutes from './modules/order/order.route';
 import adminRoutes from './modules/admin/admin.route';
 import riderRoutes from './modules/rider/rider.route';
 import addressRoutes from './modules/address/address.route';
+import routingRoutes from './modules/routing/routing.route';
 
 app.use(cookieParser());
 
@@ -48,6 +49,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/rider', riderRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/routing', routingRoutes);
 app.use('/api', catalogRoutes);
 
 app.get('/api/health', (req, res) => {

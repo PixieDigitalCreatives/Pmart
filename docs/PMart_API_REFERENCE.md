@@ -61,6 +61,11 @@ This document lists the core APIs discovered in the application. All paths are p
 | POST | `/rider/location` | Yes | RIDER | Push GPS telemetry | Updates `RiderLocation`, emits Socket event |
 | POST | `/rider/verify-otp` | Yes | RIDER | Verify delivery OTP | Matches `encryptedOtp`, updates `Order` |
 
+## Routing (`/routing`)
+| Method | Path | Auth Required | Role | Purpose | Database Effect |
+|--------|------|---------------|------|---------|-----------------|
+| GET | `/routing` | Yes | Any | Get driving route between two points | None (Uses in-memory LRU cache) |
+
 ## Admin (`/admin`)
 | Method | Path | Auth Required | Role | Purpose | Database Effect |
 |--------|------|---------------|------|---------|-----------------|

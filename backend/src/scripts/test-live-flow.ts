@@ -96,7 +96,7 @@ async function runLiveTest() {
     const orderRes = await cust.post('/orders/checkout', {
       items: [{ product: productId.toString(), shop: shopId.toString(), quantity: 1, price: 100 }],
       deliveryAddress: {
-        street: '123 Test St', city: 'Testville', state: 'TS', zipCode: '12345',
+        street: '123 Test St', city: 'Testville', state: 'TS', pincode: '123456',
         coordinates: { lat: 28.6, lng: 77.2 }
       },
       paymentMethod: 'COD',
