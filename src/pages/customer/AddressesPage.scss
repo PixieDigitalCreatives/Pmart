@@ -1,0 +1,201 @@
+.pmart-addresses-page {
+  padding: 24px 0 48px;
+
+  .page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    .page-title {
+      font-family: $font-family-display;
+      font-size: 24px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .page-subtitle {
+      font-size: 13.5px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+  }
+
+  .addresses-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+
+    .address-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-xl;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: $shadow-xs;
+      transition: all $transition-fast;
+
+      &:hover {
+        border-color: color.adjust($border-color, $lightness: -8%);
+        box-shadow: $shadow-md;
+      }
+
+      &.active-delivery {
+        border-color: $pmart-red;
+        background-color: rgba(242, 13, 24, 0.02);
+      }
+
+      .card-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+
+        .tag-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          background: $surface-secondary;
+          padding: 4px 10px;
+          border-radius: $radius-pill;
+        }
+
+        .default-chip {
+          font-size: 11px;
+          font-weight: $font-weight-semibold;
+          background: $success-bg;
+          color: $success-text;
+          padding: 2px 8px;
+          border-radius: $radius-pill;
+        }
+      }
+
+      .address-body-text {
+        font-size: 13.5px;
+        color: $text-secondary;
+        line-height: 1.5;
+        margin-bottom: 8px;
+        flex: 1;
+      }
+
+      .pincode-note {
+        font-size: 12px;
+        color: $text-muted;
+        margin-bottom: 16px;
+      }
+
+      .card-actions-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid $border-light;
+        padding-top: 12px;
+        margin-top: auto;
+
+        .set-default {
+          font-size: 12px;
+          font-weight: $font-weight-semibold;
+          color: $pmart-red;
+          cursor: pointer;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        .delivering-here-tag {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          color: $pmart-red;
+          font-weight: $font-weight-semibold;
+        }
+
+        .delete-btn {
+          color: $text-muted;
+          padding: 4px;
+          cursor: pointer;
+
+          &:hover {
+            color: $error;
+          }
+        }
+      }
+    }
+  }
+
+  // Modal
+  .add-address-modal {
+    padding: 24px;
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+
+      h3 {
+        font-size: 18px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+      }
+
+      .close-btn {
+        color: $text-muted;
+        cursor: pointer;
+
+        &:hover {
+          color: $charcoal-black;
+        }
+      }
+    }
+
+    .tag-selector-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      .type-chip {
+        padding: 6px 14px;
+        border-radius: $radius-pill;
+        border: 1px solid $border-color;
+        background: $surface-secondary;
+        font-size: 12.5px;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &.active {
+          background-color: $pmart-red;
+          border-color: $pmart-red;
+          color: $white;
+          font-weight: $font-weight-semibold;
+        }
+      }
+    }
+
+    .modal-actions {
+      margin-top: 24px;
+    }
+  }
+}
+
+.modal-body-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}

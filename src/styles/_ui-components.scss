@@ -1,0 +1,196 @@
+@use "sass:color";
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// Modal Overrides & Enhancements
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid $border-color;
+  
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+  background: $surface-secondary;
+  border-radius: $radius-xl;
+  border: 1px dashed $border-color;
+  
+  &-icon {
+    color: $text-muted;
+    margin-bottom: 16px;
+  }
+  
+  &-title {
+    margin: 0 0 8px;
+    font-size: 1.125rem;
+    color: $text-primary;
+  }
+  
+  &-description {
+    margin: 0 0 20px;
+    color: $text-secondary;
+    max-width: 400px;
+  }
+}
+
+// Error Message
+.error-message {
+  background-color: $error-bg;
+  border: 1px solid $error-border;
+  border-radius: $radius-md;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: $error-text;
+  
+  &-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  &-content {
+    flex: 1;
+    
+    h4 {
+      margin: 0 0 4px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: color.adjust($error-text, $lightness: -10%);
+    }
+  }
+  
+  &-retry {
+    margin-top: 12px;
+    background: none;
+    border: 1px solid $error-border;
+    border-radius: $radius-sm;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $error-text;
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: rgba($error, 0.1);
+    }
+  }
+}
+
+// Page Header
+.page-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  
+  &-breadcrumbs {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin-bottom: 8px;
+  }
+  
+  &-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $text-primary;
+  }
+  
+  &-subtitle {
+    margin: 4px 0 0;
+    color: $text-secondary;
+  }
+}
+
+// Loading State
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: $text-secondary;
+  
+  &--full {
+    height: 100%;
+    min-height: 200px;
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+    color: $pmart-red;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Dialog Text
+.dialog-text {
+  margin: 0 0 24px;
+  color: $text-secondary;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+// Input Styles
+.input-wrapper {
+    position: relative;
+    width: 100%;
+
+    .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: $text-secondary;
+        width: 18px;
+        height: 18px;
+        z-index: 1;
+    }
+}
+
+.form-control.has-icon {
+    padding-left: 38px;
+}
+
+.form-control.is-invalid {
+    border-color: $error !important;
+}
+
+.form-select.is-invalid {
+    border-color: $error !important;
+}

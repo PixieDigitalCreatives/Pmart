@@ -1,0 +1,67 @@
+.pmart-payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: $radius-md;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  line-height: 1.3;
+  transition: all $transition-fast;
+
+  &.status-pending {
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    color: #b45309;
+
+    .badge-icon-wrap {
+      color: #d97706;
+    }
+  }
+
+  &.status-collected {
+    background-color: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #15803d;
+
+    .badge-icon-wrap {
+      color: #16a34a;
+    }
+  }
+
+  .badge-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .badge-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+
+    .method-label {
+      font-weight: $font-weight-semibold;
+    }
+
+    .status-separator {
+      opacity: 0.6;
+    }
+
+    .status-tag {
+      font-weight: $font-weight-bold;
+    }
+
+    .amount-tag {
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &.compact {
+    padding: 3px 8px;
+    font-size: 11px;
+    gap: 5px;
+  }
+}

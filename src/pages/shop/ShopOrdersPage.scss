@@ -1,0 +1,93 @@
+.shop-orders-page {
+  .orders-header-row {
+    margin-bottom: 24px;
+
+    .page-heading {
+      font-family: $font-family-display;
+      font-size: 22px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+  }
+
+  .orders-toolbar-card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .tabs-row {
+      display: flex;
+      gap: 8px;
+
+      .tab-btn {
+        padding: 6px 14px;
+        border-radius: $radius-md;
+        background: $surface-secondary;
+        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: $font-weight-medium;
+        color: $text-secondary;
+        cursor: pointer;
+        transition: all $transition-fast;
+
+        &:hover {
+          color: $charcoal-black;
+        }
+
+        &.active {
+          background: $charcoal-black;
+          color: $white;
+        }
+      }
+    }
+
+    .search-box {
+      position: relative;
+      width: 280px;
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 11px;
+        color: $text-muted;
+      }
+
+      input {
+        width: 100%;
+        height: 38px;
+        padding-left: 36px;
+        padding-right: 12px;
+        background-color: $surface-secondary;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+        font-size: 13px;
+        outline: none;
+
+        &:focus {
+          background-color: $white;
+          border-color: $pmart-red;
+        }
+      }
+    }
+  }
+
+  .address-snippet-cell {
+    font-size: 12.5px;
+    color: $text-secondary;
+    max-width: 220px;
+    @include text-truncate;
+  }
+}

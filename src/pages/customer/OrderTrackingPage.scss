@@ -1,0 +1,918 @@
+.pmart-order-tracking-page {
+  padding: 20px 0 48px;
+
+  .tracking-top-nav {
+    margin-bottom: 18px;
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13.5px;
+      font-weight: $font-weight-medium;
+      color: $text-secondary;
+      transition: color $transition-fast;
+
+      &:hover {
+        color: $pmart-red;
+      }
+    }
+  }
+
+  // Hero ETA Banner
+  .order-eta-hero {
+    background: linear-gradient(135deg, #111318 0%, #1E232B 100%);
+    border-radius: $radius-2xl;
+    padding: 32px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .hero-status-left {
+      max-width: 600px;
+
+      .order-id-tag {
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: $font-weight-bold;
+        color: #FF5A62;
+        letter-spacing: 0.05em;
+        background: rgba(242, 13, 24, 0.2);
+        padding: 3px 8px;
+        border-radius: $radius-xs;
+        display: inline-block;
+        margin-bottom: 10px;
+      }
+
+      .eta-title {
+        font-family: $font-family-display;
+        font-size: 30px;
+        font-weight: $font-weight-extrabold;
+        color: $white;
+        line-height: 1.2;
+        margin-bottom: 6px;
+
+        @include mobile {
+          font-size: 22px;
+        }
+      }
+
+      .eta-subtext {
+        font-size: 13.5px;
+        color: #D1D5DB;
+        line-height: 1.5;
+      }
+    }
+
+    // OTP Card
+    .otp-display-card {
+      background: $white;
+      border-radius: $radius-xl;
+      padding: 16px 24px;
+      text-align: center;
+      box-shadow: $shadow-lg;
+      min-width: 200px;
+
+      @include mobile {
+        width: 100%;
+      }
+
+      .otp-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: $font-weight-bold;
+        color: $pmart-red;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+
+        .otp-key {
+          color: $pmart-red;
+        }
+      }
+
+      .otp-number {
+        font-family: monospace;
+        font-size: 32px;
+        font-weight: $font-weight-extrabold;
+        letter-spacing: 0.2em;
+        color: $charcoal-black;
+        line-height: 1.1;
+      }
+
+      .otp-instruction {
+        font-size: 11px;
+        color: $text-muted;
+        display: block;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  // Tracking Grid
+  .tracking-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px; // Fixed width for sidebar, flex for map
+    gap: 28px;
+    align-items: start; // Prevents columns from stretching to match each other's height
+    margin-top: 24px;
+
+    @include tablet-down {
+      grid-template-columns: 1fr;
+    }
+
+    // Left Column
+    .tracking-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      min-width: 0; // Fix grid overflow
+      
+      // Enforce map height responsive constraints
+      .pmart-live-tracking-map {
+        height: clamp(350px, 60dvh, 600px) !important;
+        min-height: auto !important;
+      }
+
+      .rider-contact-card {
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .rider-card-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+
+          .rider-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: $pmart-red-light;
+            color: $pmart-red;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+
+          .rider-info {
+            .rider-name {
+              font-size: 14.5px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+            }
+
+            .vehicle-info {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12px;
+              color: $text-secondary;
+              margin-top: 2px;
+
+              .dot {
+                color: $text-muted;
+              }
+            }
+
+            .rider-rating {
+              font-size: 11.5px;
+              color: #D97706;
+              font-weight: $font-weight-bold;
+              margin-top: 2px;
+            }
+          }
+        }
+
+        .btn-call-rider {
+          @include btn-primary;
+          padding: 8px 16px;
+          font-size: 13px;
+        }
+      }
+    }
+
+    // Right Column
+    .tracking-right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      .delivery-map-simulation {
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        overflow: hidden;
+
+        .map-view-box {
+          height: 220px;
+          background: #EEF2F6;
+          position: relative;
+          overflow: hidden;
+
+          .map-grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+          }
+
+          .route-path-visual {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            right: 60px;
+            bottom: 50px;
+            border-top: 3px dashed $pmart-red;
+            border-right: 3px dashed $pmart-red;
+            border-top-right-radius: 40px;
+          }
+
+          .store-marker {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            .marker-pin {
+              font-size: 24px;
+            }
+
+            .pin-label {
+              font-size: 10px;
+              font-weight: $font-weight-bold;
+              background: $white;
+              padding: 2px 6px;
+              border-radius: $radius-xs;
+              border: 1px solid $border-color;
+              margin-top: 2px;
+            }
+          }
+
+          .customer-marker {
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            .marker-pin {
+              font-size: 24px;
+            }
+
+            .pin-label {
+              font-size: 10px;
+              font-weight: $font-weight-bold;
+              background: $white;
+              padding: 2px 6px;
+              border-radius: $radius-xs;
+              border: 1px solid $border-color;
+              margin-top: 2px;
+            }
+          }
+
+          .rider-moving-marker {
+            position: absolute;
+            top: 36px;
+            left: 55%;
+            font-size: 26px;
+            animation: riderFloat 3s ease-in-out infinite alternate;
+          }
+        }
+
+        .map-caption {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 16px;
+          background: #FAFBFD;
+          border-top: 1px solid $border-light;
+          font-size: 12.5px;
+          color: $text-secondary;
+
+          .caption-clock {
+            color: $pmart-red;
+          }
+        }
+      }
+
+      .order-items-summary-card {
+        background: $white;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        padding: 20px;
+
+        .card-title {
+          font-size: 15px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          margin-bottom: 14px;
+        }
+
+        .items-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-height: 200px;
+          overflow-y: auto;
+          @include custom-scrollbar;
+
+          .ordered-item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .item-img {
+              width: 44px;
+              height: 44px;
+              border-radius: $radius-sm;
+              object-fit: cover;
+              background: #FAFBFD;
+              border: 1px solid $border-light;
+            }
+
+            .item-meta {
+              flex: 1;
+
+              .item-title {
+                font-size: 13px;
+                font-weight: $font-weight-semibold;
+                color: $charcoal-black;
+              }
+
+              .item-unit {
+                font-size: 11px;
+                color: $text-muted;
+              }
+
+              .item-price {
+                font-size: 11.5px;
+                color: $text-secondary;
+              }
+            }
+
+            .item-total-val {
+              font-size: 13.5px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+            }
+          }
+        }
+
+        .bill-breakdown-sub {
+          margin-top: 16px;
+          border-top: 1px solid $border-color;
+          padding-top: 14px;
+
+          .line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: $text-secondary;
+            margin-bottom: 6px;
+
+            &.total {
+              font-size: 15px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+              margin-top: 8px;
+            }
+          }
+
+          .payment-status-badge {
+            margin-top: 10px;
+            font-size: 11.5px;
+            color: $text-muted;
+            background: $surface-secondary;
+            padding: 6px 10px;
+            border-radius: $radius-sm;
+          }
+        }
+      }
+    }
+  }
+
+  .live-delivery-tracking-section {
+    margin-bottom: 32px;
+
+    .live-tracking-split-view {
+      display: grid;
+      grid-template-columns: 60% 40%;
+      gap: 24px;
+      align-items: start;
+
+      @include tablet {
+        grid-template-columns: 55% 45%;
+        gap: 16px;
+      }
+
+      @include mobile {
+        grid-template-columns: 1fr;
+        gap: 18px;
+
+        .map-column {
+          order: 1;
+        }
+
+        .info-column {
+          order: 2;
+        }
+      }
+
+      .map-column {
+        min-width: 0;
+      }
+
+      .info-column {
+        min-width: 0;
+      }
+    }
+  }
+
+  .order-details-bottom-section {
+    max-width: 780px;
+    margin-top: 32px;
+
+    .card-top-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .payment-status-badge-container {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed $border-color;
+
+      .cod-details-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 13px;
+
+        .cod-title {
+          font-weight: 700;
+          color: $charcoal-black;
+        }
+
+        .cod-amount {
+          color: $text-secondary;
+          font-weight: 600;
+        }
+
+        .cod-status {
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: $radius-pill;
+          font-size: 11.5px;
+
+          &.status-pending {
+            background-color: #fef3c7;
+            color: #b45309;
+          }
+
+          &.status-collected {
+            background-color: #dcfce7;
+            color: #15803d;
+          }
+        }
+      }
+    }
+  }
+
+  // Rider Arrived Notification Card
+  .rider-arrived-alert-card {
+    background: #ffffff;
+    border: 2px solid #22c55e;
+    border-radius: $radius-xl;
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.12);
+
+    @include mobile {
+      padding: 16px;
+    }
+
+    .alert-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+
+      .arrived-icon-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #dcfce7;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .arrived-headings {
+        .arrived-pill {
+          display: inline-block;
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          color: #15803d;
+          background-color: #dcfce7;
+          padding: 3px 8px;
+          border-radius: $radius-pill;
+          margin-bottom: 4px;
+        }
+
+        .arrived-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: $charcoal-black;
+          margin: 0 0 4px;
+
+          @include mobile {
+            font-size: 20px;
+          }
+        }
+
+        .arrived-subtext {
+          font-size: 14px;
+          color: $text-secondary;
+          margin: 0;
+        }
+      }
+    }
+
+    .cash-payment-readiness-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: $radius-lg;
+      padding: 16px;
+      margin-bottom: 14px;
+
+      .cash-box-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+
+        .cash-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: $radius-md;
+          background: #fde68a;
+          color: #b45309;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .cash-callout-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #92400e;
+          margin-bottom: 4px;
+
+          .highlight-amount {
+            color: $pmart-red;
+            font-size: 19px;
+            font-weight: 800;
+          }
+        }
+
+        .cash-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+          color: #78350f;
+          flex-wrap: wrap;
+
+          .text-amber {
+            color: #b45309;
+          }
+
+          .text-green {
+            color: #15803d;
+          }
+        }
+      }
+    }
+
+    .otp-sharing-instruction {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: $text-secondary;
+      background: $surface-secondary;
+      padding: 10px 14px;
+      border-radius: $radius-md;
+
+      .key-icon {
+        color: #d97706;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .hero-cod-callout {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+    padding: 6px 12px;
+    border-radius: $radius-pill;
+    font-size: 12.5px;
+    margin-top: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  // Order Details Bottom Section & Items Accordion
+  .order-details-bottom-section {
+    margin-top: 24px;
+
+    .order-items-summary-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-2xl;
+      padding: 24px;
+      box-shadow: $shadow-xs;
+
+      @include mobile {
+        padding: 16px;
+        border-radius: $radius-xl;
+      }
+
+      .card-top-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+
+        .card-title {
+          font-size: 17px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          margin: 0;
+        }
+      }
+
+      // Dropdown Trigger: View Items
+      .view-items-dropdown-trigger {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: $radius-lg;
+        cursor: pointer;
+        transition: all $transition-fast;
+        margin-bottom: 16px;
+
+        &:hover {
+          background: #F1F5F9;
+          border-color: #CBD5E1;
+        }
+
+        .trigger-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          .pkg-icon {
+            color: $pmart-red;
+          }
+
+          .trigger-label {
+            font-size: 13.5px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+          }
+        }
+
+        .trigger-right {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .subtext {
+            font-size: 12px;
+            color: $text-muted;
+
+            @include mobile {
+              display: none;
+            }
+          }
+
+          .dropdown-chevron {
+            color: $text-secondary;
+            transition: transform 0.25s ease;
+
+            &.rotated {
+              transform: rotate(180deg);
+            }
+          }
+        }
+      }
+
+      // Beautiful Small Cards Grid
+      .items-small-cards-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+        animation: fadeIn 0.2s ease-out;
+
+        .small-product-order-card {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 10px 14px;
+          background: #FFFFFF;
+          border: 1px solid #F1F5F9;
+          border-radius: $radius-lg;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: border-color $transition-fast, box-shadow $transition-fast;
+
+          &:hover {
+            border-color: #E2E8F0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+          }
+
+          .thumb-container {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            max-width: 52px;
+            border-radius: $radius-md;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            .thumb-img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: block;
+            }
+          }
+
+          .card-info {
+            flex: 1;
+            min-width: 0;
+
+            .item-name {
+              font-size: 13.5px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+              @include text-truncate;
+              line-height: 1.3;
+            }
+
+            .item-unit-row {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12px;
+              color: $text-muted;
+              margin-top: 2px;
+
+              .qty-chip {
+                color: $charcoal-black;
+                font-weight: $font-weight-semibold;
+              }
+            }
+
+            .item-rate-calc {
+              font-size: 11.5px;
+              color: $text-secondary;
+              margin-top: 1px;
+            }
+          }
+
+          .card-amount {
+            flex-shrink: 0;
+            text-align: right;
+
+            .currency-val {
+              font-size: 14px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+            }
+          }
+        }
+      }
+
+      // Bill Breakdown
+      .bill-breakdown-sub {
+        border-top: 1px solid $border-light;
+        padding-top: 16px;
+        margin-top: 8px;
+
+        .line {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13.5px;
+          color: $text-secondary;
+          margin-bottom: 8px;
+
+          &.total {
+            font-size: 16px;
+            font-weight: $font-weight-bold;
+            color: $charcoal-black;
+            border-top: 1px dashed $border-color;
+            padding-top: 12px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+          }
+        }
+
+        .payment-status-badge-container {
+          background: #F8FAFC;
+          border-radius: $radius-lg;
+          padding: 12px 16px;
+          margin-top: 12px;
+          border: 1px solid #E2E8F0;
+
+          .cod-details-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12.5px;
+            font-weight: $font-weight-semibold;
+            flex-wrap: wrap;
+            gap: 8px;
+
+            .cod-title {
+              color: #475569;
+            }
+
+            .cod-amount {
+              color: $charcoal-black;
+            }
+
+            .cod-status {
+              padding: 2px 8px;
+              border-radius: $radius-pill;
+              font-size: 11.5px;
+
+              &.status-pending {
+                background: #FEF3C7;
+                color: #92400E;
+              }
+
+              &.status-collected {
+                background: #DCFCE7;
+                color: #15803D;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes riderFloat {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(40px, 10px); }
+}
+

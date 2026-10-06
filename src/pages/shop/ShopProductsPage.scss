@@ -1,0 +1,125 @@
+.shop-products-page {
+  .products-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    .page-heading {
+      font-family: $font-family-display;
+      font-size: 22px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+  }
+
+  .products-toolbar {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .search-box {
+      position: relative;
+      width: 320px;
+
+      .icon {
+        position: absolute;
+        left: 12px;
+        top: 11px;
+        color: $text-muted;
+      }
+
+      input {
+        width: 100%;
+        height: 38px;
+        padding-left: 36px;
+        padding-right: 12px;
+        background-color: $surface-secondary;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+        font-size: 13px;
+        outline: none;
+
+        &:focus {
+          background-color: $white;
+          border-color: $pmart-red;
+        }
+      }
+    }
+
+    .count-label {
+      font-size: 13px;
+      color: $text-muted;
+    }
+  }
+
+  .product-table-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .product-thumb {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: $radius-md;
+      background: #FAFBFD;
+      border: 1px solid $border-light;
+    }
+
+    .name {
+      font-size: 13.5px;
+      color: $charcoal-black;
+      max-width: 260px;
+      @include text-truncate;
+    }
+  }
+
+  .stock-toggle-badge {
+    padding: 4px 10px;
+    border-radius: $radius-pill;
+    font-size: 12px;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all $transition-fast;
+
+    &.in-stock {
+      background: $success-bg;
+      color: $success-text;
+      border-color: $success-border;
+    }
+
+    &.out-stock {
+      background: $error-bg;
+      color: $error-text;
+      border-color: $error-border;
+    }
+  }
+
+  .action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .delete-action:hover {
+      color: $error;
+      border-color: $error;
+    }
+  }
+}

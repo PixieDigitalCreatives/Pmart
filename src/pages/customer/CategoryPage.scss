@@ -1,0 +1,208 @@
+.pmart-category-page {
+  padding: 20px 0 48px;
+
+  // Breadcrumbs
+  .category-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: $text-muted;
+    margin-bottom: 20px;
+
+    a {
+      color: $text-secondary;
+      transition: color $transition-fast;
+
+      &:hover {
+        color: $pmart-red;
+      }
+    }
+
+    .separator {
+      color: $border-dark;
+    }
+
+    .current-crumb {
+      color: $charcoal-black;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  // Category Page Header
+  .category-page-header {
+    margin-bottom: 20px;
+
+    .category-page-title {
+      font-family: $font-family-display;
+      font-size: 28px;
+      font-weight: $font-weight-extrabold;
+      color: $charcoal-black;
+      letter-spacing: -0.02em;
+
+      @include mobile {
+        font-size: 22px;
+        margin-bottom: 14px;
+      }
+    }
+  }
+
+  // Toolbar
+  .category-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 14px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+
+    @include mobile {
+      padding: 12px 14px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .toolbar-left-group {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+
+      @include mobile {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .toolbar-control-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        @include mobile {
+          justify-content: space-between;
+        }
+
+        label {
+          font-size: 13.5px;
+          font-weight: $font-weight-semibold;
+          color: $charcoal-black;
+          white-space: nowrap;
+        }
+
+        .category-filter-select,
+        .subcategory-filter-select {
+          min-width: 180px;
+          height: 38px;
+          padding: 6px 32px 6px 14px;
+          font-size: 13.5px;
+          font-weight: $font-weight-medium;
+          color: $charcoal-black;
+          border: 1px solid $border-color;
+          border-radius: $radius-lg;
+          background-color: $white;
+          cursor: pointer;
+          transition: border-color $transition-fast;
+
+          @include mobile {
+            flex: 1;
+            min-width: 0;
+          }
+
+          &:focus {
+            border-color: $pmart-red;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.12);
+          }
+        }
+      }
+
+      .items-count-text {
+        font-size: 13px;
+        color: $text-muted;
+
+        strong {
+          color: $charcoal-black;
+        }
+
+        @include mobile {
+          font-size: 12px;
+        }
+      }
+    }
+
+    .toolbar-sort {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      @include mobile {
+        justify-content: space-between;
+      }
+
+      label {
+        font-size: 13.5px;
+        font-weight: $font-weight-medium;
+        color: $text-secondary;
+        white-space: nowrap;
+      }
+
+      .sort-select {
+        min-width: 170px;
+        height: 38px;
+        padding: 6px 32px 6px 14px;
+        font-size: 13.5px;
+        font-weight: $font-weight-medium;
+        color: $charcoal-black;
+        border: 1px solid $border-color;
+        border-radius: $radius-lg;
+        background-color: $white;
+        cursor: pointer;
+        transition: border-color $transition-fast;
+
+        @include mobile {
+          flex: 1;
+          min-width: 0;
+        }
+
+        &:focus {
+          border-color: $pmart-red;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.12);
+        }
+      }
+    }
+  }
+
+  // Grid
+  .category-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+
+    @include tablet {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    @include mobile {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+  }
+
+  .empty-category-notice {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 40px;
+    text-align: center;
+    color: $text-secondary;
+  }
+}

@@ -1,0 +1,169 @@
+@use "sass:color";
+@use 'variables' as *;
+@use 'breakpoints' as *;
+
+// Flexbox Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// Typography Helper Mixins
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin text-line-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Card Style
+@mixin pmart-card($padding: 16px) {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-xl;
+  padding: $padding;
+  box-shadow: $shadow-sm;
+  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+    border-color: color.adjust($border-color, $lightness: -6%);
+  }
+}
+
+// Buttons
+@mixin btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: $font-family-base;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  padding: 10px 18px;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+  line-height: 1.25;
+  user-select: none;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+@mixin btn-primary {
+  @include btn-base;
+  background-color: $pmart-red;
+  color: $white;
+  border-color: $pmart-red;
+
+  &:hover:not(:disabled) {
+    background-color: $pmart-red-hover;
+    border-color: $pmart-red-hover;
+    box-shadow: 0 4px 12px $pmart-red-shadow;
+  }
+
+  &:active:not(:disabled) {
+    background-color: $pmart-red-active;
+    transform: translateY(1px);
+  }
+}
+
+@mixin btn-secondary {
+  @include btn-base;
+  background-color: $white;
+  color: $text-primary;
+  border-color: $border-color;
+
+  &:hover:not(:disabled) {
+    background-color: $surface-secondary;
+    border-color: color.adjust($border-color, $lightness: -10%);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+@mixin btn-outline-red {
+  @include btn-base;
+  background-color: $white;
+  color: $pmart-red;
+  border-color: $pmart-red;
+
+  &:hover:not(:disabled) {
+    background-color: $pmart-red-light;
+  }
+}
+
+@mixin btn-dark {
+  @include btn-base;
+  background-color: $charcoal-black;
+  color: $white;
+  border-color: $charcoal-black;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust($charcoal-black, $lightness: 8%);
+  }
+}
+
+// Custom Scrollbar
+@mixin custom-scrollbar($width: 6px) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $border-dark;
+    border-radius: $radius-pill;
+
+    &:hover {
+      background: $text-muted;
+    }
+  }
+}
+
+// Hide Scrollbar but keep functionality
+@mixin hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,0 +1,340 @@
+@use "sass:color";
+@use 'variables' as *;
+@use 'breakpoints' as *;
+@use 'mixins' as *;
+
+// Main Container
+.container {
+  width: 100%;
+  max-width: $container-max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+
+  @include mobile {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+.container-fluid {
+  width: 100%;
+  padding-left: 24px;
+  padding-right: 24px;
+
+  @include mobile {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+// Button Classes
+.btn {
+  @include btn-base;
+}
+
+.btn-primary {
+  @include btn-primary;
+}
+
+.btn-secondary {
+  @include btn-secondary;
+}
+
+.btn-outline-red {
+  @include btn-outline-red;
+}
+
+.btn-dark {
+  @include btn-dark;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: $font-size-xs;
+  border-radius: $radius-sm;
+}
+
+.btn-lg {
+  padding: 14px 24px;
+  font-size: $font-size-base;
+  border-radius: $radius-lg;
+}
+
+.btn-icon {
+  padding: 8px;
+  border-radius: $radius-md;
+  border: 1px solid $border-color;
+  background: $white;
+  color: $text-secondary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $surface-secondary;
+    color: $charcoal-black;
+    border-color: color.adjust($border-color, $lightness: -8%);
+  }
+}
+
+.btn-full {
+  width: 100%;
+}
+
+// Badge Classes
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  border-radius: $radius-sm;
+  line-height: 1;
+
+  &.badge-primary {
+    background-color: $pmart-red-light;
+    color: $pmart-red;
+    border: 1px solid $pmart-red-light-border;
+  }
+
+  &.badge-success {
+    background-color: $success-bg;
+    color: $success-text;
+    border: 1px solid $success-border;
+  }
+
+  &.badge-warning {
+    background-color: $warning-bg;
+    color: $warning-text;
+    border: 1px solid $warning-border;
+  }
+
+  &.badge-error {
+    background-color: $error-bg;
+    color: $error-text;
+    border: 1px solid $error-border;
+  }
+
+  &.badge-info {
+    background-color: $info-bg;
+    color: $info-text;
+    border: 1px solid $info-border;
+  }
+
+  &.badge-neutral {
+    background-color: $surface-secondary;
+    color: $text-secondary;
+    border: 1px solid $border-color;
+  }
+
+  &.badge-dark {
+    background-color: $charcoal-black;
+    color: $white;
+  }
+}
+
+// Form Controls
+.form-group {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    margin-bottom: 6px;
+  }
+
+  .form-hint {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-top: 4px;
+  }
+
+  .form-error {
+    font-size: $font-size-xs;
+    color: $error;
+    margin-top: 4px;
+  }
+}
+
+.form-control, .form-input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  font-size: $font-size-sm;
+  color: $text-primary;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+  outline: none;
+
+  &::placeholder {
+    color: $text-light;
+  }
+
+  &:focus {
+    border-color: $pmart-red;
+    box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.12);
+  }
+
+  &:disabled {
+    background-color: $surface-secondary;
+    cursor: not-allowed;
+    color: $text-muted;
+  }
+}
+
+.form-select {
+  @extend .form-control;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 38px;
+  cursor: pointer;
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 90px;
+  resize: vertical;
+}
+
+// Table Styling
+.pmart-table-wrapper {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  box-shadow: $shadow-xs;
+  @include custom-scrollbar;
+}
+
+.pmart-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: $font-size-sm;
+
+  thead {
+    background-color: $surface-secondary;
+    border-bottom: 1px solid $border-color;
+
+    th {
+      padding: 12px 16px;
+      font-weight: $font-weight-semibold;
+      color: $text-secondary;
+      text-transform: uppercase;
+      font-size: $font-size-xs;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid $border-light;
+      transition: background-color $transition-fast;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background-color: rgba(247, 248, 250, 0.8);
+      }
+
+      td {
+        padding: 14px 16px;
+        color: $text-primary;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+// Card Utility
+.pmart-card {
+  @include pmart-card;
+}
+
+// Skeleton Loader
+.skeleton {
+  background: linear-gradient(90deg, #F1F3F5 25%, #E5E7EB 50%, #F1F3F5 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.6s infinite ease-in-out;
+  border-radius: $radius-sm;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Overlay / Modal backdrop
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 19, 24, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-content {
+  background: $white;
+  border-radius: $radius-2xl;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-color;
+  position: relative;
+  @include custom-scrollbar;
+}
+
+// Drawer backdrop
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 19, 24, 0.5);
+  z-index: 1050;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.drawer-content {
+  background: $white;
+  width: 100%;
+  max-width: 440px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: $shadow-xl;
+  position: relative;
+  z-index: 1051;
+}
+
+// Helpers
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }

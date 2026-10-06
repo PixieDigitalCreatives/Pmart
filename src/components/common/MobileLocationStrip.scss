@@ -1,0 +1,62 @@
+.mobile-location-strip {
+  display: none;
+  background-color: $surface-secondary;
+  border-bottom: 1px solid $border-color;
+  padding: 8px 14px;
+  cursor: pointer;
+
+  @include mobile {
+    display: block;
+  }
+
+  .strip-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .strip-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .eta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: $pmart-red;
+      color: $white;
+      font-size: 10px;
+      font-weight: $font-weight-bold;
+      padding: 2px 6px;
+      border-radius: $radius-xs;
+      letter-spacing: 0.02em;
+    }
+
+    .address-snippet {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: $charcoal-black;
+
+      .location-tag {
+        font-weight: $font-weight-bold;
+      }
+
+      .dot {
+        color: $text-muted;
+      }
+
+      .address-text {
+        color: $text-secondary;
+        max-width: 190px;
+        @include text-truncate;
+      }
+    }
+  }
+
+  .chevron {
+    color: $text-muted;
+  }
+}

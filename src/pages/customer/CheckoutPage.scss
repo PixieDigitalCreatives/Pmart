@@ -1,0 +1,455 @@
+.pmart-checkout-page {
+  padding: 24px 0 48px;
+
+  .checkout-page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    h1 {
+      font-family: $font-family-display;
+      font-size: 26px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .security-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: $success;
+      font-weight: $font-weight-semibold;
+      background-color: $success-bg;
+      padding: 4px 10px;
+      border-radius: $radius-pill;
+      border: 1px solid $success-border;
+    }
+  }
+
+  .checkout-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: flex-start;
+
+    @include tablet-down {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Left Sections
+  .checkout-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .checkout-section-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-xl;
+      padding: 24px;
+
+      @include mobile {
+        padding: 18px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 20px;
+
+        .step-num {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: $charcoal-black;
+          color: $white;
+          font-weight: $font-weight-bold;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .step-title {
+          font-size: 16px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+        }
+
+        .step-subtitle {
+          font-size: 12.5px;
+          color: $text-muted;
+          margin-top: 2px;
+        }
+      }
+
+      // Address Cards Grid
+      .addresses-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+
+        @include mobile {
+          grid-template-columns: 1fr;
+        }
+
+        .checkout-addr-card {
+          border: 1px solid $border-color;
+          border-radius: $radius-lg;
+          padding: 14px 16px;
+          cursor: pointer;
+          transition: all $transition-fast;
+
+          &:hover {
+            border-color: color.adjust($border-color, $lightness: -10%);
+            background-color: $surface-secondary;
+          }
+
+          &.selected {
+            border-color: $pmart-red;
+            background-color: rgba(242, 13, 24, 0.03);
+          }
+
+          .addr-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+
+            .tag-box {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 13px;
+              font-weight: $font-weight-bold;
+              color: $charcoal-black;
+            }
+
+            .check-icon {
+              color: $pmart-red;
+            }
+          }
+
+          .addr-text {
+            font-size: 12.5px;
+            color: $text-secondary;
+            line-height: 1.4;
+            margin-bottom: 4px;
+          }
+
+          .pincode-text {
+            font-size: 11px;
+            color: $text-muted;
+          }
+        }
+      }
+
+      // Instructions
+      .instruction-quick-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+
+        .note-pill {
+          padding: 5px 12px;
+          border-radius: $radius-pill;
+          background: $surface-secondary;
+          border: 1px solid $border-color;
+          font-size: 12px;
+          color: $text-secondary;
+          cursor: pointer;
+          transition: all $transition-fast;
+
+          &:hover {
+            border-color: $charcoal-black;
+            color: $charcoal-black;
+          }
+        }
+      }
+
+      .delivery-note-input {
+        resize: none;
+        font-size: 13px;
+      }
+
+      // Payment Options
+      .payment-options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .payment-option-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 16px;
+          border: 1px solid $border-color;
+          border-radius: $radius-lg;
+          cursor: pointer;
+          transition: all $transition-fast;
+
+          &:hover {
+            border-color: color.adjust($border-color, $lightness: -8%);
+            background: $surface-secondary;
+          }
+
+          &.selected {
+            border-color: $pmart-red;
+            background-color: rgba(242, 13, 24, 0.03);
+          }
+
+          .option-radio input {
+            accent-color: $pmart-red;
+          }
+
+          .option-icon {
+            color: $text-secondary;
+          }
+
+          .option-details {
+            .option-name {
+              font-size: 14px;
+              font-weight: $font-weight-semibold;
+              color: $charcoal-black;
+            }
+
+            .option-desc {
+              font-size: 12px;
+              color: $text-muted;
+              margin-top: 1px;
+            }
+          }
+        }
+
+        .upi-apps-subrow {
+          display: flex;
+          gap: 8px;
+          margin-left: 36px;
+          margin-top: -2px;
+          margin-bottom: 6px;
+          flex-wrap: wrap;
+
+          .upi-app-chip {
+            padding: 4px 12px;
+            border-radius: $radius-pill;
+            border: 1px solid $border-color;
+            background: $white;
+            font-size: 11.5px;
+            font-weight: $font-weight-medium;
+            cursor: pointer;
+            transition: all $transition-fast;
+
+            &:hover {
+              border-color: $pmart-red;
+            }
+
+            &.active {
+              background-color: $pmart-red-light;
+              border-color: $pmart-red;
+              color: $pmart-red;
+              font-weight: $font-weight-bold;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Right Summary
+  .checkout-summary-col {
+    .summary-box {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-xl;
+      padding: 24px;
+      box-shadow: $shadow-xs;
+
+      .eta-badge-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: $pmart-red-light;
+        color: $pmart-red;
+        padding: 6px 12px;
+        border-radius: $radius-md;
+        font-size: 12.5px;
+        font-weight: $font-weight-semibold;
+        margin-bottom: 18px;
+        width: 100%;
+      }
+
+      .box-title {
+        font-size: 16px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+        margin-bottom: 14px;
+      }
+
+      .items-preview-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 180px;
+        overflow-y: auto;
+        margin-bottom: 14px;
+        @include custom-scrollbar;
+
+        .item-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 13px;
+
+          .row-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 240px;
+
+            .qty-tag {
+              font-weight: $font-weight-bold;
+              color: $pmart-red;
+              font-size: 12px;
+            }
+
+            .item-title {
+              color: $text-secondary;
+              @include text-truncate;
+            }
+          }
+
+          .item-amt {
+            font-weight: $font-weight-semibold;
+            color: $charcoal-black;
+          }
+        }
+      }
+
+      .divider {
+        height: 1px;
+        background-color: $border-color;
+        margin: 12px 0;
+      }
+
+      .calc-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13.5px;
+        color: $text-secondary;
+        margin-bottom: 8px;
+
+        &.savings {
+          color: $success;
+          font-weight: $font-weight-semibold;
+        }
+
+        &.total-row {
+          font-size: 15px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+          margin-top: 14px;
+          margin-bottom: 20px;
+
+          .total-amount {
+            font-size: 20px;
+            font-weight: $font-weight-extrabold;
+          }
+        }
+      }
+
+      .place-order-btn {
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .safety-note {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: $text-muted;
+
+        .shield {
+          color: $success;
+        }
+      }
+    }
+  }
+}
+
+.selected-addr-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #fff;
+  
+  .addr-top-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    
+    .tag-box {
+      display: flex;
+      align-items: center;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    .change-btn {
+      color: #F20D18;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  .addr-recipient {
+    font-size: 15px;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .addr-details {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  
+  .addr-phone {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+  }
+}
+
+.no-address-state {
+  text-align: center;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+  
+  p {
+    margin-bottom: 10px;
+    color: #666;
+  }
+}
+

@@ -1,0 +1,180 @@
+.admin-dashboard-page {
+  .page-header-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    .main-title {
+      font-family: $font-family-display;
+      font-size: 24px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .sub-title {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+  }
+
+  // Admin KPI Grid
+  .admin-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+
+    @include desktop {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-kpi-card {
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $radius-xl;
+      padding: 18px 20px;
+      box-shadow: $shadow-xs;
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+
+        .label {
+          font-size: 12px;
+          font-weight: $font-weight-semibold;
+          color: $text-secondary;
+        }
+
+        .icon-wrap {
+          width: 32px;
+          height: 32px;
+          border-radius: $radius-md;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &.purple { background: rgba(168, 85, 247, 0.12); color: #9333EA; }
+          &.red { background: $pmart-red-light; color: $pmart-red; }
+          &.green { background: $success-bg; color: $success; }
+          &.blue { background: $info-bg; color: $info; }
+          &.amber { background: $warning-bg; color: $warning; }
+        }
+      }
+
+      .value {
+        font-family: $font-family-display;
+        font-size: 24px;
+        font-weight: $font-weight-extrabold;
+        color: $charcoal-black;
+        margin-bottom: 6px;
+      }
+
+      .sub-note {
+        font-size: 11px;
+        color: $text-muted;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        &.positive {
+          color: $success;
+          font-weight: $font-weight-medium;
+        }
+      }
+    }
+  }
+
+  // SLA Banner
+  .sla-banner-card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 28px;
+    box-shadow: $shadow-xs;
+
+    @include tablet-down {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .sla-metric-item {
+      display: flex;
+      flex-direction: column;
+
+      .label {
+        font-size: 11px;
+        font-weight: $font-weight-bold;
+        color: $text-muted;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+
+      .val {
+        font-family: $font-family-display;
+        font-size: 24px;
+        font-weight: $font-weight-extrabold;
+        color: $charcoal-black;
+        line-height: 1.2;
+      }
+
+      .hint {
+        font-size: 11.5px;
+        color: $text-muted;
+        margin-top: 2px;
+      }
+    }
+  }
+
+  // Section Block
+  .admin-section-block {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 24px;
+    box-shadow: $shadow-xs;
+
+    .block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+
+      .block-title {
+        font-size: 16px;
+        font-weight: $font-weight-bold;
+        color: $charcoal-black;
+      }
+
+      .link-see-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+        font-weight: $font-weight-semibold;
+        color: $pmart-red;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}

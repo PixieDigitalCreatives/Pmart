@@ -1,0 +1,106 @@
+.pmart-tracking-panel {
+  display: flex;
+  flex-direction: column;
+
+  .pmart-store-location-card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 14px 16px;
+    box-shadow: $shadow-xs;
+    margin-bottom: 16px;
+
+    .store-badge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+      .store-pill {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #b91c1c;
+        background: #fee2e2;
+        padding: 2px 8px;
+        border-radius: $radius-pill;
+      }
+
+      .store-gmaps-link {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #1a73e8;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .store-main-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+
+      .store-pin-circle {
+        width: 32px;
+        height: 32px;
+        background: $pmart-red;
+        color: $white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 900;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(242, 13, 24, 0.3);
+      }
+
+      .store-meta {
+        flex: 1;
+
+        .store-title {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: $charcoal-black;
+          margin-bottom: 3px;
+        }
+
+        .store-address-text {
+          font-size: 11.5px;
+          color: $text-secondary;
+          line-height: 1.4;
+          margin-bottom: 5px;
+        }
+
+        .store-geo-tag {
+          font-size: 10px;
+          font-family: monospace;
+          color: #4b5563;
+          background: #f3f4f6;
+          padding: 2px 6px;
+          border-radius: 4px;
+          display: inline-block;
+        }
+      }
+    }
+  }
+
+  .tracking-timeline-card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: 18px 20px;
+    box-shadow: $shadow-xs;
+
+    .timeline-title {
+      font-size: 14.5px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+      margin-bottom: 14px;
+    }
+  }
+}
+

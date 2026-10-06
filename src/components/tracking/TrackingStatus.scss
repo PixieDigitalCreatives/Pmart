@@ -1,0 +1,102 @@
+.pmart-tracking-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: $radius-lg;
+  font-size: 13px;
+  font-weight: $font-weight-semibold;
+  margin-bottom: 16px;
+
+  &.state-active {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+
+    .status-icon-wrap {
+      color: #2563eb;
+    }
+  }
+
+  &.state-success {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+
+    .status-icon-wrap {
+      color: #16a34a;
+    }
+  }
+
+  &.state-warning {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+
+    .status-icon-wrap {
+      color: #d97706;
+    }
+  }
+
+  &.state-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+
+    .status-icon-wrap {
+      color: #dc2626;
+    }
+  }
+
+  &.state-info {
+    background-color: $surface-secondary;
+    border: 1px solid $border-color;
+    color: $charcoal-black;
+  }
+
+  .status-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .pulsing-icon {
+      animation: statusPulse 1.4s ease-in-out infinite;
+    }
+
+    .active-arrow {
+      transform: rotate(45deg);
+    }
+  }
+
+  .status-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .retry-btn {
+    background: $white;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: $radius-xs;
+    cursor: pointer;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background-color: #fee2e2;
+    }
+  }
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Fresh Organic Apples (1kg)",
+    "description": "Crisp and sweet organic apples sourced directly from local farms. Perfect for healthy snacking or baking.",
+    "price": 120,
+    "discountPrice": 105,
+    "stockQuantity": 150,
+    "sku": "APP-ORG-1KG",
+    "unit": "kg",
+    "categorySlug": "fruits-vegetables",
+    "isActive": true
+  },
+  {
+    "name": "Whole Wheat Bread",
+    "description": "Freshly baked whole wheat bread, rich in fiber and no added preservatives.",
+    "price": 45,
+    "discountPrice": null,
+    "stockQuantity": 40,
+    "sku": "BRD-WHL-001",
+    "unit": "packet",
+    "categorySlug": "bakery-dairy",
+    "isActive": true
+  },
+  {
+    "name": "Amul Taza Toned Milk (1L)",
+    "description": "Pasteurised toned milk. Keep refrigerated.",
+    "price": 68,
+    "discountPrice": 66,
+    "stockQuantity": 200,
+    "sku": "DRY-AML-1L",
+    "unit": "L",
+    "categorySlug": "bakery-dairy",
+    "isActive": true
+  },
+  {
+    "name": "Tata Salt (1kg)",
+    "description": "Vacuum evaporated iodised salt.",
+    "price": 28,
+    "discountPrice": 25,
+    "stockQuantity": 500,
+    "sku": "GRO-SLT-1KG",
+    "unit": "kg",
+    "categorySlug": "grocery-staples",
+    "isActive": true
+  },
+  {
+    "name": "Maggi 2-Minute Noodles (140g)",
+    "description": "Instant noodles with authentic Indian spices.",
+    "price": 30,
+    "discountPrice": null,
+    "stockQuantity": 300,
+    "sku": "SNK-MAG-140G",
+    "unit": "packet",
+    "categorySlug": "snacks-beverages",
+    "isActive": true
+  },
+  {
+    "name": "Lays India's Magic Masala (50g)",
+    "description": "Spicy and crunchy potato chips.",
+    "price": 20,
+    "discountPrice": null,
+    "stockQuantity": 120,
+    "sku": "SNK-LAY-50G",
+    "unit": "packet",
+    "categorySlug": "snacks-beverages",
+    "isActive": true
+  },
+  {
+    "name": "Broccoli (250g)",
+    "description": "Fresh, green broccoli crowns.",
+    "price": 80,
+    "discountPrice": 65,
+    "stockQuantity": 30,
+    "sku": "VEG-BRC-250G",
+    "unit": "g",
+    "categorySlug": "fruits-vegetables",
+    "isActive": true
+  }
+]

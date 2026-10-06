@@ -1,0 +1,352 @@
+@use "@/styles/variables" as *;
+@use "@/styles/mixins" as *;
+@use "@/styles/breakpoints" as *;
+
+.location-modal {
+  padding: 24px;
+
+  @include mobile {
+    padding: 18px;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: $font-weight-bold;
+      color: $charcoal-black;
+    }
+
+    .modal-subtitle {
+      font-size: 13px;
+      color: $text-muted;
+      margin-top: 2px;
+    }
+
+    .close-btn {
+      color: $text-muted;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color $transition-fast;
+
+      &:hover {
+        background-color: $surface-secondary;
+        color: $charcoal-black;
+      }
+    }
+  }
+
+  .location-search-box {
+    position: relative;
+    margin-bottom: 16px;
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 13px;
+      color: $text-muted;
+      pointer-events: none;
+    }
+
+    .form-control {
+      padding-left: 42px;
+    }
+  }
+
+  .current-location-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background-color: $pmart-red-light;
+    border: 1px solid $pmart-red-light-border;
+    border-radius: $radius-lg;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 24px;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: color.adjust($pmart-red-light, $lightness: -2%);
+    }
+
+    .gps-icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: $white;
+      color: $pmart-red;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: $shadow-xs;
+
+      .spinning {
+        animation: spin 1s linear infinite;
+      }
+    }
+
+    .gps-text {
+      display: flex;
+      flex-direction: column;
+
+      .gps-title {
+        font-size: 14px;
+        font-weight: $font-weight-bold;
+        color: $pmart-red;
+      }
+
+      .gps-desc {
+        font-size: 12px;
+        color: $text-secondary;
+      }
+    }
+  }
+
+  .saved-locations-section {
+    .section-label {
+      font-size: 11px;
+      font-weight: $font-weight-bold;
+      color: $text-muted;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+
+      &::-webkit-scrollbar {
+        width: 4px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: $border-color;
+        border-radius: 4px;
+      }
+    }
+
+    .saved-location-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid $border-color;
+      border-radius: $radius-lg;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &:hover {
+        background-color: $surface-secondary;
+        border-color: color.adjust($border-color, $lightness: -8%);
+      }
+
+      &.selected {
+        border-color: $pmart-red;
+        background-color: rgba(242, 13, 24, 0.03);
+      }
+
+      .loc-icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: $surface-secondary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $text-secondary;
+        flex-shrink: 0;
+        margin-top: 2px;
+        transition: all $transition-fast;
+
+        &.selected {
+          background-color: rgba(242, 13, 24, 0.08);
+          color: $pmart-red;
+        }
+      }
+
+      .loc-details {
+        flex: 1;
+        min-width: 0;
+
+        .loc-tag {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13.5px;
+          font-weight: $font-weight-bold;
+          color: $charcoal-black;
+
+          .default-pill {
+            font-size: 10px;
+            background: $surface-secondary;
+            padding: 2px 6px;
+            border-radius: $radius-pill;
+            color: $text-muted;
+            font-weight: $font-weight-medium;
+          }
+        }
+
+        .loc-address-text {
+          font-size: 12.5px;
+          color: $text-secondary;
+          margin-top: 2px;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .loc-pincode {
+          font-size: 11px;
+          color: $text-muted;
+          margin-top: 2px;
+        }
+      }
+
+      .loc-instructions {
+        font-size: 11px;
+        color: $text-secondary;
+        margin-top: 4px;
+        font-style: italic;
+      }
+
+      .loc-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+
+        button {
+          background: none;
+          border: none;
+          font-size: 11px;
+          color: $pmart-red;
+          font-weight: $font-weight-medium;
+          cursor: pointer;
+          padding: 0;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+
+      .selected-check {
+        color: $pmart-red;
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
+    }
+
+    /* ── Loading skeleton ── */
+    .saved-addresses-loading {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .skeleton-card {
+        height: 64px;
+        border-radius: $radius-lg;
+        background: linear-gradient(
+          90deg,
+          $surface-secondary 25%,
+          color.adjust($surface-secondary, $lightness: -3%) 50%,
+          $surface-secondary 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s ease-in-out infinite;
+      }
+    }
+
+    /* ── Empty state ── */
+    .saved-addresses-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px 16px;
+      border: 1px dashed $border-color;
+      border-radius: $radius-lg;
+      background-color: $surface-secondary;
+
+      .empty-icon {
+        color: $text-muted;
+        margin-bottom: 8px;
+        opacity: 0.6;
+      }
+
+      .empty-title {
+        font-size: 13px;
+        font-weight: $font-weight-medium;
+        color: $text-secondary;
+        margin: 0;
+      }
+
+      .empty-desc {
+        font-size: 12px;
+        color: $text-muted;
+        margin: 4px 0 0;
+      }
+    }
+
+    /* ── Error state ── */
+    .saved-addresses-error {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: $radius-lg;
+      background-color: rgba(220, 38, 38, 0.06);
+      color: #b91c1c;
+      font-size: 12.5px;
+
+      svg {
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .modal-footer {
+    padding-top: 16px;
+    border-top: 1px solid $border-color;
+    margin-top: 8px;
+
+    .add-address-btn {
+      width: 100%;
+      padding: 12px;
+      border: 1px dashed $pmart-red;
+      background: $white;
+      color: $pmart-red;
+      font-weight: $font-weight-bold;
+      border-radius: $radius-lg;
+      cursor: pointer;
+      transition: background-color $transition-fast;
+
+      &:hover {
+        background-color: #fdf2f2;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

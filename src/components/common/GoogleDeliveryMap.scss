@@ -1,0 +1,477 @@
+.google-delivery-map-container {
+  position: relative;
+  width: 100%;
+  background-color: #f4f3f0;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  border: 1px solid $border-color;
+  box-shadow: $shadow-sm;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  user-select: none;
+
+  &.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    border-radius: 0;
+    border: none;
+  }
+
+  // TOP LEFT: Map Type Selector (Map / Satellite / Navigation)
+  .gmap-type-selector {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    display: flex;
+    background: $white;
+    border-radius: $radius-sm;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+
+    .type-btn {
+      background: $white;
+      border: none;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #5f6368;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.15s, color 0.15s;
+      border-right: 1px solid #ebebeb;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      .btn-icon {
+        color: #1a73e8;
+      }
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #202124;
+      }
+
+      &.active {
+        color: #1a73e8;
+        font-weight: 700;
+        background-color: #e8f0fe;
+      }
+    }
+  }
+
+  // TOP CENTER: ETA Banner (Google Navigation Style)
+  .gmap-eta-banner {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9;
+    background: rgba(32, 33, 36, 0.95);
+    backdrop-filter: blur(4px);
+    color: $white;
+    padding: 6px 14px;
+    border-radius: $radius-pill;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    white-space: nowrap;
+
+    @include mobile {
+      top: 50px;
+      left: 12px;
+      transform: none;
+      max-width: calc(100% - 24px);
+      padding: 5px 10px;
+    }
+
+    .eta-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .eta-time {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #81c995; // Google Maps Green
+      }
+
+      .eta-dist {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+
+    .eta-subtext {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+        animation: pulseLiveDot 1.5s infinite;
+      }
+    }
+  }
+
+  // TOP RIGHT ACTIONS
+  .gmap-top-right-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .gmap-icon-btn {
+      width: 34px;
+      height: 34px;
+      background: $white;
+      border: none;
+      border-radius: $radius-sm;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5f6368;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #202124;
+      }
+
+      &.active-traffic {
+        color: #188038;
+        background-color: #e6f4ea;
+      }
+    }
+
+    .gmap-open-native-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: $white;
+      color: #1a73e8;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 0 10px;
+      height: 34px;
+      border-radius: $radius-sm;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      text-decoration: none;
+      transition: background-color 0.15s;
+
+      &:hover {
+        background-color: #f1f3f4;
+      }
+    }
+  }
+
+  // MAP CANVAS VIEWPORT
+  .gmap-canvas-viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+
+    .gmap-vector-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+
+  // GOOGLE MAPS EMBED WRAPPER
+  .gmap-embed-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+  }
+
+  // BOTTOM LEFT: Official Google Brand Watermark
+  .gmap-bottom-brand {
+    position: absolute;
+    bottom: 22px;
+    left: 12px;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+
+    .google-wordmark {
+      font-family: 'Product Sans', 'Roboto', Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8));
+    }
+
+    .nav-engine-pill {
+      font-size: 10px;
+      font-weight: 600;
+      color: #5f6368;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 2px 6px;
+      border-radius: $radius-xs;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  // BOTTOM RIGHT: Standard Google Maps Controls
+  .gmap-bottom-right-controls {
+    position: absolute;
+    bottom: 24px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+
+    .gmap-control-group {
+      background: $white;
+      border-radius: $radius-sm;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+
+      &.play-pause-group {
+        flex-direction: row;
+
+        .gmap-btn {
+          border-right: 1px solid #e0e0e0;
+          &:last-child {
+            border-right: none;
+          }
+        }
+      }
+
+      .btn-divider {
+        height: 1px;
+        background-color: #e0e0e0;
+        width: 100%;
+      }
+    }
+
+    .gmap-btn {
+      width: 32px;
+      height: 32px;
+      background: $white;
+      border: none;
+      color: #5f6368;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+
+      &:hover {
+        background-color: #f1f3f4;
+        color: #202124;
+      }
+
+      &.location-recenter-btn {
+        border-radius: $radius-sm;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .pegman-icon {
+        font-size: 16px;
+      }
+    }
+  }
+
+  // BOTTOM LEGAL STRIP (Google Maps Standard)
+  .gmap-legal-strip {
+    position: absolute;
+    bottom: 2px;
+    right: 8px;
+    z-index: 7;
+    font-size: 9.5px;
+    color: rgba(95, 99, 104, 0.85);
+    background: rgba(255, 255, 255, 0.7);
+    padding: 1px 6px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+
+    @include mobile {
+      display: none;
+    }
+
+    .sep {
+      opacity: 0.6;
+    }
+  }
+
+  // RIDER STATUS BAR AT BOTTOM
+  .gmap-rider-status-bar {
+    position: absolute;
+    bottom: 12px;
+    left: 120px;
+    right: 120px;
+    z-index: 9;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: $radius-lg;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    @include mobile {
+      left: 12px;
+      right: auto;
+      bottom: 56px;
+      max-width: calc(100% - 70px);
+    }
+
+    .rider-avatar-bubble {
+      width: 28px;
+      height: 28px;
+      background: #1a73e8;
+      border-radius: 50%;
+      color: $white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .rider-quick-meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+
+      .rider-title {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #202124;
+      }
+
+      .vehicle-desc {
+        font-size: 10px;
+        color: #5f6368;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .speed-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #188038;
+      background: #e6f4ea;
+      padding: 3px 7px;
+      border-radius: $radius-pill;
+      flex-shrink: 0;
+
+      .pulse-indicator {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #188038;
+        animation: pulseGreen 1.5s infinite;
+      }
+    }
+  }
+}
+
+// ANIMATIONS
+@keyframes pulseLiveDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.6;
+  }
+}
+
+@keyframes pulseGreen {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+
+.animated-route-chevrons {
+  animation: routeDash 1.2s linear infinite;
+}
+
+@keyframes routeDash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.gps-beacon-ripple {
+  animation: beaconPulse 1.8s ease-out infinite;
+}
+
+.gps-beacon-ripple-outer {
+  animation: beaconPulseOuter 1.8s ease-out infinite 0.4s;
+}
+
+@keyframes beaconPulse {
+  0% {
+    r: 10;
+    opacity: 0.8;
+  }
+  100% {
+    r: 32;
+    opacity: 0;
+  }
+}
+
+@keyframes beaconPulseOuter {
+  0% {
+    r: 18;
+    opacity: 0.6;
+  }
+  100% {
+    r: 48;
+    opacity: 0;
+  }
+}
