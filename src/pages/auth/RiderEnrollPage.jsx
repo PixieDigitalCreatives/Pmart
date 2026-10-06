@@ -33,8 +33,8 @@ export const RiderEnrollPage = () => {
       setError('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     
@@ -128,7 +128,7 @@ export const RiderEnrollPage = () => {
                   type="submit" 
                   size="full"
                   isLoading={loading}
-                  disabled={!token || password.length < 6 || password !== confirmPassword}
+                  disabled={!token || password.length < 8 || password !== confirmPassword}
                   style={{ marginTop: '16px' }}
                 >
                   Set Password &amp; Activate

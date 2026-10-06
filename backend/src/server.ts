@@ -12,6 +12,9 @@ const startServer = async () => {
   const server = createServer(app);
   initSocket(server);
 
+  const { OrderAutomation } = require('./modules/order/order.automation');
+  OrderAutomation.startRecoverySweeper();
+
   server.listen(env.PORT, () => {
     logger.info(`Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
   });

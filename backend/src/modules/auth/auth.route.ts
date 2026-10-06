@@ -26,5 +26,6 @@ router.post('/complete-profile', protect, authLimiter, AuthController.completePr
 router.post('/refresh', AuthController.refresh);
 router.post('/logout', protect, AuthController.logout);
 router.get('/me', protect, AuthController.me);
+router.put('/password', protect, authLimiter, AuthController.changePassword);
 
 export default router;

@@ -86,5 +86,38 @@ export const adminService = {
     } catch (error) {
       return null;
     }
+  },
+
+  async getEmployees() {
+    try {
+      const res = await api.get('/admin/employees');
+      return res.data;
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async createEmployee(employeeData) {
+    const res = await api.post('/admin/employees', employeeData);
+    return res.data;
+  },
+
+  async updateEmployee(id, employeeData) {
+    const res = await api.put(`/admin/employees/${id}`, employeeData);
+    return res.data;
+  },
+
+  async deleteEmployee(id) {
+    const res = await api.delete(`/admin/employees/${id}`);
+    return res.data;
+  },
+
+  async getAuditLogs(page = 1, limit = 50) {
+    try {
+      const res = await api.get(`/admin/audit-logs?page=${page}&limit=${limit}`);
+      return res.data;
+    } catch (error) {
+      return { logs: [], pagination: { total: 0, page: 1, pages: 1 } };
+    }
   }
 };

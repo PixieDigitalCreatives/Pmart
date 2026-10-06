@@ -3,23 +3,33 @@ import { adminService } from '@/services/adminService';
 import { Users, UserCheck, Shield, Bike, Store, Search, Plus } from 'lucide-react';
 import { AddRiderModal } from '../../components/admin/AddRiderModal';
 import { EditRiderModal } from '../../components/admin/EditRiderModal';
+import { AddEmployeeModal } from '../../components/admin/AddEmployeeModal';
+import { EditEmployeeModal } from '../../components/admin/EditEmployeeModal';
 
 export const AdminUsersPage = () => {
   const [activeTab, setActiveTab] = useState('customers');
   const [customers, setCustomers] = useState([]);
   const [shops, setShops] = useState([]);
   const [riders, setRiders] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  
   const [isAddRiderOpen, setIsAddRiderOpen] = useState(false);
   const [isEditRiderOpen, setIsEditRiderOpen] = useState(false);
   const [selectedRider, setSelectedRider] = useState(null);
+
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+  const [isEditEmployeeOpen, setIsEditEmployeeOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const loadData = async () => {
     const c = await adminService.getCustomers();
     const s = await adminService.getShops();
     const r = await adminService.getRiders();
+    const e = await adminService.getEmployees();
     setCustomers(c);
     setShops(s);
     setRiders(r);
+    setEmployees(e);
   };
 
   useEffect(() => {
@@ -221,23 +231,100 @@ export const AdminUsersPage = () => {
         rider={selectedRider}
       />
 
-      {/* Admins Tab */}
+      {/* Admins & Employees Tab */}
       {activeTab === 'admins' && (
         <div className="pmart-table-wrapper">
+          <div className="flex justify-end mb-4 pr-4">
+            <button className="btn btn-primary" onClick={() => setIsAddEmployeeOpen(true)}>
+              <Plus size={16} /> Add Employee
+            </button>
+          </div>
           <table className="pmart-table">
             <thead>
               <tr>
-                <th>Administrator</th>
+                <th>Name</th>
+                <th>Role</th>
                 <th>Contact</th>
-                <th>Department</th>
-                <th>Access Level</th>
+                <th>Permissions</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
-              {/* Admins will be fetched from API. For now, empty state. */}
-              {/* If you add admin fetch, map over it here. */}
+            <tbody>
+              {employees.map(e => (
+                <tr key={e.id}>
+                  <td className="font-semibold text-dark">{e.name}</td>
+                  <td>
+                    <span className={`badge ${e.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary'}`}>
+                      {e.role}
+                    </span>
+                  </td>
+                  <td>
+                    <div>{e.phone}</div>
+                    <div className="text-sm text-gray-500">{e.email}</div>
+                  </td>
+                  <td>
+                    {e.role === 'ADMIN' ? (
+                      <span className="text-sm text-gray-500">All Access</span>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        {e.permissions?.length || 0} permissions
+                      </span>
+                    )}
+                  </td>
+                  <td><span className={`badge ${e.isActive ? 'badge-success' : 'badge-danger'}`}>{e.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td>
+                    <button 
+                      className="btn btn-sm btn-secondary mr-2"
+                      onClick={() => {
+                        setSelectedEmployee(e);
+                        setIsEditEmployeeOpen(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    {e.role !== 'ADMIN' && (
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={async () => {
+                          if (!window.confirm(`Are you sure you want to delete employee ${e.name}?`)) return;
+                          try {
+                            await adminService.deleteEmployee(e.id);
+                            loadData();
+                          } catch(err) {
+                            alert(err.response?.data?.message || 'Failed to delete employee');
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {employees.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-gray-500">No employees found.</td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       )}
+
+      {/* Employee Modals */}
+      <AddEmployeeModal 
+        isOpen={isAddEmployeeOpen} 
+        onClose={() => setIsAddEmployeeOpen(false)} 
+        onSuccess={loadData} 
+      />
+
+      <EditEmployeeModal 
+        isOpen={isEditEmployeeOpen} 
+        onClose={() => { setIsEditEmployeeOpen(false); setSelectedEmployee(null); }}
+        onSuccess={loadData} 
+        employee={selectedEmployee}
+      />
     </div>
   );
 };

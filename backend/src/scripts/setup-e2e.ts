@@ -22,7 +22,7 @@ async function run() {
   let admin = await User.findOne({ email: 'admin@e2e.com' });
   if (!admin) {
     const res = await User.insertOne({
-      name: 'E2E Admin', phone: '+10000000001', email: 'admin@e2e.com', password: passwordHash, role: 'ADMIN', isActive: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Admin', phone: '+10000000001', email: 'admin@e2e.com', password: passwordHash, role: 'ADMIN', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     admin = { _id: res.insertedId };
   } else {
@@ -33,7 +33,7 @@ async function run() {
   let customer = await User.findOne({ email: 'customer@e2e.com' });
   if (!customer) {
     const res = await User.insertOne({
-      name: 'E2E Customer', phone: '+10000000002', email: 'customer@e2e.com', password: passwordHash, role: 'CUSTOMER', isActive: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Customer', phone: '+10000000002', email: 'customer@e2e.com', password: passwordHash, role: 'CUSTOMER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     customer = { _id: res.insertedId };
   } else {
@@ -84,7 +84,7 @@ async function run() {
   let rider = await User.findOne({ email: 'rider@e2e.com' });
   if (!rider) {
     const res = await User.insertOne({
-      name: 'E2E Rider', phone: '+10000000003', email: 'rider@e2e.com', password: passwordHash, role: 'RIDER', isActive: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Rider', phone: '+10000000003', email: 'rider@e2e.com', password: passwordHash, role: 'RIDER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     rider = { _id: res.insertedId };
     

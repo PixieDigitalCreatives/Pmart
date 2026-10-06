@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 import api from '../../services/apiClient';
 
 export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
@@ -9,8 +9,11 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
     phone: '',
     vehicleType: 'Bike',
     vehicleNumber: '',
-    licenseNumber: ''
+    licenseNumber: '',
+    password: '',
+    confirmPassword: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successData, setSuccessData] = useState(null);
@@ -19,8 +22,9 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setSuccessData(null);
-    setFormData({ name: '', email: '', phone: '', vehicleType: 'Bike', vehicleNumber: '', licenseNumber: '' });
+    setFormData({ name: '', email: '', phone: '', vehicleType: 'Bike', vehicleNumber: '', licenseNumber: '', password: '', confirmPassword: '' });
     setErrorMsg('');
+    setShowPassword(false);
     onClose();
   };
 
@@ -35,6 +39,16 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
     
     if (!phoneRegex.test(formData.phone) || normalizedPhone.length !== 10) {
       setErrorMsg('Invalid phone number. Enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setErrorMsg('Initial password must be at least 8 characters.');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg('Passwords do not match.');
       return;
     }
 
@@ -67,12 +81,9 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="modal-body p-4">
             <div className="bg-green-100 text-green-800 p-4 rounded mb-4">
               <h3 className="font-bold mb-2">Rider Created Successfully!</h3>
-              <p className="text-sm mb-4">
-                The rider account has been provisioned. Please share the following enrollment link with the rider so they can securely set their password and log in.
+              <p className="text-sm">
+                The rider account has been securely provisioned. The rider can now log in using their registered mobile number and the initial password you provided.
               </p>
-              <div className="bg-white p-3 rounded border border-green-200 select-all font-mono text-sm break-all">
-                {window.location.origin}/rider/enroll?token={successData.setupToken}
-              </div>
             </div>
             <div className="modal-footer flex justify-end gap-2 pt-4 border-t">
               <button type="button" className="btn btn-primary" onClick={handleClose}>Done</button>
@@ -154,9 +165,41 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
               onChange={e => setFormData({...formData, licenseNumber: e.target.value})}
             />
           </div>
+
+          <div className="form-group mb-4">
+            <label className="block text-sm font-medium mb-1">Initial Password *</label>
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                required 
+                className="form-control w-full p-2 border rounded pr-10"
+                value={formData.password}
+                onChange={e => setFormData({...formData, password: e.target.value})}
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex="-1"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="form-group mb-4">
+            <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              required 
+              className="form-control w-full p-2 border rounded"
+              value={formData.confirmPassword}
+              onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+            />
+          </div>
           
           <div className="modal-footer flex justify-end gap-2 pt-4 border-t">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create Rider'}
             </button>

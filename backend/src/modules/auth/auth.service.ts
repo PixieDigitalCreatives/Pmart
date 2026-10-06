@@ -233,6 +233,36 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
+  static async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await User.findById(userId).select('+passwordHash');
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.passwordHash) {
+      throw new Error('Current user has no password set');
+    }
+
+    const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new Error('Incorrect current password');
+    }
+    if (newPassword === currentPassword) {
+      throw new Error('New password cannot be identical to the current password');
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    
+    // Clear mustChangePassword flag on successful password change
+    user.mustChangePassword = false;
+    // Invalidate sessions / refresh tokens
+    const { accessToken, refreshToken } = this.generateTokens((user as any)._id.toString());
+    user.refreshToken = this.hashData(refreshToken);
+    await user.save();
+
+    return { user, accessToken, refreshToken };
+  }
+
   static async logout(userId: string) {
     await User.findByIdAndUpdate(userId, { refreshToken: null });
   }

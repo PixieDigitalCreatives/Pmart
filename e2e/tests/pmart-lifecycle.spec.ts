@@ -35,7 +35,7 @@ test.describe('PMart Full E2E Lifecycle', () => {
     
     // Give rider a unique name so Playwright can click the exact right one in the list
     const uniqueRiderName = 'Test Rider ' + Date.now();
-    await mongoose.connection.collection('users').updateOne({ _id: rider._id }, { $set: { name: uniqueRiderName, isActive: true } });
+    await mongoose.connection.collection('users').updateOne({ _id: rider._id }, { $set: { name: uniqueRiderName, isActive: true, profileComplete: true } });
     
     riderUser = { id: rider._id, name: uniqueRiderName, role: 'RIDER' };
     riderToken = jwt.sign(riderUser, jwtSecret, { expiresIn: '1d' });

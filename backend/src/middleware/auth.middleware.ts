@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import { User, IUser } from '../modules/auth/auth.model';
+import { User, IUser, UserRole } from '../modules/auth/auth.model';
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token;
@@ -31,11 +31,11 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     const hasPassword = !!user.passwordHash;
     user.passwordHash = undefined; // Do not expose
 
-    const isSetupRoute = req.originalUrl === '/api/auth/setup-password';
-    const isLogoutRoute = req.originalUrl === '/api/auth/logout';
-    const isMeRoute = req.originalUrl === '/api/auth/me';
-    
-    const isCompleteProfileRoute = req.originalUrl === '/api/auth/complete-profile';
+    const reqPath = req.originalUrl.split('?')[0].replace(/\/$/, '');
+    const isSetupRoute = reqPath === '/api/auth/setup-password';
+    const isLogoutRoute = reqPath === '/api/auth/logout';
+    const isMeRoute = reqPath === '/api/auth/me';
+    const isCompleteProfileRoute = reqPath === '/api/auth/complete-profile';
     
     // Only enforce password if the user is a PHONE user who somehow lacks a password
     // Google users don't strictly require a password unless they want to login via phone later
@@ -44,6 +44,15 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
         success: false, 
         code: 'NEEDS_PASSWORD_ENROLLMENT', 
         message: 'You must set a password to continue using the application.' 
+      });
+    }
+
+    const isChangePasswordRoute = reqPath === '/api/auth/password';
+    if (user.role === UserRole.RIDER && user.mustChangePassword && !isChangePasswordRoute && !isLogoutRoute && !isMeRoute) {
+      return res.status(403).json({
+        success: false,
+        code: 'MUST_CHANGE_PASSWORD',
+        message: 'You must change your initial password to continue.'
       });
     }
 
@@ -65,6 +74,26 @@ export const authorize = (...roles: string[]) => {
     if (!req.user || !roles.includes((req.user as any).role)) {
       return res.status(403).json({ success: false, message: `User role ${(req.user as any)?.role} is not authorized to access this route` });
     }
+    next();
+  };
+};
+
+export const authorizePermission = (permission: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as any;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+    
+    // Admins have all permissions
+    if (user.role === UserRole.ADMIN) {
+      return next();
+    }
+    
+    if (user.role !== UserRole.EMPLOYEE || !user.permissions || !user.permissions.includes(permission)) {
+      return res.status(403).json({ success: false, message: `User does not have permission: ${permission}` });
+    }
+    
     next();
   };
 };

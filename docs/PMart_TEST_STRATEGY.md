@@ -22,9 +22,9 @@ Ensure functional completeness, real-time synchronization, and security isolatio
 - Known Status: Limited unit test coverage; mostly integration level scripts (`test_*.js`). Added comprehensive tests for `RoutingService` in `src/modules/routing/__tests__/`.
 
 ### Integration Testing (Backend)
-- Focus: API boundaries, JWT validation, database queries.
-- Existing tools: Several manual `.ts` and `.cjs` scripts found in the backend root (`test-pickup.ts`, `test-e2e.ts`). 
-- Need: Transition these manual node scripts into automated Jest/Supertest suites.
+- Focus: API boundaries, JWT validation, database queries, and Role-Based Access Control (RBAC).
+- Existing tools: Jest and Supertest suites located in `backend/src/__tests__/`.
+- Current Coverage: Includes `checkout.test.ts` (Order logic), `admin.audit.test.ts` (Audit logs), and `catalog.admin.test.ts` (Admin catalog governance and soft deletes). Manual scripts (`test_*.js`) are being deprecated in favor of these robust suites.
 
 ### End-to-End (E2E) Testing
 - Tool: Playwright

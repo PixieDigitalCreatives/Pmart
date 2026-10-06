@@ -6,7 +6,7 @@ import { z } from 'zod';
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   phone: z.string().min(1, 'Phone is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 const loginSchema = z.object({
@@ -15,7 +15,7 @@ const loginSchema = z.object({
 });
 
 const setupPasswordSchema = z.object({
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 const googleLoginSchema = z.object({
@@ -85,6 +85,7 @@ export class AuthController {
           phone: result.user.phone,
           role: result.user.role,
           profileComplete: result.user.profileComplete,
+          mustChangePassword: result.user.mustChangePassword,
         },
         profileComplete: result.user.profileComplete,
         accessToken: result.accessToken,
@@ -227,10 +228,47 @@ export class AuthController {
           email: req.user.email,
           role: req.user.role,
           isActive: req.user.isActive,
-          profileComplete: req.user.profileComplete
+          profileComplete: req.user.profileComplete,
+          mustChangePassword: req.user.mustChangePassword
         }
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  static async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Not authorized' });
+      }
+      
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ success: false, message: 'Current password, new password, and confirmation are required' });
+      }
+      
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ success: false, message: 'New passwords do not match' });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
+      }
+
+      const result = await AuthService.changePassword((req.user as any)._id.toString(), currentPassword, newPassword);
+      setRefreshCookie(res, result.refreshToken);
+
+      res.json({
+        success: true,
+        message: 'Password changed successfully',
+        accessToken: result.accessToken
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Incorrect current password')) {
+        return res.status(401).json({ success: false, message: error.message });
+      }
       next(error);
     }
   }

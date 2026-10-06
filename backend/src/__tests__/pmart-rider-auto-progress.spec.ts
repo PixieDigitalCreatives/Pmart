@@ -27,6 +27,8 @@ import { env } from '../config/env';
 
 import { OtpReservation } from '../modules/order/otp.service';
 
+import { OrderAutomation } from '../modules/order/order.automation';
+
 let mongoServer: MongoMemoryReplSet;
 
 beforeAll(async () => {
@@ -39,9 +41,12 @@ beforeAll(async () => {
   
   env.RIDER_PICKUP_DELAY_MS = 100;
   env.RIDER_OUT_FOR_DELIVERY_DELAY_MS = 100;
+
+  OrderAutomation.startRecoverySweeper();
 });
 
 afterAll(async () => {
+  OrderAutomation.stopRecoverySweeper();
   env.RIDER_PICKUP_DELAY_MS = undefined;
   env.RIDER_OUT_FOR_DELIVERY_DELAY_MS = undefined;
   await mongoose.disconnect();
@@ -128,10 +133,14 @@ describe('Rider Auto Progression and Delivery OTP Flow', () => {
     expect(profile!.availabilityStatus).toBe(RiderAvailability.BUSY);
     expect(profile!.currentDelivery?.toString()).toBe(orderId);
 
-    // Wait for automation
-    await new Promise(r => setTimeout(r, 400)); 
-
-    const order = await Order.findById(orderId);
+    // Wait for automation (up to 3 seconds)
+    let order;
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 200));
+      order = await Order.findById(orderId);
+      if (order?.status === OrderStatus.OUT_FOR_DELIVERY) break;
+    }
+    
     expect(order!.status).toBe(OrderStatus.OUT_FOR_DELIVERY);
   });
 

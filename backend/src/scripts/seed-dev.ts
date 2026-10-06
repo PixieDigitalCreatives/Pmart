@@ -17,7 +17,7 @@ async function setup() {
   // DESTRUCTIVE BEHAVIOR REMOVED: await mongoose.connection.dropDatabase();
 
   // Admin
-  const admin = await User.findOneAndUpdate({ phone: '+916666666666' }, { role: UserRole.ADMIN, isActive: true }, { upsert: true, new: true });
+  const admin = await User.findOneAndUpdate({ phone: '+916666666666' }, { role: UserRole.ADMIN, isActive: true, profileComplete: true }, { upsert: true, new: true });
 
   // Customer
   const customer = await User.findOneAndUpdate({ phone: '+919999999999' }, { role: UserRole.CUSTOMER, isActive: true }, { upsert: true, new: true });

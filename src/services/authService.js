@@ -99,5 +99,17 @@ export const authService = {
       localStorage.removeItem('pmart_auth_token');
       localStorage.removeItem('pmart_user');
     }
+  },
+
+  /**
+   * Change password.
+   */
+  async changePassword(currentPassword, newPassword, confirmPassword) {
+    const response = await apiClient.put('/auth/password', {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    });
+    return response.data;
   }
 };

@@ -45,6 +45,7 @@ import { RiderOrderDetailPage } from '@/pages/rider/RiderOrderDetailPage';
 import { RiderHistoryPage } from '@/pages/rider/RiderHistoryPage';
 import { RiderProfilePage } from '@/pages/rider/RiderProfilePage';
 import { RiderOnboardingPage } from '@/pages/rider/RiderOnboardingPage';
+import { RiderMandatoryPasswordChangePage } from '@/pages/rider/RiderMandatoryPasswordChangePage';
 
 // Admin Pages
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
@@ -299,6 +300,14 @@ export const AppRoutes = () => {
 
       {/* Delivery Rider Portal Routes */}
       <Route
+        path="/rider/mandatory-password-change"
+        element={
+          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
+            <RiderMandatoryPasswordChangePage />
+          </RoleGuard>
+        }
+      />
+      <Route
         path="/rider/onboarding"
         element={
           <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
@@ -434,7 +443,7 @@ export const AppRoutes = () => {
       <Route
         path="/admin/products"
         element={
-          <RoleGuard allowedRoles={['ADMIN']}>
+          <RoleGuard allowedRoles={['ADMIN', 'EMPLOYEE']}>
             
             <AdminLayout>
               <ShopProductsPage />
@@ -445,7 +454,7 @@ export const AppRoutes = () => {
       <Route
         path="/admin/categories"
         element={
-          <RoleGuard allowedRoles={['ADMIN']}>
+          <RoleGuard allowedRoles={['ADMIN', 'EMPLOYEE']}>
             
             <AdminLayout>
               <ShopCategoriesPage />
@@ -478,7 +487,7 @@ export const AppRoutes = () => {
       <Route
         path="/admin/settings"
         element={
-          <RoleGuard allowedRoles={['admin']}>
+          <RoleGuard allowedRoles={['ADMIN']}>
             
             <AdminLayout>
               <AdminSettingsPage />

@@ -4,6 +4,7 @@ import { Order, OrderStatus } from '../order/order.model';
 import { User, UserRole } from '../auth/auth.model';
 import { Shop } from '../shop/shop.model';
 import { RiderProfile, RiderAvailability } from '../rider/rider.model';
+import { AuditLog } from './audit.model';
 
 export class AdminController {
   static async getDashboardStats(req: Request, res: Response) {
@@ -190,67 +191,111 @@ export class AdminController {
   }
 
   static async assignRider(req: Request, res: Response) {
-    try {
-      const order = await Order.findById(req.params.id);
-      if (!order) return res.status(404).json({ message: 'Order not found' });
-      
-      if (![OrderStatus.READY, OrderStatus.ASSIGNED].includes(order.status)) {
-        return res.status(409).json({ message: 'Order must be READY or ASSIGNED to assign a rider' });
-      }
-
-      const { riderId } = req.body;
-      const riderUser = await User.findOne({ _id: riderId, role: UserRole.RIDER, isActive: true });
-      if (!riderUser) return res.status(404).json({ message: 'Rider not found or inactive' });
-
-      const profile = await RiderProfile.findOne({ user: riderId, isActive: true, availabilityStatus: RiderAvailability.AVAILABLE });
-      if (!profile) return res.status(409).json({ message: 'Rider is not available' });
-
-      // If reassignment, free previous rider
-      if (order.rider && order.rider.toString() !== riderId) {
-        await RiderProfile.updateOne({ user: order.rider }, { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null });
-      }
-
-      order.rider = riderUser._id as any;
-      if (order.status === OrderStatus.READY) {
-        order.status = OrderStatus.ASSIGNED;
-        (order as any).assignedAt = new Date();
-        order.statusHistory.push({
-          status: OrderStatus.ASSIGNED,
-          changedAt: new Date(),
-          changedBy: (req as any).user?._id
-        });
-      }
-      await order.save();
-
-      if (order.status === OrderStatus.ASSIGNED) {
-        const { OrderEvent } = require('../order/order.model');
-        const event = new OrderEvent({
-          order: order._id,
-          status: OrderStatus.ASSIGNED,
-          notes: `Order assigned to rider ${riderUser.name}`,
-          triggeredBy: (req as any).user?._id
-        });
-        await event.save();
-      }
-
-      profile.availabilityStatus = RiderAvailability.BUSY;
-      profile.currentDelivery = order._id as any;
-      await profile.save();
-
+    let retries = 3;
+    while (retries > 0) {
+      const session = await mongoose.startSession();
+      session.startTransaction();
       try {
-        const { getIO } = require('../../config/socket');
-        getIO().to(`rider_${riderId}`).emit('delivery:assigned', order);
-        getIO().to('admin_deliveries').emit('order_status_update', { orderId: order._id, status: order.status, rider: riderId });
-      } catch (e) {}
+        const order = await Order.findById(req.params.id).session(session);
+        if (!order) {
+          await session.abortTransaction();
+          return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        if (![OrderStatus.READY, OrderStatus.ASSIGNED].includes(order.status)) {
+          await session.abortTransaction();
+          return res.status(409).json({ message: 'Order must be READY or ASSIGNED to assign a rider' });
+        }
 
-      // Trigger automatic rider progression for testing
-      const { OrderAutomation } = require('../order/order.automation');
-      OrderAutomation.scheduleRiderProgression(order._id, riderUser._id);
+        const { riderId } = req.body;
+        const riderUser = await User.findOne({ _id: riderId, role: UserRole.RIDER, isActive: true }).session(session);
+        if (!riderUser) {
+          await session.abortTransaction();
+          return res.status(404).json({ message: 'Rider not found or inactive' });
+        }
 
-      res.json(order);
-    } catch (error: any) {
-      console.error('Failed to assign rider:', error);
-      res.status(500).json({ message: 'Failed to assign rider', error: error.message, stack: error.stack });
+        const profile = await RiderProfile.findOne({ user: riderId, isActive: true, availabilityStatus: RiderAvailability.AVAILABLE }).session(session);
+        if (!profile) {
+          await session.abortTransaction();
+          return res.status(409).json({ message: 'Rider is not available' });
+        }
+
+        // If reassignment, free previous rider
+        if (order.rider && order.rider.toString() !== riderId) {
+          await RiderProfile.updateOne({ user: order.rider }, { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }).session(session);
+        }
+
+        order.rider = riderUser._id as any;
+        if (order.status === OrderStatus.READY) {
+          order.status = OrderStatus.ASSIGNED;
+          (order as any).assignedAt = new Date();
+          order.statusHistory.push({
+            status: OrderStatus.ASSIGNED,
+            changedAt: new Date(),
+            changedBy: (req as any).user?._id
+          });
+        }
+        await order.save({ session });
+
+        if (order.status === OrderStatus.ASSIGNED) {
+          const { OrderEvent } = require('../order/order.model');
+          const event = new OrderEvent({
+            order: order._id,
+            status: OrderStatus.ASSIGNED,
+            notes: `Order assigned to rider ${riderUser.name}`,
+            triggeredBy: (req as any).user?._id
+          });
+          await event.save({ session });
+        }
+
+        profile.availabilityStatus = RiderAvailability.BUSY;
+        profile.currentDelivery = order._id as any;
+        await profile.save({ session });
+
+        // Trigger automatic rider progression for testing (durably as part of transaction)
+        const { OrderAutomation } = require('../order/order.automation');
+        await OrderAutomation.scheduleRiderProgression(order._id, riderUser._id, session);
+
+        let commitRetries = 3;
+        while (commitRetries > 0) {
+          try {
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
+            }
+          }
+        }
+
+        try {
+          const { getIO } = require('../../config/socket');
+          getIO().to(`rider_${riderId}`).emit('delivery:assigned', order);
+          getIO().to('admin_deliveries').emit('order_status_update', { orderId: order._id, status: order.status, rider: riderId });
+        } catch (e) {}
+
+        return res.json(order);
+      } catch (error: any) {
+        await session.abortTransaction();
+        const isTransient = error.hasErrorLabel && error.hasErrorLabel('TransientTransactionError');
+        const isWriteConflict = error.code === 112;
+        if (isTransient || isWriteConflict) {
+          retries--;
+          if (retries === 0) {
+             return res.status(409).json({ message: 'System busy. Please try assigning again.' });
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue;
+        }
+        console.error('Failed to assign rider:', error);
+        return res.status(500).json({ message: 'Failed to assign rider', error: error.message, stack: error.stack });
+      } finally {
+        session.endSession();
+      }
     }
   }
 
@@ -387,14 +432,18 @@ export class AdminController {
 
   static async createRider(req: Request, res: Response) {
     try {
-      const { name, phone, vehicleType, vehicleNumber, licenseNumber } = req.body;
+      const { name, phone, vehicleType, vehicleNumber, licenseNumber, password } = req.body;
       const fullName = name || req.body.fullName;
 
-      if (!fullName || !phone || !vehicleType || !vehicleNumber) {
-        return res.status(422).json({ message: 'All fields are required: name, phone, vehicleType, vehicleNumber' });
+      if (!fullName || !phone || !vehicleType || !vehicleNumber || !password) {
+        return res.status(422).json({ message: 'All fields are required: name, phone, vehicleType, vehicleNumber, password' });
       }
 
-      const { normalizeMobileNumber } = require('../../utils/auth');
+      if (password.length < 8) {
+        return res.status(422).json({ message: 'Initial password must be at least 8 characters' });
+      }
+
+      const { normalizeMobileNumber, hashPassword } = require('../../utils/auth');
       const normalizedPhone = normalizeMobileNumber(phone);
 
       const phoneUser = await User.findOne({ phone: normalizedPhone });
@@ -405,22 +454,31 @@ export class AdminController {
           return res.status(409).json({ message: 'A Customer/Admin with this phone number already exists. Cross-role linking is blocked.', field: 'phone' });
         }
       }
+      
+      const email = req.body.email ? req.body.email.toLowerCase().trim() : undefined;
+      if (email) {
+        const emailUser = await User.findOne({ email });
+        if (emailUser) {
+          return res.status(409).json({ message: 'An account with this email already exists.', field: 'email' });
+        }
+      }
 
       const session = await mongoose.startSession();
       session.startTransaction();
 
       try {
-        const crypto = require('crypto');
-        const setupToken = crypto.randomBytes(32).toString('hex');
+        const passwordHash = await hashPassword(password);
         
         const user = new User({
           name: fullName, 
+          email: email,
           phone: normalizedPhone, 
           role: UserRole.RIDER, 
-          profileComplete: false, 
+          profileComplete: true, // Rider provisioned by admin is ready to login
           isActive: true, 
+          mustChangePassword: true,
           authProvider: 'PHONE',
-          setupToken // One-time setup token
+          passwordHash
         });
         await user.save({ session });
 
@@ -432,7 +490,7 @@ export class AdminController {
           vehicleNumber,
           licenseNumber: licenseNumber || vehicleNumber,
           availabilityStatus: RiderAvailability.AVAILABLE,
-          profileComplete: false
+          profileComplete: true
         });
         await profile.save({ session });
 
@@ -441,8 +499,7 @@ export class AdminController {
         
         res.status(201).json({ 
           message: 'Rider created successfully', 
-          riderId: user._id,
-          setupToken // Provide the setup token to the admin to give to the rider
+          riderId: user._id
         });
       } catch (txnError: any) {
         await session.abortTransaction();
@@ -548,17 +605,219 @@ export class AdminController {
 
   static async updateSettings(req: Request, res: Response) {
     try {
+      const { freeDeliveryThreshold, baseDeliveryFee, platformHandlingFee } = req.body;
+
+      // Server-side validation
+      const toNum = (val: unknown, field: string): number => {
+        const n = Number(val);
+        if (val === undefined || val === null || val === '') {
+          throw new Error(`${field} is required`);
+        }
+        if (!Number.isFinite(n)) {
+          throw new Error(`${field} must be a valid number`);
+        }
+        if (n < 0) {
+          throw new Error(`${field} cannot be negative`);
+        }
+        if (n > 100000) {
+          throw new Error(`${field} exceeds the maximum allowed value`);
+        }
+        return n;
+      };
+
+      const validated = {
+        freeDeliveryThreshold: toNum(freeDeliveryThreshold, 'freeDeliveryThreshold'),
+        baseDeliveryFee: toNum(baseDeliveryFee, 'baseDeliveryFee'),
+        platformHandlingFee: toNum(platformHandlingFee, 'platformHandlingFee'),
+      };
+
       const { Settings } = await import('./settings.model');
       let settings = await Settings.findOne();
       if (!settings) {
-        settings = new Settings(req.body);
+        settings = new Settings(validated);
       } else {
-        Object.assign(settings, req.body);
+        Object.assign(settings, validated);
       }
       await settings.save();
+
+      await AuditLog.create({
+        user: (req as any).user?._id,
+        action: 'UPDATE',
+        resource: 'Settings',
+        resourceId: (settings._id as any).toString(),
+        details: validated
+      });
+
       res.json(settings);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message && !error.message.includes('Failed')) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: 'Failed to update settings' });
+    }
+  }
+
+  static async getEmployees(req: Request, res: Response) {
+    try {
+      const employees = await User.find({ role: { $in: [UserRole.EMPLOYEE, UserRole.ADMIN] } }).select('-passwordHash');
+      const formatted = employees.map(e => ({
+        id: e._id,
+        name: e.name,
+        email: e.email || 'N/A',
+        phone: e.phone || 'N/A',
+        role: e.role,
+        permissions: e.permissions || [],
+        isActive: e.isActive
+      }));
+      res.json(formatted);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch employees' });
+    }
+  }
+
+  static async createEmployee(req: Request, res: Response) {
+    try {
+      const { name, phone, email, permissions } = req.body;
+      
+      if (!name || !phone) {
+        return res.status(422).json({ message: 'Name and phone are required' });
+      }
+
+      const { normalizeMobileNumber } = require('../../utils/auth');
+      const normalizedPhone = normalizeMobileNumber(phone);
+
+      const existingUser = await User.findOne({ phone: normalizedPhone });
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this phone number already exists.' });
+      }
+
+      const crypto = require('crypto');
+      const setupToken = crypto.randomBytes(32).toString('hex');
+
+      const user = new User({
+        name,
+        phone: normalizedPhone,
+        email,
+        role: UserRole.EMPLOYEE,
+        permissions: permissions || [],
+        profileComplete: true,
+        isActive: true,
+        authProvider: 'PHONE',
+        setupToken
+      });
+      await user.save();
+
+      await AuditLog.create({
+        user: (req as any).user?._id,
+        action: 'CREATE',
+        resource: 'Employee',
+        resourceId: (user._id as any).toString(),
+        details: { name, phone: normalizedPhone, permissions }
+      });
+
+      res.status(201).json({
+        message: 'Employee created successfully',
+        employeeId: user._id,
+        setupToken
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || 'Failed to create employee' });
+    }
+  }
+
+  static async updateEmployee(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { name, phone, email, permissions, isActive } = req.body;
+
+      const user = await User.findById(id);
+      if (!user || (user.role !== UserRole.EMPLOYEE && user.role !== UserRole.ADMIN)) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+
+      // Prevent non-admin from modifying admin or removing themselves
+      if (user.role === UserRole.ADMIN && (req as any).user?._id?.toString() !== id) {
+          // If we want to strictly protect ADMIN, we should ensure only ADMIN can update ADMIN.
+          // But our route protects `employees.manage`. An employee with `employees.manage` shouldn't be able to edit an ADMIN.
+          if ((req as any).user?.role !== UserRole.ADMIN) {
+             return res.status(403).json({ message: 'Cannot modify ADMIN user' });
+          }
+      }
+
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (permissions) user.permissions = permissions;
+      if (typeof isActive === 'boolean') user.isActive = isActive;
+      
+      if (phone) {
+        const { normalizeMobileNumber } = require('../../utils/auth');
+        user.phone = normalizeMobileNumber(phone);
+      }
+
+      await user.save();
+
+      await AuditLog.create({
+        user: (req as any).user?._id,
+        action: 'UPDATE',
+        resource: 'Employee',
+        resourceId: (user._id as any).toString(),
+        details: { permissions: user.permissions, isActive: user.isActive }
+      });
+
+      res.json({ message: 'Employee updated successfully', user });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to update employee' });
+    }
+  }
+
+  static async deleteEmployee(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const user = await User.findById(id);
+      if (!user || user.role !== UserRole.EMPLOYEE) {
+        // Explicitly prevent deleting an ADMIN via this route
+        return res.status(404).json({ message: 'Employee not found or cannot be deleted' });
+      }
+
+      await User.deleteOne({ _id: id });
+
+      await AuditLog.create({
+        user: (req as any).user?._id,
+        action: 'DELETE',
+        resource: 'Employee',
+        resourceId: id
+      });
+
+      res.json({ message: 'Employee deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to delete employee' });
+    }
+  }
+
+  static async getAuditLogs(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const skip = (page - 1) * limit;
+
+      const logs = await AuditLog.find()
+        .populate('user', 'name role')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await AuditLog.countDocuments();
+
+      res.json({
+        logs,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch audit logs' });
     }
   }
 }

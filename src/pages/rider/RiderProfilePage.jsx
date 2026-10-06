@@ -11,6 +11,10 @@ export const RiderProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordChanging, setPasswordChanging] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -27,6 +31,39 @@ export const RiderProfilePage = () => {
     };
     fetchProfile();
   }, []);
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordMessage({ type: '', text: '' });
+    
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+
+    if (passwords.newPassword.length < 8) {
+      setPasswordMessage({ type: 'error', text: 'New password must be at least 8 characters long' });
+      return;
+    }
+    
+    setPasswordChanging(true);
+    try {
+      await apiClient.put('/auth/password', {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+        confirmPassword: passwords.confirmPassword
+      });
+      setPasswordMessage({ type: 'success', text: 'Password updated successfully' });
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setPasswordMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Failed to update password' 
+      });
+    } finally {
+      setPasswordChanging(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -111,6 +148,51 @@ export const RiderProfilePage = () => {
             ⭐ {profile.rating != null ? profile.rating.toFixed(1) : 'N/A'}
           </span>
         </div>
+      </div>
+
+      <div className="pmart-card space-y-3 mb-4">
+        <h3 className="font-bold text-dark text-md border-b pb-2">Change Password</h3>
+        {passwordMessage.text && (
+          <div className={`p-2 text-sm rounded ${passwordMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-800'}`}>
+            {passwordMessage.text}
+          </div>
+        )}
+        <form onSubmit={handlePasswordChange} className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium mb-1">Current Password</label>
+            <input 
+              type="password" 
+              className="form-control w-full p-2 text-sm border rounded"
+              value={passwords.currentPassword}
+              onChange={e => setPasswords({...passwords, currentPassword: e.target.value})}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">New Password</label>
+            <input 
+              type="password" 
+              className="form-control w-full p-2 text-sm border rounded"
+              value={passwords.newPassword}
+              onChange={e => setPasswords({...passwords, newPassword: e.target.value})}
+              required
+              minLength={6}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Confirm New Password</label>
+            <input 
+              type="password" 
+              className="form-control w-full p-2 text-sm border rounded"
+              value={passwords.confirmPassword}
+              onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})}
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-primary btn-full" disabled={passwordChanging}>
+            {passwordChanging ? 'Updating...' : 'Update Password'}
+          </button>
+        </form>
       </div>
 
       <button className="btn btn-secondary btn-full text-error" onClick={handleLogout}>

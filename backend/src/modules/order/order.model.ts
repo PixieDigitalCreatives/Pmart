@@ -72,6 +72,10 @@ export interface IOrder extends Document {
     actorRole?: string;
     note?: string;
   }>;
+  assignedAt?: Date;
+  pickedUpAt?: Date;
+  outForDeliveryAt?: Date;
+  deliveredAt?: Date;
   rejectedAt?: Date;
   rejectedBy?: mongoose.Types.ObjectId;
   rejectionReason?: string;
@@ -146,6 +150,10 @@ const OrderSchema = new Schema<IOrder>(
         note: { type: String }
       }
     ],
+    assignedAt: { type: Date },
+    pickedUpAt: { type: Date },
+    outForDeliveryAt: { type: Date },
+    deliveredAt: { type: Date },
     rejectedAt: { type: Date },
     rejectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String }

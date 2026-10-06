@@ -30,11 +30,24 @@ export const RoleGuard = ({ allowedRoles = [], children }) => {
     }
   }
 
-  // Ensure profile is complete for protected routes
-  if (!user.profileComplete) {
+  // Mandatory password change for new riders
+  if (role === 'RIDER') {
+    if (user.mustChangePassword && location.pathname !== '/rider/mandatory-password-change') {
+      return <Navigate to="/rider/mandatory-password-change" replace />;
+    }
+    if (!user.mustChangePassword && location.pathname === '/rider/mandatory-password-change') {
+      return <Navigate to="/rider" replace />;
+    }
+  }
+
+  // Ensure profile is complete for protected routes.
+  // Only CUSTOMER and RIDER go through profile-completion onboarding.
+  // ADMIN and EMPLOYEE are staff accounts that skip this flow entirely.
+  const requiresOnboarding = role === 'CUSTOMER' || role === 'RIDER';
+  if (requiresOnboarding && !user.profileComplete) {
     if (role === 'RIDER' && location.pathname !== '/rider/onboarding') {
       return <Navigate to="/rider/onboarding" replace />;
-    } else if (role !== 'RIDER' && location.pathname !== '/register') {
+    } else if (role === 'CUSTOMER' && location.pathname !== '/register') {
       return <Navigate to="/register" replace />;
     }
   }
@@ -43,7 +56,7 @@ export const RoleGuard = ({ allowedRoles = [], children }) => {
   if (user.profileComplete) {
     if (role === 'RIDER' && location.pathname === '/rider/onboarding') {
       return <Navigate to="/rider" replace />;
-    } else if (role !== 'RIDER' && location.pathname === '/register') {
+    } else if (role === 'CUSTOMER' && location.pathname === '/register') {
       return <Navigate to="/" replace />;
     }
   }

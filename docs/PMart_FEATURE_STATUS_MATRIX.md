@@ -21,7 +21,17 @@
 | **Tracking** | Live ETA/Distance | VERIFIED | Derived actively from routing response | P0 |
 | **Admin** | Order Management | VERIFIED | Can accept/assign/prepare orders, E2E passing | P0 |
 | **Admin** | Order Rejection | VERIFIED | Fixed validation failure on ZIP code | P0 |
+| **Admin** | Full Admin Panel CRUD | VERIFIED | Full Admin CRUD including Employee RBAC, Settings, and Catalog Governance integrated with Audit Logs | P0 |
+| **Admin** | Employee Management & RBAC | VERIFIED | Add/Edit Employees, Roles, and Permission enforcement via `authorizePermission` | P0 |
+| **Admin** | Settings Configuration | VERIFIED | System parameters (delivery fee, threshold) saved in DB and available to backend | P1 |
+| **Admin** | Revenue Analytics & KPIs | VERIFIED | Reports page operational with date filtering and data exports | P1 |
+| **Admin** | Audit Logs | VERIFIED | `AuditLog` collection records Admin actions, frontend table paginates securely | P1 |
 | **OTP** | Delivery Verification | VERIFIED | Encrypted OTP mechanism is functional, E2E passing | P1 |
+| **Rider** | Provisioning with Initial Password | VERIFIED | Admin sets hashed password; mustChangePassword=true; credentials never leak | P1 |
+| **Rider** | Mandatory First-Login Password Change | VERIFIED | Middleware blocks all business routes until rider changes password; bypass-hardened; auth.test.ts 100% | P1 |
+| **Rider** | Durable Order Progression | VERIFIED | OrderProgressionJob persisted to MongoDB; atomic lock; recovery sweeper on startup; 4/4 tests pass | P0 |
+| **Admin** | Settings Navigation & Persistence | VERIFIED | Fixed locator structure, prevented remounting form fields, and passed E2E tests | P1 |
+| **Admin** | Employee Modal Permission Labels | VERIFIED | Integrated PermissionSelector to map raw keys to human-readable UI labels | P2 |
 
 **Legend:**
 - **VERIFIED**: E2E or automated testing passes successfully.

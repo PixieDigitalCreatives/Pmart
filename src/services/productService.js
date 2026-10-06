@@ -7,6 +7,11 @@ export const productService = {
     return response.data.data;
   },
 
+  async getAdminProducts(params = {}) {
+    const response = await apiClient.get('/admin/products', { params });
+    return response.data.data;
+  },
+
   // Get single product by slug
   async getProductBySlug(slug) {
     const response = await apiClient.get(`/products/slug/${slug}`);
@@ -34,14 +39,22 @@ export const productService = {
 
   // Shop / Admin CRUD operations
   async createProduct(data) {
-    throw new Error('createProduct not implemented in real API yet');
+    const response = await apiClient.post('/products', data);
+    return response.data;
   },
 
   async updateProduct(id, data) {
-    throw new Error('updateProduct not implemented in real API yet');
+    const response = await apiClient.put(`/products/${id}`, data);
+    return response.data;
+  },
+
+  async updateProductStatus(id, isActive) {
+    const response = await apiClient.patch(`/products/${id}/status`, { isActive });
+    return response.data;
   },
 
   async deleteProduct(id) {
-    throw new Error('deleteProduct not implemented in real API yet');
+    const response = await apiClient.delete(`/products/${id}`);
+    return response.data;
   }
 };

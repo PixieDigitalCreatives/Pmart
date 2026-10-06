@@ -151,7 +151,7 @@ export const Header = () => {
                 <div className="avatar-img-wrapper">
                   <User size={18} />
                 </div>
-                <span className="user-name">{user ? user.name.split(' ')[0] : 'Account'}</span>
+                <span className="user-name">{user?.name ? user.name.split(' ')[0] : 'Account'}</span>
                 <ChevronDown size={13} />
               </button>
             ) : (

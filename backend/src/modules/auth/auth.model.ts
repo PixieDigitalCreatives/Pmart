@@ -4,6 +4,7 @@ export enum UserRole {
   CUSTOMER = 'CUSTOMER',
   RIDER = 'RIDER',
   SHOP_OWNER = 'SHOP_OWNER',
+  EMPLOYEE = 'EMPLOYEE',
   ADMIN = 'ADMIN'
 }
 
@@ -20,9 +21,11 @@ export interface IUser extends Document {
   name?: string;
   phoneVerified: boolean;
   role: UserRole;
+  permissions?: string[];
   authProvider: AuthProvider;
   profileComplete: boolean;
   isActive: boolean;
+  mustChangePassword?: boolean;
   refreshToken?: string;
   passwordHash?: string;
   setupToken?: string;
@@ -44,6 +47,7 @@ const UserSchema = new Schema<IUser>(
       default: UserRole.CUSTOMER,
       required: true 
     },
+    permissions: [{ type: String }],
     authProvider: {
       type: String,
       enum: Object.values(AuthProvider),
@@ -51,6 +55,7 @@ const UserSchema = new Schema<IUser>(
     },
     profileComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    mustChangePassword: { type: Boolean, default: false },
     refreshToken: { type: String },
     passwordHash: { type: String, select: false },
     setupToken: { type: String, select: false }

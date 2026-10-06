@@ -105,6 +105,44 @@ export class OrderController {
         if (idempotencyKey) {
           const existingOrder = await Order.findOne({ idempotencyKey }).session(session);
           if (existingOrder) {
+            if (existingOrder.customer.toString() !== (req.user as any)._id.toString()) {
+              await session.abortTransaction();
+              return res.status(403).json({ success: false, message: 'Idempotency key belongs to another user' });
+            }
+            
+            // Check semantic compatibility
+            // 1. Payment method
+            if (existingOrder.paymentMethod !== paymentMethod) {
+              await session.abortTransaction();
+              return res.status(400).json({ success: false, message: 'Idempotency key used with different payment method' });
+            }
+            
+            // 2. Items & Quantities
+            const existingItemsMap = new Map();
+            existingOrder.items.forEach(i => existingItemsMap.set(i.product.toString(), i.quantity));
+            
+            const payloadItemsMap = new Map();
+            for (const item of items) {
+              if (!item.product) continue;
+              const pid = item.product.toString();
+              payloadItemsMap.set(pid, (payloadItemsMap.get(pid) || 0) + (item.quantity || 1));
+            }
+            
+            let itemsMatch = existingItemsMap.size === payloadItemsMap.size;
+            if (itemsMatch) {
+              for (const [pid, qty] of existingItemsMap.entries()) {
+                if (payloadItemsMap.get(pid) !== qty) {
+                  itemsMatch = false;
+                  break;
+                }
+              }
+            }
+            
+            if (!itemsMatch) {
+              await session.abortTransaction();
+              return res.status(400).json({ success: false, message: 'Idempotency key used with different payload' });
+            }
+
             await session.commitTransaction();
             return res.json({ success: true, data: existingOrder, message: 'Order already exists' });
           }
@@ -130,11 +168,23 @@ export class OrderController {
           return res.status(400).json({ success: false, message: 'Shop is currently inactive and cannot accept orders.' });
         }
 
+        const aggregatedItems = new Map<string, any>();
         for (const item of items) {
           if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, message: `Invalid quantity for item` });
           }
+          const productId = item.product.toString();
+          if (aggregatedItems.has(productId)) {
+            aggregatedItems.get(productId).quantity += item.quantity;
+          } else {
+            aggregatedItems.set(productId, { ...item });
+          }
+        }
+        
+        const consolidatedItems = Array.from(aggregatedItems.values());
+
+        for (const item of consolidatedItems) {
 
           // Atomic stock validation and decrement, enforcing the product belongs to the expected shop
           const product = await Product.findOneAndUpdate(
@@ -195,7 +245,7 @@ export class OrderController {
 
         const totalAmount = subTotal + deliveryFee;
 
-        const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
         const { normalizeCoordinates } = require('../../utils/geo');
         const [lng, lat] = normalizeCoordinates(finalDeliveryAddress.coordinates.lng, finalDeliveryAddress.coordinates.lat);
@@ -239,7 +289,21 @@ export class OrderController {
         });
         await event.save({ session });
 
-        await session.commitTransaction();
+        let commitRetries = 3;
+        while (commitRetries > 0) {
+          try {
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
+            }
+          }
+        }
         
         return res.status(201).json({ success: true, data: order });
       } catch (error: any) {
@@ -248,8 +312,9 @@ export class OrderController {
         // Retry logic for transient errors
         const isTransient = error.hasErrorLabel && error.hasErrorLabel('TransientTransactionError');
         const isWriteConflict = error.code === 112; // MongoDB WriteConflict code
+        const isDuplicateKey = error.code === 11000 && error.keyPattern && error.keyPattern.idempotencyKey;
         
-        if (isTransient || isWriteConflict) {
+        if (isTransient || isWriteConflict || isDuplicateKey) {
           retries--;
           if (retries === 0) {
             return res.status(409).json({ 
@@ -333,290 +398,409 @@ export class OrderController {
   }
 
   static async updateOrderStatus(req: Request, res: Response, next: NextFunction) {
-    try {
-      if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
-      const { status, rejectionReason } = req.body;
+    let retries = 3;
+    while (retries > 0) {
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        if (!req.user) { await session.abortTransaction(); return res.status(401).json({ success: false, message: 'Not authorized' }); }
+        const { status, rejectionReason } = req.body;
 
-      const order = await Order.findById(req.params.id);
-      if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-      const originalStatus = order.status;
+        const order = await Order.findById(req.params.id).select('+encryptedOtp +deliveryOtpHash').session(session);
+        if (!order) { await session.abortTransaction(); return res.status(404).json({ success: false, message: 'Order not found' }); }
+        const originalStatus = order.status;
 
-      // Role isolation
-      if (req.user.role === 'CUSTOMER') {
-        if (order.customer.toString() !== (req.user as any)._id.toString()) {
-          return res.status(403).json({ success: false, message: 'Not authorized for this order' });
-        }
-        if (status !== OrderStatus.CANCELLED) {
-          return res.status(403).json({ success: false, message: 'Customers can only cancel orders' });
-        }
-      }
-
-      if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Not assigned to this order' });
-      }
-      
-      if (req.user.role === 'SHOP_OWNER') {
-        const { Shop } = await import('../shop/shop.model');
-        const shops = await Shop.find({ owner: (req.user as any)._id });
-        const shopIds = shops.map((s: any) => s._id.toString());
-        const orderShopId = order.shop?.toString();
-        if (!shopIds.includes(orderShopId)) {
-          return res.status(403).json({ success: false, message: 'Not authorized for this shop' });
-        }
-      }
-
-      if (!VALID_TRANSITIONS[order.status as OrderStatus].includes(status as OrderStatus)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Invalid state transition from ${order.status} to ${status}` 
-        });
-      }
-
-      if (status === OrderStatus.DELIVERED) {
-        if (order.paymentMethod === 'COD' && order.paymentStatus !== 'COLLECTED') {
-          return res.status(400).json({ success: false, message: 'Cannot mark DELIVERED: COD payment is not collected' });
-        }
-        if (order.deliveryVerificationStatus !== 'OTP_VERIFIED') {
-          return res.status(400).json({ success: false, message: 'Cannot mark DELIVERED: OTP is not verified' });
-        }
-      }
-
-      order.status = status;
-      if (status === OrderStatus.OUT_FOR_DELIVERY) {
-        if (!order.encryptedOtp || !order.deliveryOtpHash) {
-          try {
-            const { OtpService } = require('./otp.service');
-            await OtpService.generateUniqueDeliveryOtp(order._id);
-            // Reload order properties
-            const updated = await Order.findById(order._id).select('+encryptedOtp +deliveryOtpHash');
-            if (updated) {
-              order.encryptedOtp = updated.encryptedOtp;
-              order.deliveryOtpHash = updated.deliveryOtpHash;
-              order.deliveryOtpExpiry = updated.deliveryOtpExpiry;
-              order.deliveryOtpAttempts = updated.deliveryOtpAttempts;
-              order.deliveryVerificationStatus = updated.deliveryVerificationStatus;
-            }
-          } catch (e) {
-            console.error('Failed to generate unique OTP on manual status update:', e);
-            return res.status(500).json({ success: false, message: 'Failed to generate Delivery OTP. Cannot transition to Out for Delivery.' });
+        // Role isolation
+        if (req.user.role === 'CUSTOMER') {
+          if (order.customer.toString() !== (req.user as any)._id.toString()) {
+            await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Not authorized for this order' });
+          }
+          if (status !== OrderStatus.CANCELLED) {
+            await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Customers can only cancel orders' });
           }
         }
-      }
-      if (status === OrderStatus.DELIVERED) {
-        order.encryptedOtp = undefined;
-        order.deliveryOtpHash = undefined;
-        (order as any).deliveredAt = new Date();
-        order.paymentStatus = 'COLLECTED';
-        
-        const { OtpService } = require('./otp.service');
-        await OtpService.releaseOtp(order._id);
-      } else if (status === OrderStatus.REJECTED || status === OrderStatus.CANCELLED || status === OrderStatus.DELIVERY_FAILED) {
-        if (status === OrderStatus.REJECTED) {
-          order.rejectedAt = new Date();
-          order.rejectedBy = (req.user as any)._id;
-          order.rejectionReason = rejectionReason || 'Unable to fulfil order';
+
+        if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
+          await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Not assigned to this order' });
         }
         
-        const { OtpService } = require('./otp.service');
-        await OtpService.releaseOtp(order._id);
-        
-        // Release rider if assigned
-        if (order.rider) {
+        if (req.user.role === 'SHOP_OWNER') {
+          const { Shop } = await import('../shop/shop.model');
+          const shops = await Shop.find({ owner: (req.user as any)._id }).session(session);
+          const shopIds = shops.map((s: any) => s._id.toString());
+          const orderShopId = order.shop?.toString();
+          if (!shopIds.includes(orderShopId)) {
+            await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Not authorized for this shop' });
+          }
+        }
+
+        if (!VALID_TRANSITIONS[order.status as OrderStatus]?.includes(status as OrderStatus)) {
+          await session.abortTransaction(); return res.status(400).json({ 
+            success: false, 
+            message: `Invalid state transition from ${order.status} to ${status}` 
+          });
+        }
+
+        if (status === OrderStatus.DELIVERED) {
+          if (order.paymentMethod === 'COD' && order.paymentStatus !== 'COLLECTED') {
+            await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Cannot mark DELIVERED: COD payment is not collected' });
+          }
+          if (order.deliveryVerificationStatus !== 'OTP_VERIFIED') {
+            await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Cannot mark DELIVERED: OTP is not verified' });
+          }
+        }
+
+        order.status = status;
+        if (status === OrderStatus.OUT_FOR_DELIVERY) {
+          if (!order.encryptedOtp || !order.deliveryOtpHash) {
+            try {
+              const { OtpService } = require('./otp.service');
+              await OtpService.generateUniqueDeliveryOtp(order._id);
+              // Reload order properties
+              const updated = await Order.findById(order._id).select('+encryptedOtp +deliveryOtpHash').session(session);
+              if (updated) {
+                order.encryptedOtp = updated.encryptedOtp;
+                order.deliveryOtpHash = updated.deliveryOtpHash;
+                order.deliveryOtpExpiry = updated.deliveryOtpExpiry;
+                order.deliveryOtpAttempts = updated.deliveryOtpAttempts;
+                order.deliveryVerificationStatus = updated.deliveryVerificationStatus;
+              }
+            } catch (e) {
+              console.error('Failed to generate unique OTP on manual status update:', e);
+              await session.abortTransaction(); return res.status(500).json({ success: false, message: 'Failed to generate Delivery OTP. Cannot transition to Out for Delivery.' });
+            }
+          }
+        }
+        if (status === OrderStatus.DELIVERED) {
+          order.encryptedOtp = undefined;
+          order.deliveryOtpHash = undefined;
+          (order as any).deliveredAt = new Date();
+          order.paymentStatus = 'COLLECTED';
+          
+          const { OtpService } = require('./otp.service');
+          await OtpService.releaseOtp(order._id);
+        } else if (status === OrderStatus.REJECTED || status === OrderStatus.CANCELLED || status === OrderStatus.DELIVERY_FAILED) {
+          if (status === OrderStatus.REJECTED) {
+            order.rejectedAt = new Date();
+            order.rejectedBy = (req.user as any)._id;
+            order.rejectionReason = rejectionReason || 'Unable to fulfil order';
+          }
+          
+          const { OtpService } = require('./otp.service');
+          await OtpService.releaseOtp(order._id);
+          
+          // Release rider if assigned
+          if (order.rider) {
+            try {
+              const { RiderProfile, RiderAvailability } = require('../rider/rider.model');
+              await RiderProfile.updateOne(
+                { user: order.rider },
+                { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
+              ).session(session);
+            } catch (e) {
+              console.error('Error freeing up rider on rejection/cancellation', e);
+            }
+          }
+          
+          // Restock inventory ONLY ONCE (guaranteed by transaction read of originalStatus)
+          if (originalStatus !== OrderStatus.REJECTED && originalStatus !== OrderStatus.CANCELLED && originalStatus !== OrderStatus.DELIVERY_FAILED) {
+            try {
+              const { Product } = require('../catalog/catalog.model');
+              for (const item of order.items) {
+                await Product.updateOne(
+                  { _id: item.product },
+                  { $inc: { stockCount: item.quantity } }
+                ).session(session);
+              }
+            } catch (e) {
+              console.error('Error restocking items', e);
+            }
+          }
+        }
+
+        order.statusHistory.push({
+          status: status,
+          changedAt: new Date(),
+          changedBy: (req.user as any)._id
+        });
+        await order.save({ session });
+
+        if (status === OrderStatus.DELIVERED && order.rider) {
           try {
             const { RiderProfile, RiderAvailability } = require('../rider/rider.model');
             await RiderProfile.updateOne(
               { user: order.rider },
               { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
-            );
+            ).session(session);
           } catch (e) {
-            console.error('Error freeing up rider on rejection/cancellation', e);
+            console.error('Error freeing up rider', e);
           }
         }
-        
-        // Restock inventory
-        // Avoid double restocking by checking if it was already in a terminal failed state
-        if (originalStatus !== OrderStatus.REJECTED && originalStatus !== OrderStatus.CANCELLED && originalStatus !== OrderStatus.DELIVERY_FAILED) {
+
+        const event = new OrderEvent({
+          order: order._id,
+          status: status,
+          notes: `Status updated to ${status} by ${req.user.role}`,
+          triggeredBy: (req.user as any)._id
+        });
+        await event.save({ session });
+
+        let commitRetries = 3;
+        while (commitRetries > 0) {
           try {
-            const { Product } = require('../catalog/catalog.model');
-            for (const item of order.items) {
-              await Product.updateOne(
-                { _id: item.product },
-                { $inc: { stockCount: item.quantity } }
-              );
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
             }
-          } catch (e) {
-            console.error('Error restocking items', e);
           }
         }
+
+        try {
+          const { getIO } = require('../../config/socket');
+          getIO().to('admin_deliveries').emit('order_status_update', { orderId: order._id, status });
+          getIO().to(`order_${order._id}`).emit('tracking_update', { status });
+        } catch (e) {
+          if (process.env.NODE_ENV !== 'test') {
+            console.error('Socket emission failed', e);
+          }
+        }
+
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        return res.json({ success: true, data: populatedOrder });
+      } catch (error: any) {
+        await session.abortTransaction();
+        const isTransient = error.hasErrorLabel && error.hasErrorLabel('TransientTransactionError');
+        const isWriteConflict = error.code === 112;
+        if (isTransient || isWriteConflict) {
+          retries--;
+          if (retries === 0) {
+             return res.status(409).json({ success: false, message: 'System busy. Please try again.' });
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue;
+        }
+        console.error('[UPDATE_ORDER_STATUS_ERROR]', error);
+        return res.status(500).json({ success: false, message: error.message, stack: error.stack });
+      } finally {
+        session.endSession();
       }
+    }
+  }
 
-      order.statusHistory.push({
-        status: status,
-        changedAt: new Date(),
-        changedBy: (req.user as any)._id
-      });
-      await order.save();
+  static async verifyOtp(req: Request, res: Response, next: NextFunction) {
+    let retries = 3;
+    while (retries > 0) {
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        if (!req.user) { await session.abortTransaction(); return res.status(401).json({ success: false, message: 'Not authorized' }); }
+        const otp = String(req.body.otp ?? '').trim();
+        
+        if (!/^[0-9]{4}$/.test(otp)) {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'OTP must be exactly 4 digits' });
+        }
 
-      if (status === OrderStatus.DELIVERED && order.rider) {
+        const order = await Order.findById(req.params.id).select('+deliveryOtpHash +deliveryOtpAttempts +deliveryOtpExpiry').session(session);
+        if (!order) { await session.abortTransaction(); return res.status(404).json({ success: false, message: 'Order not found' }); }
+
+        // Only RIDER or ADMIN can verify
+        if (req.user.role !== 'RIDER' && req.user.role !== 'ADMIN') {
+          await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Only riders can verify OTP' });
+        }
+        if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
+          await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Not assigned to this order' });
+        }
+
+        if (order.status !== OrderStatus.OUT_FOR_DELIVERY && order.status !== OrderStatus.ARRIVED) {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Order is not ready for delivery' });
+        }
+
+        if (order.deliveryVerificationStatus === 'OTP_VERIFIED') {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'OTP already verified' });
+        }
+
+        if (order.deliveryOtpAttempts >= 5) {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Max OTP attempts reached. Order locked.' });
+        }
+
+        if (order.deliveryOtpExpiry && new Date() > order.deliveryOtpExpiry) {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Delivery OTP expired' });
+        }
+
+        if (!order.deliveryOtpHash) {
+          await session.abortTransaction(); return res.status(500).json({ success: false, message: 'OTP not configured for order' });
+        }
+
+        const isValid = await bcrypt.compare(otp.toString(), order.deliveryOtpHash);
+        if (!isValid) {
+          order.deliveryOtpAttempts += 1;
+          await order.save({ session });
+          
+          let commitRetries = 3;
+          while (commitRetries > 0) {
+            try {
+              await session.commitTransaction();
+              break;
+            } catch (commitError: any) {
+              if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+                commitRetries--;
+                if (commitRetries === 0) throw commitError;
+                await new Promise(resolve => setTimeout(resolve, 50));
+              } else {
+                throw commitError;
+              }
+            }
+          }
+          return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        order.deliveryVerificationStatus = 'OTP_VERIFIED';
+        await order.save({ session });
+
+        let commitRetries = 3;
+        while (commitRetries > 0) {
+          try {
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
+            }
+          }
+        }
+
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        return res.json({ success: true, data: populatedOrder, message: 'OTP Verified successfully' });
+      } catch (error: any) {
+        await session.abortTransaction();
+        const isTransient = error.hasErrorLabel && error.hasErrorLabel('TransientTransactionError');
+        const isWriteConflict = error.code === 112;
+        if (isTransient || isWriteConflict) {
+          retries--;
+          if (retries === 0) {
+             return res.status(409).json({ success: false, message: 'System busy. Please try again.' });
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue;
+        }
+        return next(error);
+      } finally {
+        session.endSession();
+      }
+    }
+  }
+
+  static async deliverOrder(req: Request, res: Response, next: NextFunction) {
+    let retries = 3;
+    while (retries > 0) {
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        if (!req.user) { await session.abortTransaction(); return res.status(401).json({ success: false, message: 'Not authorized' }); }
+
+        const order = await Order.findById(req.params.id).session(session);
+        if (!order) { await session.abortTransaction(); return res.status(404).json({ success: false, message: 'Order not found' }); }
+
+        // Only RIDER or ADMIN can deliver
+        if (req.user.role !== 'RIDER' && req.user.role !== 'ADMIN') {
+          await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Only riders can deliver' });
+        }
+        if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
+          await session.abortTransaction(); return res.status(403).json({ success: false, message: 'Not assigned to this order' });
+        }
+
+        if (order.status !== OrderStatus.ARRIVED && order.status !== OrderStatus.OUT_FOR_DELIVERY) {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Rider must arrive at the customer doorstep before completing delivery.' });
+        }
+
+        if (order.deliveryVerificationStatus !== 'OTP_VERIFIED') {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'Customer delivery OTP must be verified before completing delivery.' });
+        }
+
+        if (order.paymentMethod === 'COD' && order.paymentStatus !== 'COLLECTED') {
+          await session.abortTransaction(); return res.status(400).json({ success: false, message: 'COD payment must be collected before completing delivery.' });
+        }
+
+        // Valid OTP and Payment => Deliver
+        order.status = OrderStatus.DELIVERED;
+        
+        order.encryptedOtp = undefined;
+        order.deliveryOtpHash = undefined;
+        (order as any).deliveredAt = new Date();
+        
+        const { OtpService } = require('./otp.service');
+        await OtpService.releaseOtp(order._id);
+
+        order.statusHistory.push({
+          status: OrderStatus.DELIVERED,
+          changedAt: new Date(),
+          changedBy: (req.user as any)._id
+        });
+
+        await order.save({ session });
+
         try {
           const { RiderProfile, RiderAvailability } = require('../rider/rider.model');
           await RiderProfile.updateOne(
             { user: order.rider },
             { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
-          );
+          ).session(session);
         } catch (e) {
           console.error('Error freeing up rider', e);
         }
+
+        const event = new OrderEvent({
+          order: order._id,
+          status: OrderStatus.DELIVERED,
+          notes: 'Order delivered successfully',
+          triggeredBy: (req.user as any)._id
+        });
+        await event.save({ session });
+
+        let commitRetries = 3;
+        while (commitRetries > 0) {
+          try {
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
+            }
+          }
+        }
+
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        return res.json({ success: true, data: populatedOrder, message: 'Delivery Completed Successfully.' });
+      } catch (error: any) {
+        await session.abortTransaction();
+        const isTransient = error.hasErrorLabel && error.hasErrorLabel('TransientTransactionError');
+        const isWriteConflict = error.code === 112;
+        if (isTransient || isWriteConflict) {
+          retries--;
+          if (retries === 0) {
+             return res.status(409).json({ success: false, message: 'System busy. Please try again.' });
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue;
+        }
+        return next(error);
+      } finally {
+        session.endSession();
       }
-
-      const event = new OrderEvent({
-        order: order._id,
-        status: status,
-        notes: `Status updated to ${status} by ${req.user.role}`,
-        triggeredBy: (req.user as any)._id
-      });
-      await event.save();
-
-      try {
-        const { getIO } = require('../../config/socket');
-        getIO().to('admin_deliveries').emit('order_status_update', { orderId: order._id, status });
-        getIO().to(`order_${order._id}`).emit('tracking_update', { status });
-      } catch (e) {
-        console.error('Socket emission failed', e);
-      }
-
-      const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
-      res.json({ success: true, data: populatedOrder });
-    } catch (error: any) {
-      console.error('[UPDATE_ORDER_STATUS_ERROR]', error);
-      res.status(500).json({ success: false, message: error.message, stack: error.stack });
-    }
-  }
-
-  static async verifyOtp(req: Request, res: Response, next: NextFunction) {
-    try {
-      if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
-      const otp = String(req.body.otp ?? '').trim();
-      
-      if (!/^[0-9]{4}$/.test(otp)) {
-        return res.status(400).json({ success: false, message: 'OTP must be exactly 4 digits' });
-      }
-
-      const order = await Order.findById(req.params.id).select('+deliveryOtpHash +deliveryOtpAttempts +deliveryOtpExpiry');
-      if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-      // Only RIDER or ADMIN can verify
-      if (req.user.role !== 'RIDER' && req.user.role !== 'ADMIN') {
-        return res.status(403).json({ success: false, message: 'Only riders can verify OTP' });
-      }
-      if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Not assigned to this order' });
-      }
-
-      if (order.status !== OrderStatus.OUT_FOR_DELIVERY && order.status !== OrderStatus.ARRIVED) {
-        return res.status(400).json({ success: false, message: 'Order is not ready for delivery' });
-      }
-
-      if (order.deliveryVerificationStatus === 'OTP_VERIFIED') {
-        return res.status(400).json({ success: false, message: 'OTP already verified' });
-      }
-
-      if (order.deliveryOtpAttempts >= 5) {
-        return res.status(400).json({ success: false, message: 'Max OTP attempts reached. Order locked.' });
-      }
-
-      if (order.deliveryOtpExpiry && new Date() > order.deliveryOtpExpiry) {
-        return res.status(400).json({ success: false, message: 'Delivery OTP expired' });
-      }
-
-      if (!order.deliveryOtpHash) {
-        return res.status(500).json({ success: false, message: 'OTP not configured for order' });
-      }
-
-      const isValid = await bcrypt.compare(otp.toString(), order.deliveryOtpHash);
-      if (!isValid) {
-        order.deliveryOtpAttempts += 1;
-        await order.save();
-        return res.status(400).json({ success: false, message: 'Invalid OTP' });
-      }
-
-      order.deliveryVerificationStatus = 'OTP_VERIFIED';
-      await order.save();
-
-      const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
-      res.json({ success: true, data: populatedOrder, message: 'OTP Verified successfully' });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async deliverOrder(req: Request, res: Response, next: NextFunction) {
-    try {
-      if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
-
-      const order = await Order.findById(req.params.id);
-      if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-
-      // Only RIDER or ADMIN can deliver
-      if (req.user.role !== 'RIDER' && req.user.role !== 'ADMIN') {
-        return res.status(403).json({ success: false, message: 'Only riders can deliver' });
-      }
-      if (req.user.role === 'RIDER' && order.rider?.toString() !== (req.user as any)._id.toString()) {
-        return res.status(403).json({ success: false, message: 'Not assigned to this order' });
-      }
-
-      if (order.status !== OrderStatus.ARRIVED && order.status !== OrderStatus.OUT_FOR_DELIVERY) {
-        return res.status(400).json({ success: false, message: 'Rider must arrive at the customer doorstep before completing delivery.' });
-      }
-
-      if (order.deliveryVerificationStatus !== 'OTP_VERIFIED') {
-        return res.status(400).json({ success: false, message: 'Customer delivery OTP must be verified before completing delivery.' });
-      }
-
-      if (order.paymentMethod === 'COD' && order.paymentStatus !== 'COLLECTED') {
-        return res.status(400).json({ success: false, message: 'COD payment must be collected before completing delivery.' });
-      }
-
-      // Valid OTP and Payment => Deliver
-      order.status = OrderStatus.DELIVERED;
-      
-      order.encryptedOtp = undefined;
-      order.deliveryOtpHash = undefined;
-      (order as any).deliveredAt = new Date();
-      
-      const { OtpService } = require('./otp.service');
-      await OtpService.releaseOtp(order._id);
-
-      order.statusHistory.push({
-        status: OrderStatus.DELIVERED,
-        changedAt: new Date(),
-        changedBy: (req.user as any)._id
-      });
-
-      await order.save();
-
-      try {
-        const { RiderProfile, RiderAvailability } = require('../rider/rider.model');
-        await RiderProfile.updateOne(
-          { user: order.rider },
-          { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
-        );
-      } catch (e) {
-        console.error('Error freeing up rider', e);
-      }
-
-      const event = new OrderEvent({
-        order: order._id,
-        status: OrderStatus.DELIVERED,
-        notes: 'Order delivered successfully',
-        triggeredBy: (req.user as any)._id
-      });
-      await event.save();
-
-      const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
-      res.json({ success: true, data: populatedOrder, message: 'Delivery Completed Successfully.' });
-    } catch (error) {
-      next(error);
     }
   }
 

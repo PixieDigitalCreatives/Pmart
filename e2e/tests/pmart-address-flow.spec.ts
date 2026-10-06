@@ -135,7 +135,7 @@ test.describe('PMart Address Flow E2E', () => {
     // ==========================================
     const savedAddress = await mongoose.connection.collection('addresses').findOne({ user: new mongoose.Types.ObjectId(customerUser.id), houseNumber: uniqueHouse });
     expect(savedAddress).toBeTruthy();
-    expect(savedAddress.pincode).toBeTruthy();
+    expect(savedAddress!.pincode).toBeTruthy();
     
     // ==========================================
     // 6. Update Address

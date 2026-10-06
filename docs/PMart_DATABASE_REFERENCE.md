@@ -58,25 +58,56 @@ This document covers the core MongoDB collections, their schemas, constraints, a
   - `deliveryAddress`: Embedded snapshot of customer address
   - `encryptedOtp` / `deliveryOtpHash` (String, `select: false`): Encrypted OTP for rider verification.
   - `statusHistory`: Audit array of state transitions
+  - `idempotencyKey` (String, Unique, Sparse): Prevents duplicate checkouts on retry
 - **Important**: OTPs are hashed/encrypted and never exposed in plaintext queries.
 
-## 6. `products` (Product Catalog)
+## 6. `categories` (Category Catalog)
+**Collection**: `categories`
+**Purpose**: Store product groupings.
+- **Fields**:
+  - `name`, `slug` (String, required, unique slug)
+  - `description`, `icon`, `image`, `imageUrl` (String)
+  - `isActive` (Boolean)
+
+## 7. `products` (Product Catalog)
 **Collection**: `products`
 **Purpose**: Store inventory items.
 - **Fields**:
-  - `name`, `description`, `price` (Number)
-  - `images` (Array of String)
+  - `name`, `slug`, `sku` (String, required, unique sku per shop)
+  - `brand`, `unit`, `description`, `categorySlug` (String)
+  - `price`, `mrp`, `discountPrice` (Number)
+  - `image`, `imageUrl`, `gallery` (Array/String)
   - `category` (ObjectId): Ref to `Category`
-  - `inStock` (Boolean)
-  - `inventory` (Number)
+  - `shop` (ObjectId): Ref to `Shop`
+  - `inStock`, `isActive` (Boolean)
+  - `stockCount`, `stockQuantity` (Number)
+  - `specifications`, `nutrition` (Mixed)
 
-## 7. `shops` (Shop/Fulfillment)
+## 8. `shops` (Shop/Fulfillment)
 **Collection**: `shops`
 **Purpose**: Darkstore / Dispatch hubs.
 - **Fields**:
   - `name` (String)
   - `address` (String)
   - `location`: GeoJSON Point `[lng, lat]`
+
+## 9. `auditlogs` (System Audit Trail)
+**Collection**: `auditlogs`
+**Purpose**: Immutable tracking of sensitive system actions.
+- **Fields**:
+  - `user` (ObjectId): Ref to `User`
+  - `action` (String, Enum): Action executed (e.g. `CREATE`, `UPDATE`)
+  - `resource` (String): Entity affected
+  - `resourceId` (String)
+  - `createdAt` (Date): Immutable timestamp
+
+## 10. `settings` (Platform Configuration)
+**Collection**: `settings`
+**Purpose**: Singleton document for global platform parameters.
+- **Fields**:
+  - `freeDeliveryThreshold` (Number)
+  - `baseDeliveryFee` (Number)
+  - `platformHandlingFee` (Number)
 
 ## Indexes and Performance
 - `Order`: Indexed on `customer`, `rider`, `status`, `createdAt`
