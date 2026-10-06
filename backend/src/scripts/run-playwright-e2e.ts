@@ -52,7 +52,7 @@ async function run() {
 
 function runPlaywright(uri: string, backend: any, replSet: any) {
   console.log('Starting Playwright tests...');
-  const env = { ...process.env, MONGODB_URI: uri, VITE_API_URL: 'http://localhost:5000/api' };
+  const env = { ...process.env, MONGODB_URI: uri, VITE_API_URL: 'http://localhost:5000/api', JWT_SECRET: 'test' };
   
   // NOTE: Start frontend server as well if needed? Playwright might need it!
   const frontend = spawn('npm', ['run', 'dev'], {
