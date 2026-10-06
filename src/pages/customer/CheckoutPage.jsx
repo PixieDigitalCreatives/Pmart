@@ -132,7 +132,7 @@ export const CheckoutPage = () => {
                           {addr.tag === 'Home' || addr.label === 'HOME' ? <Home size={16} /> : (addr.tag === 'Work' || addr.label === 'WORK' ? <Briefcase size={16} /> : <MapPin size={16} />)}
                           <span className="font-bold ml-1">{addr.tag || addr.label}</span>
                         </div>
-                        <button className="change-btn" onClick={() => setLocationModalOpen(true)}>Change</button>
+                        <Button className="change-btn" onClick={() => setLocationModalOpen(true)}>Change</Button>
                       </div>
                       
                       <div className="addr-recipient">
@@ -172,27 +172,27 @@ export const CheckoutPage = () => {
               </div>
 
               <div className="instruction-quick-pills">
-                <button
+                <Button
                   type="button"
                   className="note-pill"
                   onClick={() => setDeliveryNote('Leave package with security guard at the gate.')}
                 >
                   Leave with security
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className="note-pill"
                   onClick={() => setDeliveryNote('Do not ring doorbell, baby is sleeping.')}
                 >
                   Do not ring bell
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   className="note-pill"
                   onClick={() => setDeliveryNote('Leave at doorstep and send OTP on WhatsApp.')}
                 >
                   Leave at door
-                </button>
+                </Button>
               </div>
 
               <textarea

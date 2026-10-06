@@ -7,7 +7,7 @@ import { RiderProfile } from '../modules/rider/rider.model';
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 async function runAudit() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?retryWrites=true&w=majority&appName=pmart');
+  await mongoose.connect(process.env.MONGODB_URI as string);
 
   console.log('--- RIDER INTEGRITY AUDIT ---');
   

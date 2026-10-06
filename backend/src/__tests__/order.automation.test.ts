@@ -42,7 +42,7 @@ beforeAll(async () => {
 afterAll(async () => {
   OrderAutomation.stopRecoverySweeper();
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) { await mongoServer.stop(); }
 });
 
 beforeEach(async () => {

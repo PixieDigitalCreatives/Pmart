@@ -3,6 +3,7 @@ import { ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Loader2, RotateCcw } 
 import { deliveryOtpService } from '@/services/deliveryOtpService';
 import { deliveryService } from '@/services/deliveryService';
 import './DeliveryVerificationSection.scss';
+import { Input, Button } from '@/components/ui';
 
 export const DeliveryVerificationSection = ({
   order,
@@ -149,7 +150,7 @@ export const DeliveryVerificationSection = ({
 
         {/* 4-Digit Input Form */}
         <form onSubmit={handleVerifySubmit} className="otp-form-box">
-          <label className="input-field-label">Enter Customer OTP</label>
+          <label htmlFor="auto-id-needed" className="input-field-label">Enter Customer OTP</label>
 
           <div className="digit-inputs-row" onPaste={handlePaste}>
             {digits.map((digit, idx) => (

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import apiClient from '@/services/apiClient';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
+import { Input, Button, Select } from '@/components/ui';
 
 export const ShopProductNewPage = () => {
   const navigate = useNavigate();
@@ -68,10 +69,10 @@ export const ShopProductNewPage = () => {
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
             <div className="form-group">
-              <label>Product Name</label>
-              <input
+              <label htmlFor="auto-id-needed">Product Name</label>
+              <Input
                 type="text"
-                className="form-control"
+                
                 placeholder="e.g. Amul Salted Butter"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -80,10 +81,10 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Brand Name</label>
-              <input
+              <label htmlFor="auto-id-needed">Brand Name</label>
+              <Input
                 type="text"
-                className="form-control"
+                
                 placeholder="e.g. Amul, Nestle, Farm Fresh"
                 value={brand}
                 onChange={e => setBrand(e.target.value)}
@@ -92,8 +93,8 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Category</label>
-              <select
+              <label htmlFor="auto-id-needed">Category</label>
+              <Select
                 className="form-select"
                 value={categorySlug}
                 onChange={e => setCategorySlug(e.target.value)}
@@ -101,14 +102,14 @@ export const ShopProductNewPage = () => {
                 {categories.map(c => (
                   <option key={c._id || c.id} value={c.slug}>{c.name}</option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <div className="form-group">
-              <label>Unit / Pack Size</label>
-              <input
+              <label htmlFor="auto-id-needed">Unit / Pack Size</label>
+              <Input
                 type="text"
-                className="form-control"
+                
                 placeholder="e.g. 500 g, 1 L, Pack of 4"
                 value={unit}
                 onChange={e => setUnit(e.target.value)}
@@ -117,10 +118,10 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Selling Price (₹)</label>
-              <input
+              <label htmlFor="auto-id-needed">Selling Price (₹)</label>
+              <Input
                 type="number"
-                className="form-control"
+                
                 placeholder="e.g. 56"
                 value={price}
                 onChange={e => setPrice(e.target.value)}
@@ -129,10 +130,10 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>MRP (₹)</label>
-              <input
+              <label htmlFor="auto-id-needed">MRP (₹)</label>
+              <Input
                 type="number"
-                className="form-control"
+                
                 placeholder="e.g. 60"
                 value={mrp}
                 onChange={e => setMrp(e.target.value)}
@@ -141,10 +142,10 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Initial Stock Inventory</label>
-              <input
+              <label htmlFor="auto-id-needed">Initial Stock Inventory</label>
+              <Input
                 type="number"
-                className="form-control"
+                
                 value={stockCount}
                 onChange={e => setStockCount(e.target.value)}
                 required
@@ -152,10 +153,10 @@ export const ShopProductNewPage = () => {
             </div>
 
             <div className="form-group">
-              <label>Product Image URL</label>
-              <input
+              <label htmlFor="auto-id-needed">Product Image URL</label>
+              <Input
                 type="url"
-                className="form-control"
+                
                 value={imageUrl}
                 onChange={e => setImageUrl(e.target.value)}
                 required
@@ -164,7 +165,7 @@ export const ShopProductNewPage = () => {
           </div>
 
           <div className="form-group mt-3">
-            <label>Product Description</label>
+            <label htmlFor="auto-id-needed">Product Description</label>
             <textarea
               className="form-control"
               rows="3"
@@ -175,10 +176,10 @@ export const ShopProductNewPage = () => {
           </div>
 
           <div className="flex gap-3 mt-6">
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+            <Button type="submit"  disabled={saving}>
               <Plus size={16} />
               <span>{saving ? 'Creating Product...' : 'Publish Product to Catalog'}</span>
-            </button>
+            </Button>
             <Link to="/shop/products" className="btn btn-secondary">
               Cancel
             </Link>

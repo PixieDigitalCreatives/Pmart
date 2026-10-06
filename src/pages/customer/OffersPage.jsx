@@ -3,6 +3,7 @@ import { productService } from '@/services/productService';
 import { ProductCard } from '@/components/product/ProductCard';
 import { Tag, Sparkles, Zap, Percent, Gift, Copy, Check } from 'lucide-react';
 import './OffersPage.scss';
+import { Button } from '@/components/ui';
 
 export const OffersPage = () => {
   const [dealProducts, setDealProducts] = useState([]);
@@ -63,13 +64,13 @@ export const OffersPage = () => {
                 <div className="ticket-divider" />
                 <div className="ticket-right">
                   <div className="code-pill">{coupon.code}</div>
-                  <button
+                  <Button
                     className="copy-btn"
                     onClick={() => handleCopyCode(coupon.code)}
                   >
                     {copiedCode === coupon.code ? <Check size={14} /> : <Copy size={14} />}
                     <span>{copiedCode === coupon.code ? 'Copied' : 'Apply'}</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

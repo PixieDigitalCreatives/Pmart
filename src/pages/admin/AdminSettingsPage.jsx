@@ -137,13 +137,13 @@ export const AdminSettingsPage = () => {
         {error && (
           <div className="mb-4 p-3 text-sm flex items-center justify-between gap-2 bg-red-50 text-red-700 rounded-md border border-red-200">
             <span className="flex items-center gap-2"><AlertCircle size={18} /> {error}</span>
-            <button
+            <Button
               type="button"
               onClick={fetchSettings}
               className="flex items-center gap-1 text-xs underline opacity-75 hover:opacity-100"
             >
               <RefreshCw size={12} /> Retry
-            </button>
+            </Button>
           </div>
         )}
 

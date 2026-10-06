@@ -10,6 +10,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import './TrackingStatus.scss';
+import { Button } from '@/components/ui';
 
 export const TrackingStatus = ({ trackingState = 'TRACKING_ACTIVE', onRetry = null }) => {
   const getStatusConfig = () => {
@@ -80,9 +81,9 @@ export const TrackingStatus = ({ trackingState = 'TRACKING_ACTIVE', onRetry = nu
       <div className="status-icon-wrap">{config.icon}</div>
       <div className="status-text">{config.title}</div>
       {config.retry && onRetry && (
-        <button type="button" className="retry-btn" onClick={onRetry}>
+        <Button type="button" className="retry-btn" onClick={onRetry}>
           Retry
-        </button>
+        </Button>
       )}
     </div>
   );

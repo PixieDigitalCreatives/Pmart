@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
-import { Button } from '@/components/ui/Button';
 import {
   ShoppingBag,
   Plus,
@@ -16,6 +15,7 @@ import {
   Heart
 } from 'lucide-react';
 import './CartPage.scss';
+import { Button } from '@/components/ui';
 
 export const CartPage = () => {
   const { items, totalQuantity, billSummary, updateQuantity, removeItem, clearCart } = useCart();
@@ -71,18 +71,18 @@ export const CartPage = () => {
                   <div className="dest-address">{selectedLocation?.address}</div>
                 </div>
               </div>
-              <button className="change-btn" onClick={() => setLocationModalOpen(true)}>
+              <Button className="change-btn" onClick={() => setLocationModalOpen(true)}>
                 Change
-              </button>
+              </Button>
             </div>
 
             {/* Cart Items List */}
             <div className="cart-products-list-card">
               <div className="list-card-header">
                 <span className="header-label">ITEMS IN YOUR BASKET</span>
-                <button className="clear-cart-text-btn" onClick={clearCart}>
+                <Button className="clear-cart-text-btn" onClick={clearCart}>
                   Clear all
-                </button>
+                </Button>
               </div>
 
               <div className="items-table">
@@ -103,21 +103,21 @@ export const CartPage = () => {
 
                     <div className="stepper-wrap">
                       <div className="cart-page-stepper">
-                        <button
+                        <Button
                           className="step-btn"
                           onClick={() => updateQuantity(item._id || item.id, item.quantity - 1)}
                           aria-label="Decrease"
                         >
                           {item.quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
-                        </button>
+                        </Button>
                         <span className="step-val">{item.quantity}</span>
-                        <button
+                        <Button
                           className="step-btn"
                           onClick={() => updateQuantity(item._id || item.id, item.quantity + 1)}
                           aria-label="Increase"
                         >
                           <Plus size={13} />
-                        </button>
+                        </Button>
                       </div>
                       <div className="row-item-total">
                         ₹{item.price * item.quantity}
@@ -139,13 +139,13 @@ export const CartPage = () => {
               </div>
               <div className="tip-pills-row">
                 {tips.map((t) => (
-                  <button
+                  <Button
                     key={t}
                     className={`tip-pill ${deliveryTip === t ? 'active' : ''}`}
                     onClick={() => setDeliveryTip(deliveryTip === t ? 0 : t)}
                   >
                     +₹{t}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -201,7 +201,7 @@ export const CartPage = () => {
               <Button
                 variant="primary"
                 size="lg"
-                className="btn-full checkout-action-btn"
+                className="checkout-action-btn"
                 onClick={() => navigate('/checkout')}
               >
                 <span>Proceed to Checkout</span>

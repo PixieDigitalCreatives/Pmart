@@ -144,7 +144,10 @@ test.describe('PMart Catalog Governance Admin Flow', () => {
     // Assuming there's a checkbox for Is Active
     const isActiveCheckbox = adminPage.getByLabel(/Is Active/i);
     await isActiveCheckbox.uncheck();
-    await adminPage.getByRole('button', { name: /Save/i }).click();
+    await Promise.all([
+      adminPage.waitForResponse(res => res.url().includes('/api/products') && res.request().method() === 'PUT'),
+      adminPage.getByRole('button', { name: /Save/i }).click()
+    ]);
     
     await adminPage.reload();
     await adminPage.waitForLoadState('networkidle');

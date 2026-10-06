@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
+app.set('trust proxy', 1); // Trust the first proxy in front of Express (e.g., Load Balancer, Nginx)
 
 app.use(helmet());
 const allowedOrigins = process.env.ALLOWED_ORIGINS 

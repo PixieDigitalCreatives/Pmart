@@ -11,8 +11,8 @@ if (!getApps().length) {
   }
 
   if (!privateKey || privateKey === 'mockkey' || privateKey.includes('mockkey')) {
-    logger.error('CRITICAL: Missing or invalid FIREBASE_PRIVATE_KEY in backend environment.');
     if (env.NODE_ENV !== 'test') {
+      logger.error('CRITICAL: Missing or invalid FIREBASE_PRIVATE_KEY in backend environment.');
       throw new Error('Firebase Admin initialization failed: A valid FIREBASE_PRIVATE_KEY is required in production.');
     } else {
       logger.warn('Test environment detected. Mocking Firebase Auth.');

@@ -123,7 +123,7 @@ export const ShopProductsPage = () => {
       <div className="products-toolbar mb-4 flex justify-between">
         <div className="search-box flex items-center border p-2 rounded w-64">
           <Search size={16} className="icon mr-2 text-muted" />
-          <input
+          <Input
             type="text"
             className="border-0 outline-none w-full"
             placeholder="Search by product name or SKU..."
@@ -165,12 +165,12 @@ export const ShopProductsPage = () => {
                 </td>
                 <td className="py-3 text-right">
                   <div className="action-buttons flex justify-end gap-2">
-                    <button className="btn-icon" onClick={() => openEditModal(p)} title="Edit" aria-label="Edit">
+                    <Button  onClick={() => openEditModal(p)} title="Edit" aria-label="Edit">
                       <Edit size={16} />
-                    </button>
-                    <button className="btn-icon delete-action text-danger" onClick={() => setProductToDelete(p)} title="Delete/Archive" aria-label="Delete">
+                    </Button>
+                    <Button className="delete-action text-danger" onClick={() => setProductToDelete(p)} title="Delete/Archive" aria-label="Delete">
                       <Trash2 size={16} />
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>

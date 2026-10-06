@@ -128,13 +128,13 @@ export const OrdersPage = () => {
             { id: 'out_for_delivery', label: 'Active Deliveries' },
             { id: 'delivered', label: 'Past Orders' }
           ].map((tab) => (
-            <button
+            <Button
               key={tab.id}
               className={`filter-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
               <span>{tab.label}</span>
-            </button>
+            </Button>
           ))}
         </div>
 

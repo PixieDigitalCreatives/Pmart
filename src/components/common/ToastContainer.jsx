@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 import './ToastContainer.scss';
+import { Button } from '@/components/ui';
 
 export const ToastContainer = ({ toasts, onRemove }) => {
   const getIcon = (type) => {
@@ -36,14 +37,14 @@ export const ToastContainer = ({ toasts, onRemove }) => {
               {t.title && <div className="toast-title">{t.title}</div>}
               <div className="toast-message">{t.message}</div>
             </div>
-            <button
+            <Button
               type="button"
               className="toast-close-btn"
               onClick={() => onRemove(t.id)}
               aria-label="Close notification"
             >
               <X size={15} />
-            </button>
+            </Button>
             {t.duration > 0 && (
               <div
                 className="toast-progress-bar"

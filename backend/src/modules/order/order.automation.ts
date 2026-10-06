@@ -10,6 +10,7 @@ import { OrderProgressionJob, ProgressionJobType, ProgressionJobStatus } from '.
 
 export class OrderAutomation {
   private static sweeperInterval: NodeJS.Timeout | null = null;
+  private static pendingTimeouts: Set<NodeJS.Timeout> = new Set();
 
   static async scheduleRiderProgression(orderId: string | mongoose.Types.ObjectId, riderId: string | mongoose.Types.ObjectId, session?: mongoose.ClientSession) {
     if (env.RIDER_PICKUP_DELAY_MS && process.env.NODE_ENV !== 'production') {
@@ -29,11 +30,14 @@ export class OrderAutomation {
       }
 
       // Fast-path execution
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        this.pendingTimeouts.delete(timeoutId);
         this.executeJob(job._id as mongoose.Types.ObjectId).catch(err => {
           if (process.env.NODE_ENV !== 'test') console.error('Auto-pickup fast-path failed:', err);
         });
       }, env.RIDER_PICKUP_DELAY_MS);
+      this.pendingTimeouts.add(timeoutId);
+      timeoutId.unref();
     }
   }
 
@@ -87,6 +91,10 @@ export class OrderAutomation {
         if (process.env.NODE_ENV !== 'test') console.error('Rider progression recovery sweeper failed:', err);
       }
     }, process.env.NODE_ENV === 'test' ? 100 : 5000); // Poll every 5 seconds (100ms in test)
+    
+    if (this.sweeperInterval) {
+      this.sweeperInterval.unref();
+    }
   }
   
   static stopRecoverySweeper() {
@@ -94,6 +102,12 @@ export class OrderAutomation {
       clearInterval(this.sweeperInterval);
       this.sweeperInterval = null;
     }
+    
+    // Also clear all pending fast-path timeouts
+    for (const timeoutId of this.pendingTimeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.pendingTimeouts.clear();
   }
 
   static async processPickup(orderId: string | mongoose.Types.ObjectId, riderId: string | mongoose.Types.ObjectId) {
@@ -167,11 +181,14 @@ export class OrderAutomation {
         await session.commitTransaction();
         
         // Fast-path execution
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+          this.pendingTimeouts.delete(timeoutId);
           this.executeJob(nextJob._id as mongoose.Types.ObjectId).catch(err => {
             if (process.env.NODE_ENV !== 'test') console.error('Auto-out-for-delivery fast-path failed:', err);
           });
         }, env.RIDER_OUT_FOR_DELIVERY_DELAY_MS);
+        this.pendingTimeouts.add(timeoutId);
+        timeoutId.unref();
       } else {
         await session.commitTransaction();
       }

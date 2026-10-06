@@ -25,6 +25,7 @@ import { CustomerProfile } from '../modules/users/user.model';
 import { RiderProfile } from '../modules/rider/rider.model';
 
 let mongoServer: MongoMemoryReplSet;
+jest.setTimeout(30000);
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
@@ -34,7 +35,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) { await mongoServer.stop(); }
 });
 
 afterEach(async () => {

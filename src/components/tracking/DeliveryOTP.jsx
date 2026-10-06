@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyRound, Copy, Check, ShieldCheck } from 'lucide-react';
 import './DeliveryOTP.scss';
+import { Button } from '@/components/ui';
 
 export const DeliveryOTP = ({ otp, isNearby = false, status = 'OUT_FOR_DELIVERY' }) => {
   const [copied, setCopied] = useState(false);
@@ -40,7 +41,7 @@ export const DeliveryOTP = ({ otp, isNearby = false, status = 'OUT_FOR_DELIVERY'
           ))}
         </div>
 
-        <button
+        <Button
           type="button"
           className="btn-copy-otp"
           onClick={handleCopy}
@@ -48,7 +49,7 @@ export const DeliveryOTP = ({ otp, isNearby = false, status = 'OUT_FOR_DELIVERY'
         >
           {copied ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
           <span>{copied ? 'Copied' : 'Copy'}</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

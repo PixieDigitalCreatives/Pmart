@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Banknote, PackageCheck, ArrowRight } from 'lucide-react';
 import './DeliveryCompletionScreen.scss';
+import { Button } from '@/components/ui';
 
 export const DeliveryCompletionScreen = ({
   order,
@@ -46,14 +47,14 @@ export const DeliveryCompletionScreen = ({
       </div>
 
       <div className="footer-actions-wrapper">
-        <button
+        <Button
           type="button"
-          className="btn btn-primary btn-lg btn-full view-order-btn"
+          className="view-order-btn"
           onClick={onViewOrder}
-        >
+         size="full">
           <span>View Order</span>
           <ArrowRight size={18} />
-        </button>
+        </Button>
       </div>
     </div>
   );

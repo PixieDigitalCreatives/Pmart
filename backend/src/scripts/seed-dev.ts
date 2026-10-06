@@ -10,6 +10,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function setup() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('CRITICAL: Cannot run development seed script in production environment.');
+    process.exit(1);
+  }
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pmart');
   console.log('Connected to REAL DB for Manual Seeding');
   

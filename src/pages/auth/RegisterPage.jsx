@@ -161,7 +161,7 @@ export const RegisterPage = () => {
           {!isProfileCompletionRequired ? (
             /* STEP 1: Google Registration */
             <>
-              <button
+              <Button
                 id="google-signup-btn"
                 type="button"
                 className="google-oauth-btn"
@@ -176,7 +176,7 @@ export const RegisterPage = () => {
                   className="google-icon"
                 />
                 <span>Continue with Google</span>
-              </button>
+              </Button>
 
               <div className="auth-footer" style={{ marginTop: 'auto' }}>
                 <p>

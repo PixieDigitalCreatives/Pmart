@@ -4,6 +4,7 @@ import { X, Navigation, Bike, Clock, Phone, MapPin } from 'lucide-react';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { getRoute } from '@/services/routingService';
 import './ShopTrackRiderModal.scss';
+import { Button } from '@/components/ui';
 
 export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
   const [route, setRoute] = React.useState(null);
@@ -64,9 +65,9 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
                 </p>
               </div>
             </div>
-            <button type="button" className="close-btn" onClick={onClose} aria-label="Close tracking">
+            <Button type="button" className="close-btn" onClick={onClose} aria-label="Close tracking">
               <X size={18} />
-            </button>
+            </Button>
           </div>
 
           {/* Quick Metrics Bar */}
@@ -115,9 +116,9 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
                 <strong>Destination:</strong> {order.deliveryAddress?.line1}, {order.deliveryAddress?.city}
               </span>
             </div>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>
+            <Button type="button"  onClick={onClose} variant="secondary" size="sm">
               Close Monitor
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>

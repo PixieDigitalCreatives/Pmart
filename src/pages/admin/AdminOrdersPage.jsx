@@ -9,7 +9,7 @@ import {
 import { Search, Filter, Eye, Download, ChevronRight, Check, Play, Package, Bike } from 'lucide-react';
 import { ExportDataModal } from '../../components/admin/ExportDataModal';
 import { AssignRiderModal } from '../../components/admin/AssignRiderModal';
-import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
+import { PageHeader, StatusBadge, Button, EmptyState, Input, Select } from '@/components/ui';
 import api from '../../services/apiClient';
 import './AdminOrdersPage.scss';
 
@@ -98,7 +98,7 @@ export const AdminOrdersPage = () => {
       <div className="admin-filters-card">
         <div className="search-field">
           <Search size={16} className="icon" />
-          <input
+          <Input
             type="text"
             placeholder="Search order ID..."
             value={search}
@@ -107,7 +107,7 @@ export const AdminOrdersPage = () => {
         </div>
 
         <div className="filter-dropdowns" style={{ display: 'flex', gap: '10px' }}>
-          <select
+          <Select
             className="form-select status-select"
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
@@ -122,9 +122,9 @@ export const AdminOrdersPage = () => {
             <option value={ORDER_STATUS.OUT_FOR_DELIVERY}>Out for Delivery</option>
             <option value={ORDER_STATUS.ARRIVED}>Arrived at Customer</option>
             <option value={ORDER_STATUS.DELIVERED}>Delivered</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             className="form-select status-select"
             value={paymentFilter}
             onChange={e => setPaymentFilter(e.target.value)}
@@ -132,7 +132,7 @@ export const AdminOrdersPage = () => {
             <option value="all">All Payment Statuses</option>
             <option value={PAYMENT_STATUS.PENDING}>Payment: PENDING</option>
             <option value={PAYMENT_STATUS.COLLECTED}>Payment: COLLECTED</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -220,23 +220,23 @@ export const AdminOrdersPage = () => {
                       <div className="flex gap-2 items-center flex-wrap" style={{ minWidth: '200px' }}>
                         {o.status === ORDER_STATUS.PENDING && (
                           <>
-                            <button onClick={() => handleAction(o._id, 'approve')} className="btn btn-primary btn-sm">Accept Order</button>
-                            <button onClick={() => handleAction(o._id, 'reject')} className="btn btn-danger btn-sm">Reject</button>
+                            <Button onClick={() => handleAction(o._id, 'approve')} className="btn btn-primary btn-sm">Accept Order</Button>
+                            <Button onClick={() => handleAction(o._id, 'reject')} className="btn btn-danger btn-sm">Reject</Button>
                           </>
                         )}
                         {(o.status === ORDER_STATUS.ACCEPTED || o.status === ORDER_STATUS.CONFIRMED) && (
-                          <button onClick={() => handleAction(o._id, 'prepare')} className="btn btn-warning btn-sm">Start Preparing</button>
+                          <Button onClick={() => handleAction(o._id, 'prepare')} className="btn btn-warning btn-sm">Start Preparing</Button>
                         )}
                         {o.status === ORDER_STATUS.PREPARING && (
-                          <button onClick={() => handleAction(o._id, 'ready')} className="btn btn-info btn-sm text-white">Mark Ready</button>
+                          <Button onClick={() => handleAction(o._id, 'ready')} className="btn btn-info btn-sm text-white">Mark Ready</Button>
                         )}
                         {o.status === ORDER_STATUS.READY && (
-                          <button onClick={() => setAssignRiderOrderId(o._id)} className="btn btn-primary btn-sm">Assign Rider</button>
+                          <Button onClick={() => setAssignRiderOrderId(o._id)} className="btn btn-primary btn-sm">Assign Rider</Button>
                         )}
                         {o.status === ORDER_STATUS.ASSIGNED && (
                           <div className="text-xs text-muted flex flex-col gap-1">
                             <span className="font-semibold text-amber">Waiting for rider pickup</span>
-                            <button onClick={() => setAssignRiderOrderId(o._id)} className="btn btn-secondary btn-sm">Re-assign Rider</button>
+                            <Button onClick={() => setAssignRiderOrderId(o._id)} className="btn btn-secondary btn-sm">Re-assign Rider</Button>
                           </div>
                         )}
                         {o.status === ORDER_STATUS.PICKED_UP && (
@@ -265,20 +265,20 @@ export const AdminOrdersPage = () => {
       <div className="flex justify-between items-center mt-4">
         <span className="text-sm text-gray-500">Page {page} of {totalPages || 1}</span>
         <div className="flex gap-2">
-          <button 
-            className="btn btn-secondary btn-sm" 
+          <Button 
+             
             disabled={page === 1}
             onClick={() => setPage(p => p - 1)}
           >
             Previous
-          </button>
-          <button 
-            className="btn btn-secondary btn-sm" 
+          </Button>
+          <Button 
+             
             disabled={page >= totalPages}
             onClick={() => setPage(p => p + 1)}
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 

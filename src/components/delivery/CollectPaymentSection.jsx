@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Banknote, User, AlertCircle, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { paymentService } from '@/services/paymentService';
 import './CollectPaymentSection.scss';
+import { Button } from '@/components/ui';
 
 export const CollectPaymentSection = ({
   order,
@@ -111,12 +112,12 @@ export const CollectPaymentSection = ({
 
         {/* Primary Action Button */}
         <div className="action-button-wrapper">
-          <button
+          <Button
             type="button"
-            className="btn btn-primary btn-lg btn-full payment-received-btn"
+            className="payment-received-btn"
             onClick={handleConfirmPayment}
             disabled={submitting || isProcessing || isAlreadyCollected}
-          >
+           size="full">
             {submitting ? (
               <>
                 <Loader2 size={18} className="spinner" />
@@ -133,7 +134,7 @@ export const CollectPaymentSection = ({
                 <span>Payment Received</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

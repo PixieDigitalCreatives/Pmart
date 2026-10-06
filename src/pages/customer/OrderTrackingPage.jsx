@@ -257,7 +257,7 @@ export const OrderTrackingPage = () => {
             </div>
 
             {/* Dropdown trigger: View Items */}
-            <button
+            <Button
               type="button"
               className="view-items-dropdown-trigger"
               onClick={() => setIsItemsExpanded(!isItemsExpanded)}
@@ -273,7 +273,7 @@ export const OrderTrackingPage = () => {
                 <span className="subtext">{isItemsExpanded ? 'Tap to collapse' : 'Tap to expand'}</span>
                 <ChevronDown size={18} className={`dropdown-chevron ${isItemsExpanded ? 'rotated' : ''}`} />
               </div>
-            </button>
+            </Button>
 
             {/* Small Product Cards Grid (Visible on Dropdown Click) */}
             {isItemsExpanded && (

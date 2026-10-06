@@ -33,7 +33,7 @@ export class OrderController {
   }
 
   static async checkout(req: Request, res: Response, next: NextFunction) {
-    let retries = 3;
+    let retries = 7;
     while (retries > 0) {
       const session = await mongoose.startSession();
       session.startTransaction();
@@ -182,7 +182,7 @@ export class OrderController {
           }
         }
         
-        const consolidatedItems = Array.from(aggregatedItems.values());
+        const consolidatedItems = Array.from(aggregatedItems.values()).sort((a: any, b: any) => a.product.toString().localeCompare(b.product.toString()));
 
         for (const item of consolidatedItems) {
 
@@ -323,8 +323,8 @@ export class OrderController {
               message: 'High traffic detected. Stock may be unavailable or checkout is busy. Please try again.' 
             });
           }
-          // Exponential backoff or small delay could be added here
-          await new Promise(resolve => setTimeout(resolve, 50));
+          const backoff = Math.pow(2, 7 - retries) * 50 + Math.random() * 50;
+          await new Promise(resolve => setTimeout(resolve, backoff));
           continue;
         }
 
@@ -498,7 +498,10 @@ export class OrderController {
                 { user: order.rider },
                 { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
               ).session(session);
-            } catch (e) {
+            } catch (e: any) {
+              if ((e.hasErrorLabel && e.hasErrorLabel('TransientTransactionError')) || e.code === 112) {
+                throw e;
+              }
               console.error('Error freeing up rider on rejection/cancellation', e);
             }
           }
@@ -513,7 +516,10 @@ export class OrderController {
                   { $inc: { stockCount: item.quantity } }
                 ).session(session);
               }
-            } catch (e) {
+            } catch (e: any) {
+              if ((e.hasErrorLabel && e.hasErrorLabel('TransientTransactionError')) || e.code === 112) {
+                throw e;
+              }
               console.error('Error restocking items', e);
             }
           }
@@ -533,7 +539,10 @@ export class OrderController {
               { user: order.rider },
               { availabilityStatus: RiderAvailability.AVAILABLE, currentDelivery: null }
             ).session(session);
-          } catch (e) {
+          } catch (e: any) {
+            if ((e.hasErrorLabel && e.hasErrorLabel('TransientTransactionError')) || e.code === 112) {
+              throw e;
+            }
             console.error('Error freeing up rider', e);
           }
         }
@@ -572,7 +581,7 @@ export class OrderController {
           }
         }
 
-        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as any);
         return res.json({ success: true, data: populatedOrder });
       } catch (error: any) {
         await session.abortTransaction();
@@ -680,7 +689,7 @@ export class OrderController {
           }
         }
 
-        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as any);
         return res.json({ success: true, data: populatedOrder, message: 'OTP Verified successfully' });
       } catch (error: any) {
         await session.abortTransaction();
@@ -784,7 +793,7 @@ export class OrderController {
           }
         }
 
-        const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+        const populatedOrder = await OrderController.getPopulatedOrder(order._id as any);
         return res.json({ success: true, data: populatedOrder, message: 'Delivery Completed Successfully.' });
       } catch (error: any) {
         await session.abortTransaction();
@@ -912,7 +921,7 @@ export class OrderController {
       });
       await event.save();
 
-      const populatedOrder = await OrderController.getPopulatedOrder(order._id as string);
+      const populatedOrder = await OrderController.getPopulatedOrder(order._id as any);
       res.json({ success: true, data: populatedOrder });
     } catch (error) {
       next(error);

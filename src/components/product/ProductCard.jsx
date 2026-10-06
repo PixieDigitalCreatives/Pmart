@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import { Plus, Minus, Clock, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './ProductCard.scss';
+import { Button } from '@/components/ui';
 
 export const ProductCard = ({ product }) => {
   const navigate = useNavigate();

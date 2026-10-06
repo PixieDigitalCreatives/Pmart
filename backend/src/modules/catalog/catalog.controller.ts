@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Category, Product } from './catalog.model';
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { escapeRegExp } from '../../utils/regex';
 
 export class CatalogController {
   static async getCategories(req: Request, res: Response, next: NextFunction) {
@@ -49,10 +50,20 @@ export class CatalogController {
       
       if (tag) filter.tags = tag;
       if (search) {
-        filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { brand: { $regex: search, $options: 'i' } }
-        ];
+        if (typeof search !== 'string') {
+          return res.status(400).json({ success: false, message: 'Invalid search query type' });
+        }
+        const searchStr = search.trim();
+        if (searchStr.length > 100) {
+          return res.status(400).json({ success: false, message: 'Search query too long' });
+        }
+        if (searchStr) {
+          const escaped = escapeRegExp(searchStr);
+          filter.$or = [
+            { name: { $regex: escaped, $options: 'i' } },
+            { brand: { $regex: escaped, $options: 'i' } }
+          ];
+        }
       }
       
       if (minPrice !== undefined) filter.price = { ...filter.price, $gte: Number(minPrice) };
@@ -95,10 +106,20 @@ export class CatalogController {
       }
       
       if (search) {
-        filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { sku: { $regex: search, $options: 'i' } }
-        ];
+        if (typeof search !== 'string') {
+          return res.status(400).json({ success: false, message: 'Invalid search query type' });
+        }
+        const searchStr = search.trim();
+        if (searchStr.length > 100) {
+          return res.status(400).json({ success: false, message: 'Search query too long' });
+        }
+        if (searchStr) {
+          const escaped = escapeRegExp(searchStr);
+          filter.$or = [
+            { name: { $regex: escaped, $options: 'i' } },
+            { sku: { $regex: escaped, $options: 'i' } }
+          ];
+        }
       }
       
       const pageNum = parseInt(page as string);
@@ -130,12 +151,21 @@ export class CatalogController {
     try {
       const { q } = req.query;
       if (!q) return res.json({ success: true, data: [] });
-      const search = q.toString();
+      if (typeof q !== 'string') {
+        return res.status(400).json({ success: false, message: 'Invalid search query type' });
+      }
+      const search = q.trim();
+      if (search.length > 100) {
+        return res.status(400).json({ success: false, message: 'Search query too long' });
+      }
+      if (!search) return res.json({ success: true, data: [] });
+      
+      const escaped = escapeRegExp(search);
       const products = await Product.find({
         isActive: true,
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { brand: { $regex: search, $options: 'i' } }
+          { name: { $regex: escaped, $options: 'i' } },
+          { brand: { $regex: escaped, $options: 'i' } }
         ]
       }).limit(10);
       res.json({ success: true, data: products });
@@ -200,8 +230,11 @@ export class CatalogController {
       const existingSlug = await Product.findOne({ slug });
       if (existingSlug) slug += '-' + Date.now();
 
+      // Prevent mass assignment of protected fields
+      const { brand, tags, description, mrp, discount, discountPrice, inStock, stockCount, stockQuantity, deliveryTime, image, gallery, specifications, nutrition, imageUrl, isActive } = req.body;
+
       const product = new Product({
-        ...req.body,
+        name, brand, tags, description, price, mrp, discount, discountPrice, unit, inStock, stockCount, stockQuantity, deliveryTime, image, gallery, specifications, nutrition, imageUrl, sku, isActive, shop,
         category: catObj._id,
         categorySlug: catObj.slug,
         slug

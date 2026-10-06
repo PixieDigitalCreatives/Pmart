@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
 import { useAuth } from '@/context/AuthContext';
 import './Header.scss';
+import { Input, Button } from '@/components/ui';
 
 export const Header = () => {
   const { totalQuantity, billSummary, setIsCartOpen } = useCart();
@@ -75,7 +76,7 @@ export const Header = () => {
             <img src="/Pmart.png" alt="PMart — Grocery and More" className="pmart-logo-img" />
           </Link>
 
-          <button
+          <Button
             className="location-selector-btn"
             onClick={() => setLocationModalOpen(true)}
             aria-label="Select delivery location"
@@ -98,7 +99,7 @@ export const Header = () => {
                 <ChevronDown size={14} className="chevron-icon" />
               </div>
             </div>
-          </button>
+          </Button>
         </div>
 
         {/* Center: Search Bar (Hidden on Account and Orders pages) */}
@@ -106,7 +107,7 @@ export const Header = () => {
           <div className="header-search">
             <form onSubmit={handleSearchSubmit} className="search-form">
               <Search size={18} className="search-icon" />
-              <input
+              <Input
                 ref={searchInputRef}
                 id="header-main-search-input"
                 type="text"
@@ -117,13 +118,13 @@ export const Header = () => {
                 onFocus={handleSearchFocus}
               />
               {searchQuery && (
-                <button
+                <Button
                   type="button"
                   className="clear-search-btn"
                   onClick={handleClear}
                 >
                   <X size={15} />
-                </button>
+                </Button>
               )}
             </form>
           </div>
@@ -144,7 +145,7 @@ export const Header = () => {
           {/* User Profile */}
           <div className="profile-dropdown-wrapper">
             {isAuthenticated ? (
-              <button
+              <Button
                 className="profile-btn"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
@@ -153,7 +154,7 @@ export const Header = () => {
                 </div>
                 <span className="user-name">{user?.name ? user.name.split(' ')[0] : 'Account'}</span>
                 <ChevronDown size={13} />
-              </button>
+              </Button>
             ) : (
               <Link to="/login" className="login-link-btn">
                 <User size={16} />
@@ -181,7 +182,7 @@ export const Header = () => {
                   Help & FAQs
                 </Link>
                 <div className="menu-divider" />
-                <button
+                <Button
                   className="menu-item logout-btn"
                   onClick={() => {
                     logout();
@@ -189,13 +190,13 @@ export const Header = () => {
                   }}
                 >
                   Logout
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           {/* Cart CTA Button */}
-          <button
+          <Button
             className={`cart-header-btn ${totalQuantity > 0 ? 'has-items' : ''}`}
             onClick={() => setIsCartOpen(true)}
             aria-label="View shopping cart"
@@ -214,19 +215,19 @@ export const Header = () => {
                 <span className="my-cart-text">My Cart</span>
               )}
             </div>
-          </button>
+          </Button>
         </div>
 
         {/* Mobile menu toggle */}
         <div className="mobile-header-actions">
-          <button
+          <Button
             className="cart-mobile-btn"
             onClick={() => setIsCartOpen(true)}
             aria-label="Open Cart"
           >
             <ShoppingBag size={22} />
             {totalQuantity > 0 && <span className="cart-badge">{totalQuantity}</span>}
-          </button>
+          </Button>
         </div>
       </div>
     </header>

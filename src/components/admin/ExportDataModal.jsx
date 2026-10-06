@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, FileSpreadsheet, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import './ExportDataModal.scss';
+import { Button, Select } from '@/components/ui';
 
 export const ExportDataModal = ({
   isOpen,
@@ -66,22 +67,22 @@ export const ExportDataModal = ({
                 <p className="modal-desc">{description}</p>
               </div>
             </div>
-            <button
+            <Button
               type="button"
               className="close-btn"
               onClick={() => !isExporting && onClose()}
               disabled={isExporting}
             >
               <X size={18} />
-            </button>
+            </Button>
           </div>
 
           <div className="export-modal-body">
             {/* Format Selection */}
             <div className="form-group">
-              <label className="form-label">Export File Format</label>
+              <label htmlFor="auto-id-needed" className="form-label">Export File Format</label>
               <div className="format-options-grid">
-                <label className={`format-card ${format === 'xlsx' ? 'active' : ''}`}>
+                <label htmlFor="auto-id-needed" className={`format-card ${format === 'xlsx' ? 'active' : ''}`}>
                   <input
                     type="radio"
                     name="format"
@@ -95,7 +96,7 @@ export const ExportDataModal = ({
                   <span className="format-sub">Formatted tables</span>
                 </label>
 
-                <label className={`format-card ${format === 'csv' ? 'active' : ''}`}>
+                <label htmlFor="auto-id-needed" className={`format-card ${format === 'csv' ? 'active' : ''}`}>
                   <input
                     type="radio"
                     name="format"
@@ -109,7 +110,7 @@ export const ExportDataModal = ({
                   <span className="format-sub">Raw structured rows</span>
                 </label>
 
-                <label className={`format-card ${format === 'pdf' ? 'active' : ''}`}>
+                <label htmlFor="auto-id-needed" className={`format-card ${format === 'pdf' ? 'active' : ''}`}>
                   <input
                     type="radio"
                     name="format"
@@ -127,8 +128,8 @@ export const ExportDataModal = ({
 
             {/* Time Period */}
             <div className="form-group">
-              <label className="form-label">Dataset Time Range</label>
-              <select
+              <label htmlFor="auto-id-needed" className="form-label">Dataset Time Range</label>
+              <Select
                 className="form-select"
                 value={range}
                 onChange={(e) => setRange(e.target.value)}
@@ -138,14 +139,14 @@ export const ExportDataModal = ({
                 <option value="this-week">Past 7 Days</option>
                 <option value="this-month">Month to Date (MTD)</option>
                 <option value="all-time">Complete FY Audit Log</option>
-              </select>
+              </Select>
             </div>
 
             {/* Inclusions */}
             <div className="form-group">
-              <label className="form-label">Export Inclusions</label>
+              <label htmlFor="auto-id-needed" className="form-label">Export Inclusions</label>
               <div className="checkboxes-stack">
-                <label className="checkbox-row">
+                <label htmlFor="auto-id-needed" className="checkbox-row">
                   <input
                     type="checkbox"
                     checked={includeFinancials}
@@ -154,7 +155,7 @@ export const ExportDataModal = ({
                   />
                   <span>Include gross margin, tax rates, and rider commissions</span>
                 </label>
-                <label className="checkbox-row">
+                <label htmlFor="auto-id-needed" className="checkbox-row">
                   <input
                     type="checkbox"
                     checked={includePII}
@@ -181,17 +182,17 @@ export const ExportDataModal = ({
           </div>
 
           <div className="export-modal-footer">
-            <button
+            <Button
               type="button"
-              className="btn btn-secondary"
+              
               onClick={onClose}
               disabled={isExporting}
-            >
+             variant="secondary">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn btn-primary"
+              
               onClick={handleStartExport}
               disabled={isExporting}
             >
@@ -206,7 +207,7 @@ export const ExportDataModal = ({
                   <span>Download File</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>

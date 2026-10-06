@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../../services/apiClient';
+import { Input, Button, Select } from '@/components/ui';
 
 export const EditRiderModal = ({ isOpen, onClose, onSuccess, rider }) => {
   const [formData, setFormData] = useState({
@@ -62,7 +63,7 @@ export const EditRiderModal = ({ isOpen, onClose, onSuccess, rider }) => {
       <div className="modal-content add-rider-modal">
         <div className="modal-header">
           <h2>Edit Fleet Rider</h2>
-          <button className="icon-btn" onClick={onClose}><X size={20} /></button>
+          <Button className="icon-btn" onClick={onClose}><X size={20} /></Button>
         </div>
         
         <form onSubmit={handleSubmit} className="modal-body p-4">
@@ -73,22 +74,22 @@ export const EditRiderModal = ({ isOpen, onClose, onSuccess, rider }) => {
           )}
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Full Name *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Full Name *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
           </div>
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Phone *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Phone *</label>
+            <Input 
               type="tel" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.phone}
               onChange={e => setFormData({...formData, phone: e.target.value})}
               placeholder="e.g. 9876543210"
@@ -96,45 +97,45 @@ export const EditRiderModal = ({ isOpen, onClose, onSuccess, rider }) => {
           </div>
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Vehicle Type *</label>
-            <select 
-              className="form-control w-full p-2 border rounded"
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Vehicle Type *</label>
+            <Select 
+              className="w-full p-2 border rounded"
               value={formData.vehicleType}
               onChange={e => setFormData({...formData, vehicleType: e.target.value})}
             >
               <option value="Bike">Bike</option>
               <option value="Scooter">Scooter</option>
               <option value="Van">Van</option>
-            </select>
+            </Select>
           </div>
           
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">Vehicle Number *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Vehicle Number *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.vehicleNumber}
               onChange={e => setFormData({...formData, vehicleNumber: e.target.value})}
             />
           </div>
 
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">License Number *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">License Number *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.licenseNumber}
               onChange={e => setFormData({...formData, licenseNumber: e.target.value})}
             />
           </div>
           
           <div className="modal-footer flex justify-end gap-2 pt-4 border-t">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <Button type="button"  onClick={onClose} variant="secondary">Cancel</Button>
+            <Button type="submit"  disabled={isSubmitting}>
               {isSubmitting ? 'Updating...' : 'Update Rider'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -71,7 +71,7 @@ export const RiderMandatoryPasswordChangePage = () => {
         <Card>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auto-id-needed" className="block text-sm font-medium text-gray-700 mb-1">
                 Initial Password
               </label>
               <Input
@@ -83,7 +83,7 @@ export const RiderMandatoryPasswordChangePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auto-id-needed" className="block text-sm font-medium text-gray-700 mb-1">
                 New Password
               </label>
               <Input
@@ -95,7 +95,7 @@ export const RiderMandatoryPasswordChangePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auto-id-needed" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm New Password
               </label>
               <Input

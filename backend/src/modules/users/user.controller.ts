@@ -27,7 +27,7 @@ export class UserController {
         const todayDeliveries = todaysOrders.length;
         const todayEarnings = todaysOrders.reduce((sum, order) => sum + (order.deliveryFee || 0), 0);
 
-        profile = profileDoc ? profileDoc.toObject() : null;
+        profile = profileDoc ? profileDoc.toObject() as any : null;
         if (profile) {
           profile.todayDeliveries = todayDeliveries;
           profile.todayEarnings = todayEarnings;
@@ -55,12 +55,11 @@ export class UserController {
       if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
 
       let profile;
-      delete req.body.user;
       
       if (req.user.role === 'CUSTOMER') {
         const allowedUpdates: any = {};
-        if (req.body.fullName !== undefined) allowedUpdates.fullName = req.body.fullName;
-        if (req.body.email !== undefined) allowedUpdates.email = req.body.email;
+        if (typeof req.body.fullName === 'string') allowedUpdates.fullName = req.body.fullName;
+        if (typeof req.body.email === 'string') allowedUpdates.email = req.body.email;
 
         profile = await CustomerProfile.findOneAndUpdate(
           { user: (req.user as any)._id },
@@ -69,12 +68,12 @@ export class UserController {
         );
       } else if (req.user.role === 'RIDER') {
         const allowedUpdates: any = {};
-        if (req.body.fullName !== undefined) allowedUpdates.fullName = req.body.fullName;
-        if (req.body.phone !== undefined) allowedUpdates.phone = req.body.phone;
-        if (req.body.vehicleType !== undefined) allowedUpdates.vehicleType = req.body.vehicleType;
-        if (req.body.vehicleNumber !== undefined) allowedUpdates.vehicleNumber = req.body.vehicleNumber;
-        if (req.body.licenseNumber !== undefined) allowedUpdates.licenseNumber = req.body.licenseNumber;
-        if (req.body.availabilityStatus !== undefined) allowedUpdates.availabilityStatus = req.body.availabilityStatus;
+        if (typeof req.body.fullName === 'string') allowedUpdates.fullName = req.body.fullName;
+        if (typeof req.body.phone === 'string') allowedUpdates.phone = req.body.phone;
+        if (typeof req.body.vehicleType === 'string') allowedUpdates.vehicleType = req.body.vehicleType;
+        if (typeof req.body.vehicleNumber === 'string') allowedUpdates.vehicleNumber = req.body.vehicleNumber;
+        if (typeof req.body.licenseNumber === 'string') allowedUpdates.licenseNumber = req.body.licenseNumber;
+        if (typeof req.body.availabilityStatus === 'string') allowedUpdates.availabilityStatus = req.body.availabilityStatus;
 
         profile = await RiderProfile.findOneAndUpdate(
           { user: (req.user as any)._id },
@@ -111,7 +110,35 @@ export class UserController {
         profile.addresses.forEach(a => a.isDefault = false);
       }
 
-      profile.addresses.push(req.body);
+      const {
+        recipientName,
+        recipientPhone,
+        houseNumber,
+        street,
+        landmark,
+        pincode,
+        city,
+        state,
+        country,
+        location,
+        isDefault,
+        label
+      } = req.body;
+
+      profile.addresses.push({
+        recipientName,
+        recipientPhone,
+        houseNumber,
+        street,
+        landmark,
+        pincode,
+        city,
+        state,
+        country,
+        location,
+        isDefault,
+        label
+      } as any);
       await profile.save();
       
       res.json({ success: true, data: profile.addresses });

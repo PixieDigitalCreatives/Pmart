@@ -70,18 +70,18 @@ export const AdminReportsPage = () => {
 
       {/* Tabs */}
       <div className="pmart-tabs mb-6 flex gap-4 border-b border-gray-200">
-        <button 
+        <Button 
           className={`tab-btn pb-2 px-1 font-semibold ${activeTab === 'analytics' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}
           onClick={() => setActiveTab('analytics')}
         >
           <FileBarChart size={16} className="inline mr-2" /> Analytics
-        </button>
-        <button 
+        </Button>
+        <Button 
           className={`tab-btn pb-2 px-1 font-semibold ${activeTab === 'audit' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}
           onClick={() => setActiveTab('audit')}
         >
           <ShieldAlert size={16} className="inline mr-2" /> Audit Logs
-        </button>
+        </Button>
       </div>
 
       {/* Analytics Tab */}
@@ -195,20 +195,20 @@ export const AdminReportsPage = () => {
                     Showing page {auditPagination.page} of {auditPagination.pages}
                   </div>
                   <div className="flex gap-2">
-                    <button 
-                      className="btn btn-sm btn-secondary" 
+                    <Button 
+                       
                       disabled={auditPagination.page <= 1}
                       onClick={() => loadAuditLogs(auditPagination.page - 1)}
                     >
                       Previous
-                    </button>
-                    <button 
-                      className="btn btn-sm btn-secondary" 
+                    </Button>
+                    <Button 
+                       
                       disabled={auditPagination.page >= auditPagination.pages}
                       onClick={() => loadAuditLogs(auditPagination.page + 1)}
                     >
                       Next
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

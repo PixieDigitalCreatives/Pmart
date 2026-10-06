@@ -80,9 +80,9 @@ export const ShopCategoriesPage = () => {
                 <td className="py-3">{c.name}</td>
                 <td className="py-3 text-muted">{c.slug}</td>
                 <td className="py-3 text-right">
-                  <button className="btn-icon delete-action text-danger" onClick={() => setDeleteId(c.id || c._id)} aria-label="Delete">
+                  <Button className="delete-action text-danger" onClick={() => setDeleteId(c.id || c._id)} aria-label="Delete">
                     <Trash2 size={16} />
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

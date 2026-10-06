@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './CartDrawer.scss';
+import { Button } from '@/components/ui';
 
 export const CartDrawer = () => {
   const {
@@ -52,13 +53,13 @@ export const CartDrawer = () => {
                 <span className="items-count-badge">{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}</span>
               )}
             </div>
-            <button
+            <Button
               className="close-drawer-btn"
               onClick={() => setIsCartOpen(false)}
               aria-label="Close Cart"
             >
               <X size={20} />
-            </button>
+            </Button>
           </div>
 
           {items.length === 0 ? (
@@ -71,15 +72,15 @@ export const CartDrawer = () => {
               <p className="empty-desc">
                 Looks like you haven't added anything yet. Explore farm-fresh produce and daily grocery essentials!
               </p>
-              <button
-                className="btn btn-primary"
+              <Button
+                
                 onClick={() => {
                   setIsCartOpen(false);
                   navigate('/category/fruits-vegetables');
                 }}
               >
                 Browse Fresh Groceries
-              </button>
+              </Button>
             </div>
           ) : (
             <>
@@ -127,21 +128,21 @@ export const CartDrawer = () => {
 
                     <div className="item-qty-actions">
                       <div className="qty-control-pill">
-                        <button
+                        <Button
                           className="qty-btn"
                           onClick={() => updateQuantity(item._id || item.id, item.quantity - 1)}
                           aria-label="Decrease quantity"
                         >
                           {item.quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
-                        </button>
+                        </Button>
                         <span className="qty-number">{item.quantity}</span>
-                        <button
+                        <Button
                           className="qty-btn"
                           onClick={() => updateQuantity(item._id || item.id, item.quantity + 1)}
                           aria-label="Increase quantity"
                         >
                           <Plus size={13} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -190,13 +191,13 @@ export const CartDrawer = () => {
 
               {/* Drawer Footer Actions */}
               <div className="drawer-footer">
-                <button className="btn btn-primary btn-full checkout-cta" onClick={handleCheckout}>
+                <Button className="checkout-cta" onClick={handleCheckout} size="full">
                   <span>Proceed to Checkout</span>
                   <ArrowRight size={17} />
-                </button>
-                <button className="btn btn-secondary btn-full view-cart-link" onClick={handleViewCart}>
+                </Button>
+                <Button className="view-cart-link" onClick={handleViewCart} variant="secondary" size="full">
                   View Full Cart
-                </button>
+                </Button>
               </div>
             </>
           )}

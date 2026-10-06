@@ -163,7 +163,7 @@ export const RiderProfilePage = () => {
         )}
         <form onSubmit={handlePasswordChange} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium mb-1">Current Password</label>
+            <label htmlFor="auto-id-needed" className="block text-xs font-medium mb-1">Current Password</label>
             <Input 
               type="password" 
               value={passwords.currentPassword}
@@ -172,7 +172,7 @@ export const RiderProfilePage = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">New Password</label>
+            <label htmlFor="auto-id-needed" className="block text-xs font-medium mb-1">New Password</label>
             <Input 
               type="password" 
               value={passwords.newPassword}
@@ -182,7 +182,7 @@ export const RiderProfilePage = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">Confirm New Password</label>
+            <label htmlFor="auto-id-needed" className="block text-xs font-medium mb-1">Confirm New Password</label>
             <Input 
               type="password" 
               value={passwords.confirmPassword}

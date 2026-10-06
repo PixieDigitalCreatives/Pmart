@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 export const ErrorMessage = ({ title = 'Error', message, onRetry }) => {
   return (
@@ -9,9 +10,9 @@ export const ErrorMessage = ({ title = 'Error', message, onRetry }) => {
         <h4>{title}</h4>
         <p>{message}</p>
         {onRetry && (
-          <button onClick={onRetry} className="error-message-retry">
+          <Button onClick={onRetry} className="error-message-retry">
             Retry
-          </button>
+          </Button>
         )}
       </div>
     </div>

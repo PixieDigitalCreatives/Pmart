@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, User, CheckCheck, Sparkles, Phone, MessageSquare } from 'lucide-react';
 import './LiveChatModal.scss';
+import { Input, Button } from '@/components/ui';
 
 export const LiveChatModal = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([
@@ -111,27 +112,27 @@ export const LiveChatModal = ({ isOpen, onClose }) => {
                 <p className="agent-status">Sneha R. · Online · Typical reply &lt; 1m</p>
               </div>
             </div>
-            <button
+            <Button
               type="button"
               className="chat-close-btn"
               onClick={onClose}
               aria-label="Close chat"
             >
               <X size={18} />
-            </button>
+            </Button>
           </div>
 
           {/* Quick Prompts Bar */}
           <div className="quick-prompts-bar">
             {quickPrompts.map((prompt, idx) => (
-              <button
+              <Button
                 key={idx}
                 type="button"
                 className="prompt-chip"
                 onClick={() => handleSendMessage(prompt)}
               >
                 {prompt}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -169,22 +170,22 @@ export const LiveChatModal = ({ isOpen, onClose }) => {
               handleSendMessage();
             }}
           >
-            <input
+            <Input
               type="text"
-              className="form-control chat-input"
+              className="chat-input"
               placeholder="Type your question or issue..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               autoFocus
             />
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary send-btn"
+              className="send-btn"
               disabled={!inputText.trim()}
               aria-label="Send message"
             >
               <Send size={16} />
-            </button>
+            </Button>
           </form>
         </motion.div>
       </div>

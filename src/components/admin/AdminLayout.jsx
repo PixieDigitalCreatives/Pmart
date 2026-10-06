@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import './AdminLayout.scss';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { Input, Button } from '@/components/ui';
 
 export const AdminLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -51,9 +52,9 @@ export const AdminLayout = ({ children }) => {
               <span className="platform-name">Admin Console</span>
             </div>
           </Link>
-          <button className="mobile-close" onClick={() => setMobileMenuOpen(false)}>
+          <Button className="mobile-close" onClick={() => setMobileMenuOpen(false)}>
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <nav className="admin-nav-list">
@@ -88,7 +89,7 @@ export const AdminLayout = ({ children }) => {
               <div className="name">{user?.name || 'Ananya Saxena'}</div>
               <div className="role">Central Operations</div>
             </div>
-            <button
+            <Button
               className="logout-btn"
               onClick={() => {
                 logout();
@@ -97,7 +98,7 @@ export const AdminLayout = ({ children }) => {
               title="Logout"
             >
               <LogOut size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
@@ -107,12 +108,12 @@ export const AdminLayout = ({ children }) => {
         {/* Top Header */}
         <header className="admin-topbar">
           <div className="topbar-left">
-            <button className="mobile-toggle-btn" onClick={() => setMobileMenuOpen(true)}>
+            <Button className="mobile-toggle-btn" onClick={() => setMobileMenuOpen(true)}>
               <Menu size={20} />
-            </button>
+            </Button>
             <div className="admin-search-bar">
               <Search size={16} className="search-icon" />
-              <input
+              <Input
                 type="text"
                 placeholder="Global search orders, shops, users, transactions..."
               />
@@ -125,10 +126,10 @@ export const AdminLayout = ({ children }) => {
               <span>Platform Operational</span>
             </div>
 
-            <button className="icon-notice-btn" aria-label="Alerts">
+            <Button className="icon-notice-btn" aria-label="Alerts">
               <Bell size={18} />
               <span className="dot" />
-            </button>
+            </Button>
 
             <div className="admin-user-pill">
               <span className="role-tag">Super Admin</span>

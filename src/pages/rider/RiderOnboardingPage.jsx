@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { User, Phone, ArrowRight, AlertCircle, CheckCircle2, Car, Key } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, Input, Select } from '@/components/ui';
 import './RiderOnboardingPage.scss';
 
 export const RiderOnboardingPage = () => {
@@ -116,13 +116,13 @@ export const RiderOnboardingPage = () => {
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="form-group">
-                <label>Full Name <span className="required">*</span></label>
+                <label htmlFor="auto-id-needed">Full Name <span className="required">*</span></label>
                 <div className="input-with-icon">
                   <User size={18} className="field-icon" />
-                  <input
+                  <Input
                     type="text"
                     name="fullName"
-                    className="form-control"
+                    
                     placeholder="e.g. Shyam Mohan"
                     value={formData.fullName}
                     onChange={handleChange}
@@ -133,13 +133,13 @@ export const RiderOnboardingPage = () => {
               </div>
 
               <div className="form-group">
-                <label>Mobile Number <span className="required">*</span></label>
+                <label htmlFor="auto-id-needed">Mobile Number <span className="required">*</span></label>
                 <div className="input-with-icon">
                   <Phone size={18} className="field-icon" />
-                  <input
+                  <Input
                     type="tel"
                     name="phone"
-                    className="form-control"
+                    
                     placeholder="e.g. +91 98765 43210"
                     value={formData.phone}
                     onChange={handleChange}
@@ -150,27 +150,27 @@ export const RiderOnboardingPage = () => {
 
               <div className="form-row">
                 <div className="form-group flex-1">
-                  <label>Vehicle Type <span className="required">*</span></label>
-                  <select
+                  <label htmlFor="auto-id-needed">Vehicle Type <span className="required">*</span></label>
+                  <Select
                     name="vehicleType"
-                    className="form-control"
+                    
                     value={formData.vehicleType}
                     onChange={handleChange}
                   >
                     <option value="Bike">Bike</option>
                     <option value="Scooter">Scooter</option>
                     <option value="Electric Bike">Electric Bike</option>
-                  </select>
+                  </Select>
                 </div>
                 
                 <div className="form-group flex-1">
-                  <label>Vehicle Number <span className="required">*</span></label>
+                  <label htmlFor="auto-id-needed">Vehicle Number <span className="required">*</span></label>
                   <div className="input-with-icon">
                     <Car size={18} className="field-icon" />
-                    <input
+                    <Input
                       type="text"
                       name="vehicleNumber"
-                      className="form-control uppercase"
+                      className="uppercase"
                       placeholder="e.g. KA01AB1234"
                       value={formData.vehicleNumber}
                       onChange={handleChange}
@@ -181,13 +181,13 @@ export const RiderOnboardingPage = () => {
               </div>
 
               <div className="form-group">
-                <label>License Number <span className="required">*</span></label>
+                <label htmlFor="auto-id-needed">License Number <span className="required">*</span></label>
                 <div className="input-with-icon">
                   <Key size={18} className="field-icon" />
-                  <input
+                  <Input
                     type="text"
                     name="licenseNumber"
-                    className="form-control uppercase"
+                    className="uppercase"
                     placeholder="e.g. KA0120200000000"
                     value={formData.licenseNumber}
                     onChange={handleChange}

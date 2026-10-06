@@ -9,8 +9,7 @@ async function run() {
   uri = uri.replace(/\/\?/, '/pmart?');
   console.log(`MongoDB Memory Server started at: ${uri}`);
 
-  const env = { ...process.env, MONGODB_URI: uri, NODE_ENV: 'test', PORT: '5000', FIREBASE_PRIVATE_KEY: 'mockkey', JWT_SECRET: 'test' };
-
+  const env = { ...process.env, MONGODB_URI: uri, NODE_ENV: 'test', PORT: '5000', FIREBASE_PRIVATE_KEY: 'mockkey', JWT_SECRET: 'test', OTP_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' };
   console.log('Running setup-e2e.ts...');
   const setup = spawn('npx', ['ts-node', 'src/scripts/setup-e2e.ts'], {
     cwd: path.resolve(__dirname, '../../'),
@@ -71,7 +70,10 @@ function runPlaywright(uri: string, backend: any, replSet: any) {
 
   setTimeout(() => {
     console.log('Frontend server assumed ready, starting Playwright...');
-    const pw = spawn('npx', ['playwright', 'test'], {
+    const pwArgs = ['playwright', 'test'];
+    const customArgs = process.argv.slice(2);
+    if (customArgs.length > 0) pwArgs.push(...customArgs);
+    const pw = spawn('npx', pwArgs, {
         cwd: path.resolve(__dirname, '../../../e2e'),
         env,
         stdio: 'inherit',

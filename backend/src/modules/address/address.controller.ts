@@ -189,7 +189,11 @@ export class AddressController {
         return res.status(400).json({ success: false, message: 'lat and lng are required' });
       }
 
-      const MAPTILER_KEY = process.env.MAPTILER_API_KEY || process.env.VITE_MAPTILER_API_KEY || 'Ex3uk6dmjLzOoVUhieWZ';
+      const MAPTILER_KEY = process.env.MAPTILER_API_KEY || process.env.VITE_MAPTILER_API_KEY;
+      if (!MAPTILER_KEY) {
+        return res.status(500).json({ success: false, message: 'Geocoding service unavailable (Missing API Key)' });
+      }
+      
       const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_KEY}`;
       
       const response = await axios.get(url);

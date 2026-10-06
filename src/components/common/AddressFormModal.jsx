@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import './AddressFormModal.scss';
+import { Input, Button } from '@/components/ui';
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY || 'Ex3uk6dmjLzOoVUhieWZ';
 
@@ -279,7 +280,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
         >
           <div className="modal-header">
             <h3>{initialData ? 'Edit Address' : 'Add New Address'}</h3>
-            <button onClick={onClose} className="close-btn"><X size={20} /></button>
+            <Button onClick={onClose} className="close-btn"><X size={20} /></Button>
           </div>
 
           <div className="modal-body">
@@ -295,7 +296,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                 <div className="search-box-container">
                   <div className="search-input-wrapper">
                     <Search size={18} className="search-icon" />
-                    <input 
+                    <Input 
                       type="text" 
                       placeholder="Search area, apartment, street or pincode..." 
                       value={searchQuery}
@@ -324,10 +325,10 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                   )}
                 </div>
 
-                <button className="gps-btn" onClick={handleUseCurrentLocation} disabled={loading}>
+                <Button className="gps-btn" onClick={handleUseCurrentLocation} disabled={loading}>
                   {loading ? <Loader2 className="spinning" size={18} /> : <Navigation size={18} />}
                   Use Current Location
-                </button>
+                </Button>
                 <div className="map-container" ref={mapContainer}></div>
                 <div className="map-address-preview">
                   <p className="preview-label">Location detected</p>
@@ -343,13 +344,13 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                     <p className="preview-text">Move marker to select location</p>
                   )}
                 </div>
-                <button 
-                  className="btn btn-primary w-100" 
+                <Button 
+                  className="w-100" 
                   disabled={loading || !formData.formattedAddress}
                   onClick={() => setStep(2)}
                 >
                   Enter Complete Address
-                </button>
+                </Button>
               </div>
             )}
 
@@ -358,96 +359,96 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                 
                 <h4 className="section-title">Address Details</h4>
                 <div className="form-group">
-                  <label>House / Flat / Building *</label>
-                  <input type="text" value={formData.houseNumber} onChange={e => setFormData({...formData, houseNumber: e.target.value})} />
+                  <label htmlFor="auto-id-needed">House / Flat / Building *</label>
+                  <Input type="text" value={formData.houseNumber} onChange={e => setFormData({...formData, houseNumber: e.target.value})} />
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label>Apartment / Society</label>
-                    <input type="text" value={formData.buildingName} onChange={e => setFormData({...formData, buildingName: e.target.value})} />
+                    <label htmlFor="auto-id-needed">Apartment / Society</label>
+                    <Input type="text" value={formData.buildingName} onChange={e => setFormData({...formData, buildingName: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label>Floor</label>
-                    <input type="text" value={formData.floor} onChange={e => setFormData({...formData, floor: e.target.value})} />
+                    <label htmlFor="auto-id-needed">Floor</label>
+                    <Input type="text" value={formData.floor} onChange={e => setFormData({...formData, floor: e.target.value})} />
                   </div>
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label>Street / Road</label>
-                    <input type="text" value={formData.street} onChange={e => setFormData({...formData, street: e.target.value})} />
+                    <label htmlFor="auto-id-needed">Street / Road</label>
+                    <Input type="text" value={formData.street} onChange={e => setFormData({...formData, street: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label>Area / Locality</label>
-                    <input type="text" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                    <label htmlFor="auto-id-needed">Area / Locality</label>
+                    <Input type="text" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Landmark</label>
-                  <input type="text" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} />
+                  <label htmlFor="auto-id-needed">Landmark</label>
+                  <Input type="text" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} />
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label>City *</label>
-                    <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                    <label htmlFor="auto-id-needed">City *</label>
+                    <Input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label>State *</label>
-                    <input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
+                    <label htmlFor="auto-id-needed">State *</label>
+                    <Input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
                   </div>
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label>Pincode *</label>
-                    <input type="text" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
+                    <label htmlFor="auto-id-needed">Pincode *</label>
+                    <Input type="text" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label>District</label>
-                    <input type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} />
+                    <label htmlFor="auto-id-needed">District</label>
+                    <Input type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} />
                   </div>
                 </div>
                 
                 <h4 className="section-title mt-4">Deliver to</h4>
                 <div className="form-group">
-                  <label>Full Name *</label>
-                  <input type="text" value={formData.recipientName} onChange={e => setFormData({...formData, recipientName: e.target.value})} />
+                  <label htmlFor="auto-id-needed">Full Name *</label>
+                  <Input type="text" value={formData.recipientName} onChange={e => setFormData({...formData, recipientName: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label>Phone Number *</label>
-                  <input type="text" value={formData.recipientPhone} onChange={e => setFormData({...formData, recipientPhone: e.target.value})} />
+                  <label htmlFor="auto-id-needed">Phone Number *</label>
+                  <Input type="text" value={formData.recipientPhone} onChange={e => setFormData({...formData, recipientPhone: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label>Delivery Instructions (Optional)</label>
-                  <input type="text" placeholder="e.g. Leave at security gate" value={formData.deliveryInstructions} onChange={e => setFormData({...formData, deliveryInstructions: e.target.value})} />
+                  <label htmlFor="auto-id-needed">Delivery Instructions (Optional)</label>
+                  <Input type="text" placeholder="e.g. Leave at security gate" value={formData.deliveryInstructions} onChange={e => setFormData({...formData, deliveryInstructions: e.target.value})} />
                 </div>
                 
                 <div className="label-selector">
-                  <label>Address Type</label>
+                  <label htmlFor="auto-id-needed">Address Type</label>
                   <div className="tags">
                     {['HOME', 'WORK', 'OTHER'].map(tag => (
-                      <button 
+                      <Button 
                         key={tag} 
                         className={`tag-btn ${formData.tag === tag ? 'active' : ''}`}
                         onClick={() => setFormData({...formData, tag})}
                       >
                         {tag}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
 
                 <div className="default-toggle">
-                  <label className="checkbox-label">
+                  <label htmlFor="auto-id-needed" className="checkbox-label">
                     <input type="checkbox" checked={formData.isDefault} onChange={e => setFormData({...formData, isDefault: e.target.checked})} />
                     Make this my default address
                   </label>
                 </div>
 
                 <div className="actions">
-                  {!initialData && <button className="btn btn-outline" onClick={() => setStep(1)}>Back to Map</button>}
-                  <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
+                  {!initialData && <Button  onClick={() => setStep(1)}>Back to Map</Button>}
+                  <Button  onClick={handleSave} disabled={loading}>
                     {loading ? <Loader2 className="spinning" size={18} /> : 'Save Address'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

@@ -57,11 +57,11 @@ export class AuthService {
     const { uid, email, name, email_verified } = decodedToken as any;
 
     // Look for existing user by googleId
-    let user = await User.findOne({ googleId: uid }).select('+passwordHash');
+    let user = await User.findOne({ googleId: uid }).select('+passwordHash') as any;
 
     if (!user && email) {
       // If not found by googleId, try by email
-      user = await User.findOne({ email }).select('+passwordHash');
+      user = await User.findOne({ email }).select('+passwordHash') as any;
       if (user) {
         // Link google account to existing user
         user.googleId = uid;

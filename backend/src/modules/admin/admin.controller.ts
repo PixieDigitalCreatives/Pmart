@@ -5,6 +5,7 @@ import { User, UserRole } from '../auth/auth.model';
 import { Shop } from '../shop/shop.model';
 import { RiderProfile, RiderAvailability } from '../rider/rider.model';
 import { AuditLog } from './audit.model';
+import { escapeRegExp } from '../../utils/regex';
 
 export class AdminController {
   static async getDashboardStats(req: Request, res: Response) {
@@ -136,7 +137,16 @@ export class AdminController {
       if (req.query.status && req.query.status !== 'all') filter.status = req.query.status;
       if (req.query.paymentStatus && req.query.paymentStatus !== 'all') filter.paymentStatus = req.query.paymentStatus;
       if (req.query.search) {
-        filter.orderNumber = { $regex: req.query.search, $options: 'i' };
+        if (typeof req.query.search !== 'string') {
+          return res.status(400).json({ message: 'Invalid search query type' });
+        }
+        const searchStr = req.query.search.trim();
+        if (searchStr.length > 100) {
+          return res.status(400).json({ message: 'Search query too long' });
+        }
+        if (searchStr) {
+          filter.orderNumber = { $regex: escapeRegExp(searchStr), $options: 'i' };
+        }
       }
 
       const orders = await Order.find(filter)
@@ -400,6 +410,9 @@ export class AdminController {
 
       // Check if it's a phone number search or name search
       const cleanQ = q.trim();
+      if (cleanQ.length > 100) {
+        return res.status(400).json({ message: 'Search query too long' });
+      }
       const isPhoneLike = /^[\d\+]+$/.test(cleanQ);
 
       let query: any = {};
@@ -408,7 +421,7 @@ export class AdminController {
         const normalized = normalizeMobileNumber(cleanQ);
         query = { phone: normalized };
       } else {
-        query = { name: { $regex: cleanQ, $options: 'i' } };
+        query = { name: { $regex: escapeRegExp(cleanQ), $options: 'i' } };
       }
 
       const users = await User.find(query).limit(20).select('name phone role isActive profileComplete');
@@ -464,8 +477,10 @@ export class AdminController {
       }
 
       const session = await mongoose.startSession();
-      session.startTransaction();
-
+      let retries = 3;
+      let createdUserId: string | null = null;
+      while (retries > 0) {
+        session.startTransaction();
       try {
         const passwordHash = await hashPassword(password);
         
@@ -494,18 +509,48 @@ export class AdminController {
         });
         await profile.save({ session });
 
-        await session.commitTransaction();
-        session.endSession();
+        let commitRetries = 3;
+        while (commitRetries > 0) {
+          try {
+            await session.commitTransaction();
+            break;
+          } catch (commitError: any) {
+            if (commitError.hasErrorLabel && commitError.hasErrorLabel('UnknownTransactionCommitResult')) {
+              commitRetries--;
+              if (commitRetries === 0) throw commitError;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } else {
+              throw commitError;
+            }
+          }
+        }
         
-        res.status(201).json({ 
-          message: 'Rider created successfully', 
-          riderId: user._id
-        });
+        createdUserId = user._id.toString();
+        break; // Success, exit retry loop
       } catch (txnError: any) {
         await session.abortTransaction();
+        if (txnError.hasErrorLabel && txnError.hasErrorLabel('TransientTransactionError')) {
+          retries--;
+          if (retries === 0) {
+            session.endSession();
+            console.error('Rider creation failed after retries:', txnError);
+            return res.status(500).json({ message: 'System busy, please try again.' });
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+          continue; // Retry
+        }
         session.endSession();
         console.error('Rider creation failed, transaction aborted:', txnError);
         return res.status(500).json({ message: txnError.message || 'Failed to create rider and profile atomically' });
+      }
+      } // end while
+
+      session.endSession();
+      if (createdUserId) {
+        res.status(201).json({ 
+          message: 'Rider created successfully', 
+          riderId: createdUserId
+        });
       }
     } catch (error: any) {
       console.error('Create Rider Error:', error);
@@ -748,26 +793,9 @@ export class AdminController {
 
       const currentUser = (req as any).user;
       
-      // Prevent non-admin from modifying admin or removing themselves
-      if (user.role === UserRole.ADMIN && currentUser?._id?.toString() !== id) {
-          if (currentUser?.role !== UserRole.ADMIN) {
-             return res.status(403).json({ message: 'Cannot modify ADMIN user' });
-          }
-      }
-
-      // Prevent employees from modifying their own permissions or role
-      if (currentUser?.role !== UserRole.ADMIN && currentUser?._id?.toString() === id) {
-        if (permissions) {
-          return res.status(403).json({ message: 'Cannot modify your own permissions' });
-        }
-      }
-
-      // Prevent employees from granting permissions they do not hold
-      if (currentUser?.role !== UserRole.ADMIN && permissions && Array.isArray(permissions)) {
-        const hasAll = permissions.every((p: string) => currentUser?.permissions?.includes(p));
-        if (!hasAll) {
-          return res.status(403).json({ message: 'Cannot grant permissions you do not possess' });
-        }
+      // SEC-004: Restrict employee modification to ADMIN only
+      if (currentUser?.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: Only ADMIN can modify employees' });
       }
 
       if (name) user.name = name;

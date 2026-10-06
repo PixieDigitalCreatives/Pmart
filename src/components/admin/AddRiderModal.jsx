@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import api from '../../services/apiClient';
+import { Input, Button, Select } from '@/components/ui';
 
 export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -74,7 +75,7 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
       <div className="modal-content add-rider-modal">
         <div className="modal-header">
           <h2>Add Fleet Rider</h2>
-          <button className="icon-btn" onClick={handleClose}><X size={20} /></button>
+          <Button className="icon-btn" onClick={handleClose}><X size={20} /></Button>
         </div>
         
         {successData ? (
@@ -86,7 +87,7 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
               </p>
             </div>
             <div className="modal-footer flex justify-end gap-2 pt-4 border-t">
-              <button type="button" className="btn btn-primary" onClick={handleClose}>Done</button>
+              <Button type="button"  onClick={handleClose}>Done</Button>
             </div>
           </div>
         ) : (
@@ -98,33 +99,33 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
             )}
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Full Name *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Full Name *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
           </div>
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Email *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Email *</label>
+            <Input 
               type="email" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.email}
               onChange={e => setFormData({...formData, email: e.target.value})}
             />
           </div>
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Phone *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Phone *</label>
+            <Input 
               type="tel" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.phone}
               onChange={e => setFormData({...formData, phone: e.target.value})}
               placeholder="e.g. 9876543210"
@@ -132,77 +133,77 @@ export const AddRiderModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
           
           <div className="form-group mb-3">
-            <label className="block text-sm font-medium mb-1">Vehicle Type *</label>
-            <select 
-              className="form-control w-full p-2 border rounded"
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Vehicle Type *</label>
+            <Select 
+              className="w-full p-2 border rounded"
               value={formData.vehicleType}
               onChange={e => setFormData({...formData, vehicleType: e.target.value})}
             >
               <option value="Bike">Bike</option>
               <option value="Scooter">Scooter</option>
               <option value="Van">Van</option>
-            </select>
+            </Select>
           </div>
           
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">Vehicle Number *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Vehicle Number *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.vehicleNumber}
               onChange={e => setFormData({...formData, vehicleNumber: e.target.value})}
             />
           </div>
 
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">License Number *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">License Number *</label>
+            <Input 
               type="text" 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.licenseNumber}
               onChange={e => setFormData({...formData, licenseNumber: e.target.value})}
             />
           </div>
 
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">Initial Password *</label>
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Initial Password *</label>
             <div className="relative">
-              <input 
+              <Input 
                 type={showPassword ? "text" : "password"} 
                 required 
-                className="form-control w-full p-2 border rounded pr-10"
+                className="w-full p-2 border rounded pr-10"
                 value={formData.password}
                 onChange={e => setFormData({...formData, password: e.target.value})}
               />
-              <button
+              <Button
                 type="button"
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex="-1"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="form-group mb-4">
-            <label className="block text-sm font-medium mb-1">Confirm Password *</label>
-            <input 
+            <label htmlFor="auto-id-needed" className="block text-sm font-medium mb-1">Confirm Password *</label>
+            <Input 
               type={showPassword ? "text" : "password"} 
               required 
-              className="form-control w-full p-2 border rounded"
+              className="w-full p-2 border rounded"
               value={formData.confirmPassword}
               onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
             />
           </div>
           
           <div className="modal-footer flex justify-end gap-2 pt-4 border-t">
-            <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <Button type="button"  onClick={handleClose} variant="secondary">Cancel</Button>
+            <Button type="submit"  disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create Rider'}
-            </button>
+            </Button>
           </div>
         </form>
         )}

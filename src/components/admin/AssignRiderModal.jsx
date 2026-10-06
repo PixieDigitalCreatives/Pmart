@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/apiClient';
 import { X, Bike } from 'lucide-react';
 import '../../pages/admin/AdminOrdersPage.scss';
+import { Button } from '@/components/ui';
 
 export const AssignRiderModal = ({ isOpen, onClose, orderId, onAssign }) => {
   const [riders, setRiders] = useState([]);
@@ -49,9 +50,9 @@ export const AssignRiderModal = ({ isOpen, onClose, orderId, onAssign }) => {
       <div className="modal-content" style={{ maxWidth: '500px', width: '90%' }}>
         <div className="modal-header">
           <h2>Assign Rider</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
+          <Button className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={20} />
-          </button>
+          </Button>
         </div>
         
         <div className="modal-body p-4" style={{ padding: '16px' }}>
@@ -77,7 +78,7 @@ export const AssignRiderModal = ({ isOpen, onClose, orderId, onAssign }) => {
                 const isSelected = selectedRider?.id === rider.id;
                 const isBusy = rider.status === 'BUSY';
                 return (
-                  <button 
+                  <Button 
                     key={rider.id}
                     type="button"
                     onClick={() => !isBusy && setSelectedRider(rider)}
@@ -126,7 +127,7 @@ export const AssignRiderModal = ({ isOpen, onClose, orderId, onAssign }) => {
                     <div style={{ color: isSelected ? '#eb3223' : '#cbd5e1' }}>
                       <Bike size={24} />
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -134,23 +135,23 @@ export const AssignRiderModal = ({ isOpen, onClose, orderId, onAssign }) => {
         </div>
 
         <div className="modal-actions" style={{ padding: '16px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <button 
+          <Button 
             type="button"
-            className="btn btn-secondary"
+            
             onClick={onClose}
             disabled={isAssigning}
-          >
+           variant="secondary">
             Cancel
-          </button>
-          <button 
+          </Button>
+          <Button 
             type="button"
-            className="btn btn-primary"
+            
             onClick={handleAssignClick}
             disabled={!selectedRider || selectedRider.status === 'BUSY' || isAssigning}
             style={{ opacity: (!selectedRider || selectedRider.status === 'BUSY' || isAssigning) ? 0.6 : 1 }}
           >
             {isAssigning ? 'Assigning...' : 'Assign Rider'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

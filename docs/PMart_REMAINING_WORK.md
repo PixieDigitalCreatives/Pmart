@@ -9,10 +9,25 @@
 **Title:** Security IDOR Verification
 **Status:** ✅ COMPLETED (Empirically verified via `backend/tests/idor-audit.ts`. Tests confirmed 403/404/400 responses for cross-tenant access to orders, addresses, and shops, as well as rider isolation, admin authorization, role escalation blocks, and OTP security.)
 
+### ID: 013
+**Title:** Security Audit Remediation Sprint
+**Status:** ✅ COMPLETED (Reconciled 54-item tracker, mitigated Mongoose NoSQL risks and completely addressed ReDoS via strict regex escaping, enforced strict JWT length validation, completely overhauled Socket.IO to include comprehensive resource-level authorization verifying order ownership and specific employee roles (verified via 18 strict tests in `socket.auth.test.ts`), removed hardcoded production secrets in seeders, stripped OTPs from logs, and disabled sourcemaps in Vite.)
 
 ### ID: 004
 **Title:** Error Boundary and Frontend Fallbacks
 **Status:** ✅ COMPLETED (Wrapped layouts with ErrorBoundary)
+
+### ID: 015
+**Title:** Concurrent Checkout and Inventory Audit
+**Current behavior:** Concurrency testing for inventory overselling and idempotency replay was requested.
+**Expected behavior:** Formal invariant tests verifying concurrency bounds (e.g. 11000 duplicate keys, 409 WriteConflicts) must exist and pass.
+**Status:** ✅ COMPLETED (Implemented 11 comprehensive concurrency scenarios in `checkout.concurrency.test.ts` verifying atomicity, transient transaction retries, and exactly-once idempotency checks. 11/11 passing.)
+
+### ID: 016
+**Title:** Test Suite Stability and Teardown Lifecycle Verification
+**Current behavior:** Test suite experienced transient failures (`IX lock` timeouts) and graceful shutdown hangs due to lingering background timers.
+**Expected behavior:** Robust transactional retry handling (including `UnknownTransactionCommitResult`) and explicit deterministic teardown of timers, memory servers, and sockets.
+**Status:** ✅ COMPLETED (Implemented explicit `clearTimeout` tracking in `OrderAutomation`. Added `commitRetries` loops in `admin.controller.ts` and `order.controller.ts`. Added defensive memory server checks. Suite runs sequentially 100% green with 0 Open Handles over multiple runs.)
 
 ### ID: 007
 **Title:** Comprehensive Admin Panel Implementation
@@ -29,6 +44,13 @@
 **Current behavior:** `order.automation.ts` used in-memory `setTimeout` jobs that were lost on backend restart.
 **Expected behavior:** Jobs persisted to MongoDB `OrderProgressionJob` collection, atomically locked before execution, and recovered by a sweeper on startup.
 **Status:** ✅ COMPLETED (OrderProgressionJob model, idempotent executeJob, AdminController assignment inside transaction, recovery sweeper. 4/4 tests pass in `order.automation.test.ts`.)
+
+## P1 — Rate Limiting & Proxy Configuration
+### ID: 014
+**Title:** Granular Rate Limiting & Proxy Trust Mitigation
+**Current behavior:** Catalog search, checkout, OTP verification, admin mutations, and rider location updates lacked specific limiters, and `trust proxy` was missing.
+**Expected behavior:** Granular limits applied and Express correctly configured to trust the proxy, avoiding global blockages based on proxy IPs.
+**Status:** ✅ COMPLETED (Implemented `searchLimiter`, `checkoutLimiter`, `otpLimiter`, `adminMutationLimiter`, and `locationLimiter`. Configured `app.set('trust proxy', 1)`. Regression tests added in `rate-limit.test.ts` passing 4/4.)
 
 ## P1 — Pending UI Work
 ### ID: 010

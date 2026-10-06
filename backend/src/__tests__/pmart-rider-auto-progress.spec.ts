@@ -50,7 +50,7 @@ afterAll(async () => {
   env.RIDER_PICKUP_DELAY_MS = undefined;
   env.RIDER_OUT_FOR_DELIVERY_DELAY_MS = undefined;
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) { await mongoServer.stop(); }
 });
 
 const generateToken = (user: any) => {

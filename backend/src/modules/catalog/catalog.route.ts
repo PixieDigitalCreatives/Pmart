@@ -2,6 +2,14 @@ import { Router } from 'express';
 import { CatalogController } from './catalog.controller';
 import { protect, authorize, authorizePermission } from '../../middleware/auth.middleware';
 import { UserRole } from '../auth/auth.model';
+import rateLimit from 'express-rate-limit';
+
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 searches per minute
+  message: { success: false, message: 'Too many search requests, please try again later' },
+  skip: (req) => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+});
 
 const router = Router();
 
@@ -9,7 +17,7 @@ const router = Router();
 router.get('/categories', CatalogController.getCategories);
 router.get('/categories/:slug', CatalogController.getCategoryBySlug);
 router.get('/products', CatalogController.getProducts);
-router.get('/products/search', CatalogController.searchProducts);
+router.get('/products/search', searchLimiter, CatalogController.searchProducts);
 router.get('/products/tag/:tag', CatalogController.getProductsByTag);
 router.get('/products/slug/:slug', CatalogController.getProductBySlug);
 router.get('/products/:id', CatalogController.getProductById);

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
 import './ConfirmationModal.scss';
+import { Button } from '@/components/ui';
 
 export const ConfirmationModal = ({
   isOpen,
@@ -47,7 +48,7 @@ export const ConfirmationModal = ({
           role="dialog"
           aria-modal="true"
         >
-          <button
+          <Button
             type="button"
             className="modal-close-icon"
             onClick={() => !loading && onClose()}
@@ -55,7 +56,7 @@ export const ConfirmationModal = ({
             aria-label="Close dialog"
           >
             <X size={18} />
-          </button>
+          </Button>
 
           <div className="confirmation-modal-body">
             <div className={`icon-badge variant-${variant}`}>
@@ -66,15 +67,15 @@ export const ConfirmationModal = ({
             <p className="modal-message">{message}</p>
 
             <div className="modal-actions">
-              <button
+              <Button
                 type="button"
-                className="btn btn-secondary"
+                
                 onClick={onClose}
                 disabled={loading}
-              >
+               variant="secondary">
                 {cancelText}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 className={`btn ${variant === 'danger' ? 'btn-primary' : variant === 'warning' ? 'btn-primary' : 'btn-primary'}`}
                 style={
@@ -88,7 +89,7 @@ export const ConfirmationModal = ({
                 disabled={loading}
               >
                 {loading ? 'Processing...' : confirmText}
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>

@@ -27,7 +27,7 @@ import {
   Banknote,
   KeyRound
 } from 'lucide-react';
-import { Button, StatusBadge, Card } from '@/components/ui';
+import { Button, StatusBadge, Card, Select } from '@/components/ui';
 import './ShopOrderDetailPage.scss';
 
 export const ShopOrderDetailPage = () => {
@@ -350,8 +350,8 @@ export const ShopOrderDetailPage = () => {
             <h3 className="card-heading">Delivery Partner Assignment</h3>
             <form onSubmit={handleAssignRider}>
               <div className="form-group">
-                <label>Select Available Rider</label>
-                <select
+                <label htmlFor="auto-id-needed">Select Available Rider</label>
+                <Select
                   className="form-select"
                   value={selectedRiderId}
                   onChange={e => setSelectedRiderId(e.target.value)}
@@ -363,7 +363,7 @@ export const ShopOrderDetailPage = () => {
                       {r.name || r.fullName} ({r.vehicleNumber}) — {r.availabilityStatus === 'AVAILABLE' ? '🟢 Available' : '🟡 On Delivery'}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <Button

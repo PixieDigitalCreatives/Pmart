@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { useCart } from '@/context/CartContext';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
-import { Button } from '@/components/ui/Button';
 import {
   Clock,
   Star,
@@ -18,6 +17,7 @@ import {
   Check
 } from 'lucide-react';
 import './ProductDetailPage.scss';
+import { Button } from '@/components/ui';
 
 export const ProductDetailPage = () => {
   const { slug } = useParams();
@@ -115,20 +115,20 @@ export const ProductDetailPage = () => {
 
             {product.gallery && product.gallery.length > 1 && (
               <div className="thumbnail-row">
-                <button
+                <Button
                   className={`thumb-btn ${selectedImage === (product.imageUrl || product.image) ? 'active' : ''}`}
                   onClick={() => setSelectedImage(product.imageUrl || product.image)}
                 >
                   <img src={product.imageUrl || product.image} alt={product.name} />
-                </button>
+                </Button>
                 {product.gallery.map((imgUrl, idx) => (
-                  <button
+                  <Button
                     key={idx}
                     className={`thumb-btn ${selectedImage === imgUrl ? 'active' : ''}`}
                     onClick={() => setSelectedImage(imgUrl)}
                   >
                     <img src={imgUrl} alt={`${product.name} ${idx + 1}`} />
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -138,10 +138,10 @@ export const ProductDetailPage = () => {
           <div className="pdp-info-column">
             <div className="brand-share-row">
               <span className="brand-label">{product.brand}</span>
-              <button className="share-btn" onClick={handleShare} title="Share product link">
+              <Button className="share-btn" onClick={handleShare} title="Share product link">
                 {copiedLink ? <Check size={16} className="text-success" /> : <Share2 size={16} />}
                 <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
-              </button>
+              </Button>
             </div>
 
             <h1 className="pdp-product-title">{product.name}</h1>
@@ -191,20 +191,20 @@ export const ProductDetailPage = () => {
                 <div className="qty-stepper-box">
                   <span className="qty-label">Quantity in Cart:</span>
                   <div className="stepper-controls">
-                    <button
+                    <Button
                       className="step-btn"
                       onClick={() => updateQuantity(product._id || product.id, currentCartQty - 1)}
                     >
                       <Minus size={15} />
-                    </button>
+                    </Button>
                     <span className="step-val">{currentCartQty}</span>
-                    <button
+                    <Button
                       className="step-btn"
                       onClick={() => updateQuantity(product._id || product.id, currentCartQty + 1)}
                       disabled={currentCartQty >= product.stockCount}
                     >
                       <Plus size={15} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

@@ -5,6 +5,7 @@ import { categoryService } from '@/services/categoryService';
 import { ProductCard } from '@/components/product/ProductCard';
 import { Search, X, SlidersHorizontal, ArrowUpDown, Clock } from 'lucide-react';
 import './SearchPage.scss';
+import { Button, Select } from '@/components/ui';
 
 export const SearchPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,13 +81,13 @@ export const SearchPage = () => {
               <span className="tags-label">Trending:</span>
               <div className="tags-list">
                 {popularSearches.map((term, i) => (
-                  <button
+                  <Button
                     key={i}
                     className={`search-tag-chip ${query.toLowerCase() === term.toLowerCase() ? 'active' : ''}`}
                     onClick={() => handleChipClick(term)}
                   >
                     {term}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -103,7 +104,7 @@ export const SearchPage = () => {
                 <span>Filters</span>
               </div>
               {(selectedCategory || inStockOnly || priceRange < 1000) && (
-                <button
+                <Button
                   className="reset-filters-btn"
                   onClick={() => {
                     setSelectedCategory('');
@@ -112,28 +113,28 @@ export const SearchPage = () => {
                   }}
                 >
                   Clear all
-                </button>
+                </Button>
               )}
             </div>
 
             {/* Category Filter */}
             <div className="filter-group">
-              <label className="group-label">Category</label>
+              <label htmlFor="auto-id-needed" className="group-label">Category</label>
               <div className="category-options-list">
-                <button
+                <Button
                   className={`cat-filter-option ${selectedCategory === '' ? 'active' : ''}`}
                   onClick={() => setSelectedCategory('')}
                 >
                   All Categories
-                </button>
+                </Button>
                 {categories.map((c) => (
-                  <button
+                  <Button
                     key={c.id || c._id}
                     className={`cat-filter-option ${selectedCategory === c.slug ? 'active' : ''}`}
                     onClick={() => setSelectedCategory(c.slug)}
                   >
                     {c.name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -141,7 +142,7 @@ export const SearchPage = () => {
             {/* Price Filter */}
             <div className="filter-group">
               <div className="flex justify-between items-center mb-1">
-                <label className="group-label">Max Price: ₹{priceRange}</label>
+                <label htmlFor="auto-id-needed" className="group-label">Max Price: ₹{priceRange}</label>
               </div>
               <input
                 type="range"
@@ -160,7 +161,7 @@ export const SearchPage = () => {
 
             {/* In Stock toggle */}
             <div className="filter-group checkbox-group">
-              <label className="checkbox-label">
+              <label htmlFor="auto-id-needed" className="checkbox-label">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
@@ -185,7 +186,7 @@ export const SearchPage = () => {
 
               <div className="sort-wrapper">
                 <label htmlFor="sort-select" className="sort-label">Sort by:</label>
-                <select
+                <Select
                   id="sort-select"
                   className="form-select sort-select"
                   value={sortBy}
@@ -196,7 +197,7 @@ export const SearchPage = () => {
                   <option value="price-high">Price: High to Low</option>
                   <option value="discount">Highest Discount</option>
                   <option value="rating">Top Rated</option>
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -208,13 +209,13 @@ export const SearchPage = () => {
                 <p>Try checking the spelling or browse popular categories below.</p>
                 <div className="fallback-suggestions">
                   {popularSearches.slice(0, 4).map((s, idx) => (
-                    <button
+                    <Button
                       key={idx}
                       className="search-tag-chip"
                       onClick={() => handleChipClick(s)}
                     >
                       {s}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

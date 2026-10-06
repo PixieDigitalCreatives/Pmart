@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Store, MapPin, User, Phone, Package, Bike, CheckCircle } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import './AddDarkstoreModal.scss';
+import { Input, Button, Select } from '@/components/ui';
 
 export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
   const [formData, setFormData] = useState({
@@ -70,19 +71,19 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                 <p className="modal-desc">Onboard a regional micro-fulfillment center to the quick delivery network</p>
               </div>
             </div>
-            <button type="button" className="close-btn" onClick={onClose}>
+            <Button type="button" className="close-btn" onClick={onClose}>
               <X size={18} />
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="darkstore-modal-body">
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <label className="form-label">Darkstore Name *</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">Darkstore Name *</label>
+                  <Input
                     type="text"
-                    className="form-control"
+                    
                     placeholder="e.g. PMart Darkstore #08 - Indiranagar East"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -91,8 +92,8 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Hub City</label>
-                  <select
+                  <label htmlFor="auto-id-needed" className="form-label">Hub City</label>
+                  <Select
                     className="form-select"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
@@ -102,14 +103,14 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                     <option value="Delhi NCR">Delhi NCR</option>
                     <option value="Hyderabad">Hyderabad</option>
                     <option value="Chennai">Chennai</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Service Pincode *</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">Service Pincode *</label>
+                  <Input
                     type="text"
-                    className="form-control"
+                    
                     placeholder="e.g. 560038"
                     value={formData.pincode}
                     onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
@@ -119,10 +120,10 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Hub Manager Name *</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">Hub Manager Name *</label>
+                  <Input
                     type="text"
-                    className="form-control"
+                    
                     placeholder="e.g. Arvind Swamy"
                     value={formData.manager}
                     onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
@@ -131,10 +132,10 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Manager Contact Phone</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">Manager Contact Phone</label>
+                  <Input
                     type="tel"
-                    className="form-control"
+                    
                     placeholder="+91 98450 12345"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -142,20 +143,20 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">SKU Inventory Capacity</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">SKU Inventory Capacity</label>
+                  <Input
                     type="number"
-                    className="form-control"
+                    
                     value={formData.inventoryCount}
                     onChange={(e) => setFormData({ ...formData, inventoryCount: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Assigned Delivery Fleet</label>
-                  <input
+                  <label htmlFor="auto-id-needed" className="form-label">Assigned Delivery Fleet</label>
+                  <Input
                     type="number"
-                    className="form-control"
+                    
                     value={formData.activeRiders}
                     onChange={(e) => setFormData({ ...formData, activeRiders: e.target.value })}
                   />
@@ -164,13 +165,13 @@ export const AddDarkstoreModal = ({ isOpen, onClose, onAddShop }) => {
             </div>
 
             <div className="darkstore-modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
+              <Button type="button"  onClick={onClose} variant="secondary">
                 Cancel
-              </button>
-              <button type="submit" className="btn btn-primary">
+              </Button>
+              <Button type="submit" >
                 <CheckCircle size={16} />
                 <span>Provision & Launch Hub</span>
-              </button>
+              </Button>
             </div>
           </form>
         </motion.div>

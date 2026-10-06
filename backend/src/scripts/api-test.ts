@@ -8,7 +8,7 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 async function run() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?retryWrites=true&w=majority&appName=pmart');
+  await mongoose.connect(process.env.MONGODB_URI as string);
   
   const riders = await User.find({ role: UserRole.RIDER });
   if (riders.length === 0) {

@@ -10,6 +10,11 @@ dotenv.config();
 async function seedCatalog() {
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pmart';
   
+  if (process.env.NODE_ENV === 'production') {
+    console.error('CRITICAL: Cannot run development seed script in production environment.');
+    process.exit(1);
+  }
+
   try {
     console.log(`Connecting to MongoDB at ${MONGODB_URI}...`);
     await mongoose.connect(MONGODB_URI);

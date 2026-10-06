@@ -23,6 +23,12 @@ const productImages: Record<string, string> = {
 
 async function seedImages() {
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pmart';
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.error('CRITICAL: Cannot run development seed script in production environment.');
+    process.exit(1);
+  }
+
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to DB');

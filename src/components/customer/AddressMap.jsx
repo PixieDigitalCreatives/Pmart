@@ -3,6 +3,7 @@ import * as maptilersdk from '@maptiler/sdk';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import { locationService } from '@/services/locationService';
 import { MapPin, Navigation, Loader } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 const isDev = import.meta.env.DEV;
 const log = (...args) => { if (isDev) console.log('[MAP AddressMap]', ...args); };
@@ -171,13 +172,13 @@ export const AddressMap = ({
       <div className="bg-red-50 text-red-600 p-4 rounded-lg flex flex-col items-center gap-2">
         <MapPin size={24} />
         <p className="text-sm font-medium text-center">{mapError}</p>
-        <button
+        <Button
           type="button"
           onClick={() => { setMapError(''); useCurrentLocation(); }}
           className="text-sm text-blue-600 underline"
         >
           Try Again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -191,7 +192,7 @@ export const AddressMap = ({
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         {/* Use Current Location button */}
-        <button
+        <Button
           type="button"
           onClick={useCurrentLocation}
           disabled={isLoading}
@@ -205,7 +206,7 @@ export const AddressMap = ({
           title="Use my current location"
         >
           {isLoading ? <Loader size={16} className="animate-spin text-gray-500" /> : <Navigation size={16} className="text-blue-600" />}
-        </button>
+        </Button>
         {/* Loading overlay */}
         {!mapReady && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', zIndex: 5 }}>

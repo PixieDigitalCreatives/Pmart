@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 // FAQs will be fetched from API in the future
 import { LiveChatModal } from '@/components/common/LiveChatModal';
-import { Button } from '@/components/ui/Button';
 import {
   HelpCircle,
   ChevronDown,
@@ -12,6 +11,7 @@ import {
   Search
 } from 'lucide-react';
 import './HelpPage.scss';
+import { Input, Button } from '@/components/ui';
 
 export const HelpPage = () => {
   const [expandedIndex, setExpandedIndex] = useState('0-0');
@@ -32,9 +32,9 @@ export const HelpPage = () => {
             <p className="hero-subtitle">Find fast answers to questions regarding your groceries, OTPs, and delivery</p>
             <div className="help-search-box">
               <Search size={18} className="search-icon" />
-              <input
+              <Input
                 type="text"
-                className="form-control"
+                
                 placeholder="Search FAQs, refunds, delivery issues..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -93,14 +93,14 @@ export const HelpPage = () => {
                     const isOpen = expandedIndex === id;
                     return (
                       <div key={qIdx} className={`faq-accordion-item ${isOpen ? 'open' : ''}`}>
-                        <button
+                        <Button
                           className="faq-question-btn"
                           onClick={() => toggleAccordion(id)}
                           aria-expanded={isOpen}
                         >
                           <span className="question-text">{faq.q}</span>
                           <ChevronDown size={18} className={`chevron-arrow ${isOpen ? 'rotated' : ''}`} />
-                        </button>
+                        </Button>
                         {isOpen && (
                           <div className="faq-answer-panel">
                             <p>{faq.a}</p>

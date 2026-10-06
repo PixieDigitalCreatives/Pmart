@@ -34,7 +34,10 @@ export const AdminDashboardPage = () => {
 
     import('socket.io-client').then(({ io }) => {
       const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-      const socket = io(SOCKET_URL);
+      const token = localStorage.getItem('pmart_auth_token');
+      const socket = io(SOCKET_URL, {
+        auth: { token }
+      });
       socket.emit('join_admin');
       
       socket.on('order_status_update', () => {

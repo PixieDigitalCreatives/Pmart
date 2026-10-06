@@ -8,7 +8,17 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string(),
-  JWT_SECRET: z.string(),
+  JWT_SECRET: z.string().min(1).superRefine((val, ctx) => {
+    if (process.env.NODE_ENV === 'production') {
+      if (val.length < 32) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'JWT_SECRET must be at least 32 characters in production' });
+      }
+      const weakSecrets = ['secret', 'test', 'fallback_secret', '123456', 'production_secret_key_change_me_in_real_prod'];
+      if (weakSecrets.some(w => val.includes(w))) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'JWT_SECRET cannot be a known weak/fallback string in production' });
+      }
+    }
+  }),
   JWT_EXPIRES_IN: z.string().default('1h'),
   OTP_LENGTH: z.string().default('4').transform(Number),
   OTP_ENCRYPTION_KEY: z.string().length(64, 'Must be a 64 character hex string (32 bytes)'),

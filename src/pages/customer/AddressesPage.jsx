@@ -119,16 +119,16 @@ export const AddressesPage = () => {
 
                 <div className="card-actions-row">
                   {!addr.isDefault && (
-                    <button className="action-btn set-default" onClick={(e) => handleSetDefault(e, addr._id)}>
+                    <Button className="action-btn set-default" onClick={(e) => handleSetDefault(e, addr._id)}>
                       Set as Default
-                    </button>
+                    </Button>
                   )}
-                  <button className="action-btn edit-btn" onClick={(e) => { e.stopPropagation(); openEditForm(addr); }}>
+                  <Button className="action-btn edit-btn" onClick={(e) => { e.stopPropagation(); openEditForm(addr); }}>
                     Edit
-                  </button>
-                  <button className="action-btn delete-btn" aria-label="Delete" onClick={(e) => handleDelete(e, addr._id)}>
+                  </Button>
+                  <Button className="action-btn delete-btn" aria-label="Delete" onClick={(e) => handleDelete(e, addr._id)}>
                     <Trash2 size={15} />
-                  </button>
+                  </Button>
                 </div>
                 
                 {isSelected && (

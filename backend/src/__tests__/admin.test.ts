@@ -40,7 +40,7 @@ describe('Admin API - Employee Management', () => {
       profileComplete: true,
       passwordHash: 'dummy',
     });
-    adminId = admin._id as string;
+    adminId = (admin._id as any) as string;
     adminToken = generateToken(adminId);
 
     // Create an Employee without 'employees.manage' permission
@@ -54,7 +54,7 @@ describe('Admin API - Employee Management', () => {
       passwordHash: 'dummy',
       permissions: ['orders.read']
     });
-    employeeId = emp._id as string;
+    employeeId = (emp._id as any) as string;
     employeeToken = generateToken(employeeId);
   });
 
@@ -105,7 +105,7 @@ describe('Admin API - Employee Management', () => {
       passwordHash: 'dummy',
       permissions: ['employees.manage']
     });
-    const token = generateToken(empWithPerm._id as string);
+    const token = generateToken((empWithPerm._id as any) as string);
 
     const res = await request(app)
       .get('/api/admin/employees')

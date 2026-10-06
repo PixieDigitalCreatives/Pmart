@@ -3,9 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { ProductCard } from '@/components/product/ProductCard';
-import { Button } from '@/components/ui/Button';
 import { ChevronRight, Filter, ArrowUpDown } from 'lucide-react';
 import './CategoryPage.scss';
+import { Select } from '@/components/ui';
 
 export const CategoryPage = () => {
   const { slug } = useParams();
@@ -103,7 +103,7 @@ export const CategoryPage = () => {
             {/* All 18 Categories Dropdown */}
             <div className="toolbar-control-item">
               <label htmlFor="cat-dropdown-filter">Categories:</label>
-              <select
+              <Select
                 id="cat-dropdown-filter"
                 className="form-select category-filter-select"
                 value={category?.slug || slug}
@@ -114,14 +114,14 @@ export const CategoryPage = () => {
                     {cat.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Subcategories Filter for the selected category */}
             {category?.subcategories && category.subcategories.length > 0 && (
               <div className="toolbar-control-item">
                 <label htmlFor="subcat-dropdown-filter">Subcategory:</label>
-                <select
+                <Select
                   id="subcat-dropdown-filter"
                   className="form-select subcategory-filter-select"
                   value={activeSubcategory}
@@ -131,7 +131,7 @@ export const CategoryPage = () => {
                   {category.subcategories.map((sub, i) => (
                     <option key={i} value={sub}>{sub}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
 
@@ -142,7 +142,7 @@ export const CategoryPage = () => {
 
           <div className="toolbar-sort">
             <label htmlFor="cat-sort">Sort by:</label>
-            <select
+            <Select
               id="cat-sort"
               className="form-select sort-select"
               value={sortBy}
@@ -153,7 +153,7 @@ export const CategoryPage = () => {
               <option value="price-high">Price: High to Low</option>
               <option value="discount">Discount Percentage</option>
               <option value="rating">Customer Rating</option>
-            </select>
+            </Select>
           </div>
         </div>
 

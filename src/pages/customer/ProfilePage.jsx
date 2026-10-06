@@ -72,7 +72,7 @@ export const ProfilePage = () => {
                   <span>Coupons & Rewards</span>
                   <ChevronRight size={16} className="arrow" />
                 </Link>
-                <button
+                <Button
                   type="button"
                   className="nav-item active-account-btn"
                   onClick={() => setActiveTab('account_details')}
@@ -80,16 +80,16 @@ export const ProfilePage = () => {
                   <User size={18} />
                   <span>Account Details</span>
                   <ChevronRight size={16} className="arrow" />
-                </button>
+                </Button>
                 <Link to="/help" className="nav-item">
                   <HelpCircle size={18} />
                   <span>Help & Support</span>
                   <ChevronRight size={16} className="arrow" />
                 </Link>
-                <button className="nav-item logout-link" onClick={handleLogout}>
+                <Button className="nav-item logout-link" onClick={handleLogout}>
                   <LogOut size={18} />
                   <span>Logout</span>
-                </button>
+                </Button>
               </nav>
             </aside>
           </div>
@@ -97,7 +97,7 @@ export const ProfilePage = () => {
           /* Dedicated Account Details View (Opened when clicking Account Details) */
           <div className="account-details-view">
             <div className="details-header-nav">
-              <button
+              <Button
                 type="button"
                 className="back-to-menu-btn"
                 onClick={() => {
@@ -107,7 +107,7 @@ export const ProfilePage = () => {
               >
                 <ChevronLeft size={18} />
                 <span>Back to Account</span>
-              </button>
+              </Button>
             </div>
 
             <main className="profile-main-content">

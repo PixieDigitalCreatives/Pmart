@@ -89,8 +89,7 @@ test.describe('PMart Full E2E Lifecycle', () => {
     // 1. Create Browser Contexts
     const customerContext = await browser.newContext();
     const adminContext = await browser.newContext();
-    const riderContext = await browser.newContext();
-
+    const riderContext = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 12.9716, longitude: 77.5946 } });
     const customerPage = await customerContext.newPage();
     const adminPage = await adminContext.newPage();
     const riderPage = await riderContext.newPage();
@@ -200,7 +199,9 @@ test.describe('PMart Full E2E Lifecycle', () => {
     // Start Delivery Run
     const startRunBtn = riderPage.getByRole('button', { name: /Start Delivery Run/i });
     await startRunBtn.waitFor({ state: 'visible', timeout: 15000 });
+    const responsePromise = riderPage.waitForResponse(res => res.url().includes('/status') && res.request().method() === 'PUT');
     await startRunBtn.click();
+    await responsePromise;
 
     // Customer Realtime Update check
     await expect(customerPage.getByText('OUT FOR DELIVERY').first()).toBeVisible({ timeout: 15000 });

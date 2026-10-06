@@ -85,7 +85,11 @@ export const trackingService = {
 
     // Socket.io for real-time rider GPS
     log('Connecting to socket:', SOCKET_URL);
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    const token = localStorage.getItem('pmart_auth_token');
+    const socket = io(SOCKET_URL, { 
+      transports: ['websocket', 'polling'],
+      auth: { token }
+    });
 
     socket.on('connect', () => log('Socket connected, joining order room:', orderId));
     socket.on('connect_error', (err) => log('Socket connect error:', err.message));

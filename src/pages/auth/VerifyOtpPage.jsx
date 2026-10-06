@@ -9,7 +9,7 @@ import {
   ArrowLeft,
   RotateCcw
 } from 'lucide-react';
-import { Button, ErrorMessage } from '@/components/ui';
+import { Button, ErrorMessage, Input } from '@/components/ui';
 import './LoginPage.scss';
 
 export const VerifyOtpPage = () => {
@@ -128,10 +128,10 @@ export const VerifyOtpPage = () => {
         {/* Right Side: OTP Card */}
         <div className="auth-form-side">
           <div className="form-wrapper">
-            <button className="back-to-login-link" onClick={() => navigate('/login')}>
+            <Button className="back-to-login-link" onClick={() => navigate('/login')}>
               <ArrowLeft size={16} />
               <span>Change phone / email</span>
-            </button>
+            </Button>
 
             <div className="form-heading-group">
               <h1 className="form-title">Enter Verification Code</h1>
@@ -152,7 +152,7 @@ export const VerifyOtpPage = () => {
             <form onSubmit={handleVerify} className="otp-form">
               <div className="otp-digits-row">
                 {otp.map((digit, idx) => (
-                  <input
+                  <Input
                     key={idx}
                     ref={inputRefs[idx]}
                     type="text"
@@ -171,10 +171,10 @@ export const VerifyOtpPage = () => {
                 {timer > 0 ? (
                   <span className="timer-text">Resend code in {timer}s</span>
                 ) : (
-                  <button type="button" className="resend-btn" onClick={handleResend}>
+                  <Button type="button" className="resend-btn" onClick={handleResend}>
                     <RotateCcw size={14} />
                     <span>Resend OTP</span>
-                  </button>
+                  </Button>
                 )}
               </div>
 

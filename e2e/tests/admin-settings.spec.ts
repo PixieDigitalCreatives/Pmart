@@ -77,12 +77,18 @@ test.describe('Admin Settings Persistence and Navigation (ID010)', () => {
         // 4. Change values
         const randomFee = Math.floor(Math.random() * 10) + 10;
         
-        // Fill baseDeliveryFee
-        await page.getByLabel(/Standard Delivery Fee/).fill(randomFee.toString());
-        // Fill freeDeliveryThreshold
-        await page.getByLabel(/Free Delivery Order Minimum/).fill('499');
-        // Fill platformHandlingFee
-        await page.getByLabel(/Platform Handling Fee/).fill('2');
+        const fillInput = async (label: RegExp, value: string) => {
+            const input = page.getByLabel(label);
+            await input.click();
+            await input.fill('');
+            await input.fill(value);
+            await expect(input).toHaveValue(value);
+            await input.blur();
+        };
+
+        await fillInput(/Standard Delivery Fee/, randomFee.toString());
+        await fillInput(/Free Delivery Order Minimum/, '499');
+        await fillInput(/Platform Handling Fee/, '2');
 
         // 5. Save and confirm the actual API request succeeds
         await page.screenshot({ path: 'filled_form.png', fullPage: true });

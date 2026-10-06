@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import './ShopLayout.scss';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { Input, Button } from '@/components/ui';
 
 export const ShopLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -50,9 +51,9 @@ export const ShopLayout = ({ children }) => {
               <span className="store-name">Noida Sector 62</span>
             </div>
           </Link>
-          <button className="mobile-close-btn" onClick={() => setMobileSidebarOpen(false)}>
+          <Button className="mobile-close-btn" onClick={() => setMobileSidebarOpen(false)}>
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         {/* Navigation */}
@@ -90,7 +91,7 @@ export const ShopLayout = ({ children }) => {
               <div className="user-name">{user?.name || 'Manish Tyagi'}</div>
               <div className="user-role">Hub Manager</div>
             </div>
-            <button
+            <Button
               className="logout-icon-btn"
               onClick={() => {
                 logout();
@@ -99,7 +100,7 @@ export const ShopLayout = ({ children }) => {
               title="Logout"
             >
               <LogOut size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
@@ -109,12 +110,12 @@ export const ShopLayout = ({ children }) => {
         {/* Top Navbar */}
         <header className="shop-topbar">
           <div className="topbar-left">
-            <button className="hamburger-btn" onClick={() => setMobileSidebarOpen(true)}>
+            <Button className="hamburger-btn" onClick={() => setMobileSidebarOpen(true)}>
               <Menu size={20} />
-            </button>
+            </Button>
             <div className="topbar-search">
               <Search size={16} className="search-icon" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search orders, SKU codes, customer mobile..."
               />
@@ -127,10 +128,10 @@ export const ShopLayout = ({ children }) => {
               <span className="status-label">Store Online (Accepting Orders)</span>
             </div>
 
-            <button className="notification-btn" aria-label="Notifications">
+            <Button className="notification-btn" aria-label="Notifications">
               <Bell size={18} />
               <span className="alert-dot" />
-            </button>
+            </Button>
 
             <div className="topbar-user-badge">
               <div className="avatar-circle">M</div>

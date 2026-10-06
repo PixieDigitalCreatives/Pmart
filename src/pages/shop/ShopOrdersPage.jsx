@@ -23,7 +23,7 @@ import {
   ShieldCheck,
   PackageSearch
 } from 'lucide-react';
-import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
+import { PageHeader, StatusBadge, Button, EmptyState, Input } from '@/components/ui';
 import './ShopOrdersPage.scss';
 
 export const ShopOrdersPage = () => {
@@ -102,19 +102,19 @@ export const ShopOrdersPage = () => {
             { id: 'out_for_delivery', label: 'Out for Delivery' },
             { id: 'delivered', label: 'Completed' }
           ].map(t => (
-            <button
+            <Button
               key={t.id}
               className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
               onClick={() => setActiveTab(t.id)}
             >
               {t.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="search-box">
           <Search size={16} className="search-icon" />
-          <input
+          <Input
             type="text"
             placeholder="Search order ID, customer phone or name..."
             value={search}

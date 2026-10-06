@@ -3,6 +3,7 @@ import { useCart } from '@/context/CartContext';
 import { ShoppingBag, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './StickyMobileCart.scss';
+import { Button } from '@/components/ui';
 
 export const StickyMobileCart = () => {
   const { totalQuantity, billSummary, setIsCartOpen } = useCart();
@@ -18,7 +19,7 @@ export const StickyMobileCart = () => {
         exit={{ y: 80, opacity: 0 }}
         transition={{ duration: 0.25 }}
       >
-        <button
+        <Button
           className="sticky-cart-btn"
           onClick={() => setIsCartOpen(true)}
           aria-label="View Cart"
@@ -39,7 +40,7 @@ export const StickyMobileCart = () => {
             <span>View Cart</span>
             <ChevronRight size={16} />
           </div>
-        </button>
+        </Button>
       </motion.div>
     </AnimatePresence>
   );

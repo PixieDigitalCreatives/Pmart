@@ -27,9 +27,14 @@ async function run() {
   }
   
   const rider = riders[0];
+  if (!process.env.JWT_SECRET) {
+    console.error('ERROR: JWT_SECRET environment variable is required.');
+    process.exit(1);
+  }
+
   const token = jwt.sign(
     { id: rider._id, role: rider.role, email: rider.email },
-    process.env.JWT_SECRET || 'fallback_secret_for_local_testing_only',
+    process.env.JWT_SECRET,
     { expiresIn: '1d' }
   );
 

@@ -121,7 +121,7 @@ export const LoginPage = () => {
           {error && <ErrorMessage message={error} />}
 
           {/* ① Google button */}
-          <button
+          <Button
             id="google-sign-in-btn"
             type="button"
             className="google-oauth-btn"
@@ -136,7 +136,7 @@ export const LoginPage = () => {
               className="google-icon"
             />
             <span>Continue with Google</span>
-          </button>
+          </Button>
 
           {/* ② Divider */}
           <div className="auth-divider">

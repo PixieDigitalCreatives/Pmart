@@ -86,7 +86,7 @@ export const PermissionSelector = ({ selectedPermissions = [], onChange }) => {
             <h4 className="font-bold text-sm mb-2 text-gray-700 border-b pb-1">{group.title}</h4>
             <div className="space-y-1">
               {group.permissions.map(perm => (
-                <label key={perm.key} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded">
+                <label htmlFor="auto-id-needed" key={perm.key} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded">
                   <input 
                     type="checkbox" 
                     className="form-checkbox text-primary rounded border-gray-300"
@@ -105,7 +105,7 @@ export const PermissionSelector = ({ selectedPermissions = [], onChange }) => {
             <h4 className="font-bold text-sm mb-2 text-gray-700 border-b pb-1">Other Permissions</h4>
             <div className="space-y-1">
               {unknownKeys.map(key => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded">
+                <label htmlFor="auto-id-needed" key={key} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded">
                   <input 
                     type="checkbox" 
                     className="form-checkbox text-primary rounded border-gray-300"

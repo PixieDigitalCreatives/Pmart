@@ -19,6 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import './GoogleDeliveryMap.scss';
+import { Button } from '@/components/ui';
 
 export const GoogleDeliveryMap = ({
   order,
@@ -137,7 +138,7 @@ export const GoogleDeliveryMap = ({
     >
       {/* Top Left: Google Maps Style Layer Switcher */}
       <div className="gmap-type-selector">
-        <button
+        <Button
           type="button"
           className={`type-btn ${mapType === 'navigation' ? 'active' : ''}`}
           onClick={() => setMapType('navigation')}
@@ -145,23 +146,23 @@ export const GoogleDeliveryMap = ({
         >
           <Navigation size={13} className="btn-icon" />
           <span>Live GPS</span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={`type-btn ${mapType === 'google-map' ? 'active' : ''}`}
           onClick={() => setMapType('google-map')}
           title="Actual Google Map Road Network"
         >
           <span>Map</span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           className={`type-btn ${mapType === 'google-satellite' ? 'active' : ''}`}
           onClick={() => setMapType('google-satellite')}
           title="Google Maps Satellite Imagery"
         >
           <span>Satellite</span>
-        </button>
+        </Button>
       </div>
 
       {/* Top Center: Floating Google Navigation Banner */}
@@ -178,14 +179,14 @@ export const GoogleDeliveryMap = ({
 
       {/* Top Right: Traffic & External Navigation Links */}
       <div className="gmap-top-right-actions">
-        <button
+        <Button
           type="button"
           className={`gmap-icon-btn ${showTraffic ? 'active-traffic' : ''}`}
           onClick={() => setShowTraffic(!showTraffic)}
           title={showTraffic ? 'Traffic layer enabled' : 'Toggle traffic layer'}
         >
           <Layers size={15} />
-        </button>
+        </Button>
         <a
           href={googleMapsDirectionsUrl}
           target="_blank"
@@ -442,27 +443,27 @@ export const GoogleDeliveryMap = ({
         {/* Play / Pause live simulation (only in Navigation mode) */}
         {mapType === 'navigation' && (
           <div className="gmap-control-group play-pause-group">
-            <button
+            <Button
               type="button"
               className="gmap-btn"
               onClick={() => setIsPlaying(!isPlaying)}
               title={isPlaying ? 'Pause rider movement' : 'Resume rider movement'}
             >
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className="gmap-btn"
               onClick={handleResetSimulation}
               title="Reset simulation to hub"
             >
               <RotateCcw size={14} />
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Re-center GPS */}
-        <button
+        <Button
           type="button"
           className="gmap-btn location-recenter-btn"
           onClick={() => {
@@ -472,48 +473,48 @@ export const GoogleDeliveryMap = ({
           title="Re-center on delivery rider"
         >
           <Crosshair size={16} />
-        </button>
+        </Button>
 
         {/* Zoom In & Out */}
         <div className="gmap-control-group zoom-group">
-          <button
+          <Button
             type="button"
             className="gmap-btn zoom-in"
             onClick={() => setZoomLevel((z) => Math.min(z + 1, 19))}
             title="Zoom In"
           >
             <Plus size={16} />
-          </button>
+          </Button>
           <div className="btn-divider" />
-          <button
+          <Button
             type="button"
             className="gmap-btn zoom-out"
             onClick={() => setZoomLevel((z) => Math.max(z - 1, 10))}
             title="Zoom Out"
           >
             <Minus size={16} />
-          </button>
+          </Button>
         </div>
 
         {/* Pegman Street View & Fullscreen */}
         <div className="gmap-control-group view-group">
-          <button
+          <Button
             type="button"
             className="gmap-btn pegman-btn"
             onClick={() => setMapType(mapType === 'google-satellite' ? 'navigation' : 'google-satellite')}
             title="Toggle Google Satellite / Street Imagery"
           >
             <span className="pegman-icon">🚶</span>
-          </button>
+          </Button>
           <div className="btn-divider" />
-          <button
+          <Button
             type="button"
             className="gmap-btn fullscreen-btn"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'View Fullscreen Map'}
           >
             {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          </button>
+          </Button>
         </div>
       </div>
 

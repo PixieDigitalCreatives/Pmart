@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import './RiderLayout.scss';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { Button } from '@/components/ui';
 
 export const RiderLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -30,14 +31,14 @@ export const RiderLayout = ({ children }) => {
           </div>
 
           {/* Online/Offline Toggle */}
-          <button
+          <Button
             className={`rider-status-toggle ${isOnline ? 'online' : 'offline'}`}
             onClick={() => setIsOnline(!isOnline)}
             title="Toggle Fleet Availability"
           >
             <span className="indicator-dot" />
             <span className="status-text">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-          </button>
+          </Button>
         </div>
       </header>
 

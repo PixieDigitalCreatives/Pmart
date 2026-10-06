@@ -2,12 +2,26 @@ import { Router } from 'express';
 import { AdminController } from './admin.controller';
 import { protect, authorize, authorizePermission } from '../../middleware/auth.middleware';
 import { UserRole } from '../auth/auth.model';
+import rateLimit from 'express-rate-limit';
+
+const adminMutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // 60 mutations per 15 minutes
+  message: { success: false, message: 'Too many administrative actions, please try again later' },
+  skip: (req) => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
+});
 
 const router = Router();
 
 // All admin routes are protected and require the ADMIN or EMPLOYEE role
 router.use(protect);
 router.use(authorize(UserRole.ADMIN, UserRole.EMPLOYEE));
+router.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return adminMutationLimiter(req, res, next);
+  }
+  next();
+});
 
 // Dashboard stats (viewable by anyone with dashboard access)
 router.get('/dashboard', authorizePermission('dashboard.read'), AdminController.getDashboardStats);

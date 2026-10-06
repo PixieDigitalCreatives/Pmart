@@ -12,15 +12,15 @@ const registerLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 login requests per window
+  max: 5, // limit each IP to 5 login requests per window
   message: { success: false, message: 'Too many login attempts, please try again later' },
   skip: (req) => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
 });
 
 const passwordLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // limit each IP to 5 password changes per hour
-  message: { success: false, message: 'Too many password change attempts, please try again after an hour' },
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 password changes per 15 mins
+  message: { success: false, message: 'Too many password change attempts, please try again after 15 minutes' },
   skip: (req) => process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
 });
 

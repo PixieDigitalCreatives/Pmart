@@ -4,6 +4,7 @@ import { X, Search, Navigation, Home, Briefcase, MapPin, Check, Loader2, AlertCi
 import { motion, AnimatePresence } from 'framer-motion';
 import { AddressFormModal } from './AddressFormModal';
 import './LocationModal.scss';
+import { Input, Button } from '@/components/ui';
 
 export const LocationModal = () => {
   const {
@@ -101,22 +102,22 @@ export const LocationModal = () => {
               <h3 className="modal-title">Select Delivery Location</h3>
               <p className="modal-subtitle">Express delivery from nearby darkstore</p>
             </div>
-            <button
+            <Button
               className="close-btn"
               onClick={() => setLocationModalOpen(false)}
               aria-label="Close dialog"
             >
               <X size={20} />
-            </button>
+            </Button>
           </div>
 
           <div className="modal-body">
             {/* Search Input */}
             <div className="location-search-box">
               <Search size={18} className="search-icon" />
-              <input
+              <Input
                 type="text"
-                className="form-control"
+                
                 placeholder="Search area, apartment, street or pincode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -124,7 +125,7 @@ export const LocationModal = () => {
             </div>
 
             {/* GPS Detection */}
-            <button
+            <Button
               className="current-location-btn"
               onClick={handleUseCurrentLocation}
               disabled={isDetecting}
@@ -138,7 +139,7 @@ export const LocationModal = () => {
                 </span>
                 <span className="gps-desc">Using device GPS for precise doorstep delivery</span>
               </div>
-            </button>
+            </Button>
 
             {/* Saved Locations */}
             <div className="saved-locations-section">
@@ -209,8 +210,8 @@ export const LocationModal = () => {
                             <div className="loc-instructions">Instr: {loc.deliveryInstructions}</div>
                           )}
                           <div className="loc-actions">
-                            <button onClick={(e) => openEditForm(e, loc)}>Edit</button>
-                            <button onClick={(e) => handleDelete(e, loc._id)}>Delete</button>
+                            <Button onClick={(e) => openEditForm(e, loc)}>Edit</Button>
+                            <Button onClick={(e) => handleDelete(e, loc._id)}>Delete</Button>
                           </div>
                         </div>
                         {isSelected && (
@@ -227,9 +228,9 @@ export const LocationModal = () => {
           </div>
           
           <div className="modal-footer">
-            <button className="add-address-btn" onClick={openAddForm}>
+            <Button className="add-address-btn" onClick={openAddForm}>
               + Add New Address
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>

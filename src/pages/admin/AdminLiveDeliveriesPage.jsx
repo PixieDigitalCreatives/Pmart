@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveDeliveryMap } from '../../components/admin/LiveDeliveryMap';
-import { PageHeader, StatusBadge } from '@/components/ui';
+import { PageHeader, StatusBadge, Input, Button } from '@/components/ui';
 import { io } from 'socket.io-client';
 import api from '../../services/apiClient';
 import './AdminLiveDeliveriesPage.scss';
@@ -54,7 +54,11 @@ export const AdminLiveDeliveriesPage = () => {
     fetchDeliveries();
 
     // Set up Socket.IO
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    const token = localStorage.getItem('pmart_auth_token');
+    const socket = io(SOCKET_URL, { 
+      transports: ['websocket', 'polling'],
+      auth: { token }
+    });
 
     socket.on('connect', () => {
       if (import.meta.env.DEV) console.log('[ADMIN SOCKET] connected, joining admin room');
@@ -131,7 +135,7 @@ export const AdminLiveDeliveriesPage = () => {
       <div className="delivery-filter-bar">
         <div className="search-box">
           <Search size={16} className="search-icon" />
-          <input
+          <Input
             type="text"
             placeholder="Search order ID, rider name, customer..."
             value={search}
@@ -147,14 +151,14 @@ export const AdminLiveDeliveriesPage = () => {
             { id: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
             { id: 'near_customer', label: 'Near Customer (<500m)' }
           ].map(f => (
-            <button
+            <Button
               key={f.id}
               type="button"
               className={`filter-pill ${filter === f.id ? 'active' : ''}`}
               onClick={() => setFilter(f.id)}
             >
               {f.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

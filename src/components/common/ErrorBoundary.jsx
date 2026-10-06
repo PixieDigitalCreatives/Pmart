@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
 import '../../styles/error-boundary.scss';
+import { Button } from '@/components/ui';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -29,13 +30,13 @@ class ErrorBoundary extends React.Component {
               We're sorry, but there was an unexpected error. 
               {this.props.fallbackMessage || 'Our team has been notified.'}
             </p>
-            <button 
+            <Button 
               className="retry-button" 
               onClick={() => window.location.reload()}
             >
               <RefreshCcw size={16} />
               <span>Reload Page</span>
-            </button>
+            </Button>
             
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="error-details">

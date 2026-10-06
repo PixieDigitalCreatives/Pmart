@@ -4,7 +4,11 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 const API_URL = 'http://localhost:5000/api';
-const SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_testing_only';
+if (!process.env.JWT_SECRET) {
+  console.error('ERROR: JWT_SECRET environment variable is required.');
+  process.exit(1);
+}
+const SECRET = process.env.JWT_SECRET;
 
 async function runLiveTest() {
   if (process.env.NODE_ENV === 'production' || process.env.VITE_API_URL?.includes('pmart')) {
