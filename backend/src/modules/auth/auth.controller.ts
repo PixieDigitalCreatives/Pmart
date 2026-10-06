@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { UserRole } from './auth.model';
 import { z } from 'zod';
+import { logger } from '../../utils/logger';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -48,6 +49,8 @@ export class AuthController {
       const { name, phone, password } = registerSchema.parse(req.body);
       const result = await AuthService.registerCustomer({ name, phone, password });
       
+      logger.info(`Successful registration for user ${(result.user as any)._id} from IP: ${req.ip || req.socket.remoteAddress}`);
+      
       setRefreshCookie(res, result.refreshToken);
 
       res.status(201).json({
@@ -64,6 +67,7 @@ export class AuthController {
       });
     } catch (error) {
       if (error instanceof Error && error.message.includes('already associated')) {
+        logger.warn(`Failed registration attempt for ${req.body.phone} from IP: ${req.ip || req.socket.remoteAddress}`);
         return res.status(409).json({ success: false, message: error.message });
       }
       next(error);
@@ -74,6 +78,8 @@ export class AuthController {
     try {
       const { phone, password } = loginSchema.parse(req.body);
       const result = await AuthService.login({ phone, password });
+      
+      logger.info(`Successful login for user ${(result.user as any)._id} from IP: ${req.ip || req.socket.remoteAddress}`);
       
       setRefreshCookie(res, result.refreshToken);
 
@@ -92,6 +98,7 @@ export class AuthController {
       });
     } catch (error) {
       if (error instanceof Error && (error.message.includes('credentials') || error.message.includes('deactivated'))) {
+        logger.warn(`Failed login attempt for ${req.body.phone} from IP: ${req.ip || req.socket.remoteAddress}`);
         return res.status(401).json({ success: false, message: error.message });
       }
       next(error);

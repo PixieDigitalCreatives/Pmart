@@ -54,7 +54,7 @@ export class AuthService {
   static async googleLogin(idToken: string) {
     // Verify the Firebase ID token
     const decodedToken = await firebaseAuth.verifyIdToken(idToken);
-    const { uid, email, name, email_verified } = decodedToken;
+    const { uid, email, name, email_verified } = decodedToken as any;
 
     // Look for existing user by googleId
     let user = await User.findOne({ googleId: uid }).select('+passwordHash');
@@ -141,9 +141,13 @@ export class AuthService {
   }
 
   static async enrollRider(token: string, password: string) {
-    const user = await User.findOne({ setupToken: token });
+    const user = await User.findOne({ setupToken: token }).select('+setupTokenExpires');
     if (!user) {
       throw new Error('Invalid or expired setup token');
+    }
+
+    if (user.setupTokenExpires && user.setupTokenExpires < new Date()) {
+      throw new Error('Setup token has expired');
     }
 
     if (user.role !== UserRole.RIDER) {

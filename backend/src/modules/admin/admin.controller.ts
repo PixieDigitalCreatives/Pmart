@@ -683,6 +683,16 @@ export class AdminController {
         return res.status(422).json({ message: 'Name and phone are required' });
       }
 
+      const currentUser = (req as any).user;
+      if (currentUser?.role !== UserRole.ADMIN) {
+        if (permissions && Array.isArray(permissions)) {
+          const hasAll = permissions.every(p => currentUser?.permissions?.includes(p));
+          if (!hasAll) {
+            return res.status(403).json({ message: 'Cannot grant permissions you do not possess' });
+          }
+        }
+      }
+
       const { normalizeMobileNumber } = require('../../utils/auth');
       const normalizedPhone = normalizeMobileNumber(phone);
 
@@ -703,7 +713,8 @@ export class AdminController {
         profileComplete: true,
         isActive: true,
         authProvider: 'PHONE',
-        setupToken
+        setupToken,
+        setupTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
       await user.save();
 
@@ -735,13 +746,28 @@ export class AdminController {
         return res.status(404).json({ message: 'Employee not found' });
       }
 
+      const currentUser = (req as any).user;
+      
       // Prevent non-admin from modifying admin or removing themselves
-      if (user.role === UserRole.ADMIN && (req as any).user?._id?.toString() !== id) {
-          // If we want to strictly protect ADMIN, we should ensure only ADMIN can update ADMIN.
-          // But our route protects `employees.manage`. An employee with `employees.manage` shouldn't be able to edit an ADMIN.
-          if ((req as any).user?.role !== UserRole.ADMIN) {
+      if (user.role === UserRole.ADMIN && currentUser?._id?.toString() !== id) {
+          if (currentUser?.role !== UserRole.ADMIN) {
              return res.status(403).json({ message: 'Cannot modify ADMIN user' });
           }
+      }
+
+      // Prevent employees from modifying their own permissions or role
+      if (currentUser?.role !== UserRole.ADMIN && currentUser?._id?.toString() === id) {
+        if (permissions) {
+          return res.status(403).json({ message: 'Cannot modify your own permissions' });
+        }
+      }
+
+      // Prevent employees from granting permissions they do not hold
+      if (currentUser?.role !== UserRole.ADMIN && permissions && Array.isArray(permissions)) {
+        const hasAll = permissions.every((p: string) => currentUser?.permissions?.includes(p));
+        if (!hasAll) {
+          return res.status(403).json({ message: 'Cannot grant permissions you do not possess' });
+        }
       }
 
       if (name) user.name = name;
