@@ -12,10 +12,10 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  ChevronLeft,
   ShieldCheck,
   Check
 } from 'lucide-react';
+import { Button, FormField, Input, Card } from '@/components/ui';
 import './ProfilePage.scss';
 
 export const ProfilePage = () => {
@@ -111,16 +111,16 @@ export const ProfilePage = () => {
             </div>
 
             <main className="profile-main-content">
-              <div id="account-personal-info-card" className="content-card">
+              <Card id="account-personal-info-card" className="content-card">
                 <div className="card-header-row">
                   <div>
                     <h2 className="card-title">Personal Information</h2>
                     <p className="card-subtitle">Manage your account details and contact preferences</p>
                   </div>
                   {!isEditing && (
-                    <button className="btn btn-secondary btn-sm" onClick={() => setIsEditing(true)}>
+                    <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                       Edit Details
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -132,24 +132,20 @@ export const ProfilePage = () => {
                 )}
 
                 <form onSubmit={handleSave} className="profile-form">
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input
+                  <FormField label="Full Name">
+                    <Input
                       type="text"
-                      className="form-control"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       disabled={!isEditing}
                       required
                     />
-                  </div>
+                  </FormField>
 
-                  <div className="form-group">
-                    <label>Mobile Number (Verified)</label>
+                  <FormField label="Mobile Number (Verified)">
                     <div className="verified-input-wrap">
-                      <input
+                      <Input
                         type="tel"
-                        className="form-control"
                         value={user?.phone || 'Not available'}
                         disabled
                       />
@@ -158,36 +154,34 @@ export const ProfilePage = () => {
                         <span>Verified</span>
                       </span>
                     </div>
-                  </div>
+                  </FormField>
 
-                  <div className="form-group">
-                    <label>Email Address</label>
-                    <input
+                  <FormField label="Email Address">
+                    <Input
                       type="email"
-                      className="form-control"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={!isEditing}
                       required
                     />
-                  </div>
+                  </FormField>
 
                   {isEditing && (
                     <div className="form-actions-row">
-                      <button type="submit" className="btn btn-primary">
+                      <Button type="submit" variant="primary">
                         Save Changes
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
-                        className="btn btn-secondary"
+                        variant="secondary"
                         onClick={() => setIsEditing(false)}
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </form>
-              </div>
+              </Card>
             </main>
           </div>
         )}

@@ -2,9 +2,40 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Navigation, Bike, Clock, Phone, MapPin } from 'lucide-react';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
+import { getRoute } from '@/services/routingService';
 import './ShopTrackRiderModal.scss';
 
 export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
+  const [route, setRoute] = React.useState(null);
+  const [routeError, setRouteError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen && order) {
+      const rLat = order.rider?.location?.lat;
+      const rLng = order.rider?.location?.lng;
+      const cLat = order.deliveryAddress?.coordinates?.lat || order.deliveryAddress?.location?.coordinates?.[1];
+      const cLng = order.deliveryAddress?.coordinates?.lng || order.deliveryAddress?.location?.coordinates?.[0];
+
+      if (rLat && rLng && cLat && cLng) {
+        getRoute([rLng, rLat], [cLng, cLat])
+          .then(data => {
+            if (data?.geometry) {
+              setRoute(data.geometry);
+              setRouteError(false);
+            } else {
+              setRoute(null);
+              setRouteError(true);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to get route in modal:', err);
+            setRoute(null);
+            setRouteError(true);
+          });
+      }
+    }
+  }, [isOpen, order?.rider?.location?.lat, order?.rider?.location?.lng]);
+
   if (!isOpen || !order) return null;
 
   return (
@@ -69,6 +100,8 @@ export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
               etaMinutes={order.tracking?.etaMinutes}
               distanceKm={order.tracking?.distanceKm}
               riderName={order.rider?.name || 'Delivery Partner'}
+              route={route}
+              routeError={routeError}
               height="380px"
               orderId={order.id}
             />

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { useCart } from '@/context/CartContext';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
+import { Button } from '@/components/ui/Button';
 import {
   Clock,
   Star,
@@ -63,7 +64,7 @@ export const ProductDetailPage = () => {
     return (
       <div className="container py-12 text-center">
         <h3>Product not found</h3>
-        <Link to="/" className="btn btn-primary mt-4">Back to Shop</Link>
+        <Button component={Link} to="/" variant="primary" className="mt-4">Back to Shop</Button>
       </div>
     );
   }
@@ -182,10 +183,10 @@ export const ProductDetailPage = () => {
                   Out of Stock
                 </div>
               ) : currentCartQty === 0 ? (
-                <button className="btn btn-primary btn-lg add-to-cart-cta" onClick={handleAddToCart}>
+                <Button variant="primary" size="lg" className="add-to-cart-cta" onClick={handleAddToCart}>
                   <ShoppingBag size={18} />
                   <span>ADD TO CART</span>
-                </button>
+                </Button>
               ) : (
                 <div className="qty-stepper-box">
                   <span className="qty-label">Quantity in Cart:</span>
@@ -208,14 +209,16 @@ export const ProductDetailPage = () => {
                 </div>
               )}
 
-              <button 
-                className="btn btn-dark btn-lg buy-now-cta" 
+              <Button 
+                variant="dark" 
+                size="lg" 
+                className="buy-now-cta" 
                 onClick={handleBuyNow}
                 disabled={product.stockCount <= 0}
               >
                 <span>BUY NOW</span>
                 <ArrowRight size={18} />
-              </button>
+              </Button>
             </div>
 
             {/* Value Guarantees */}

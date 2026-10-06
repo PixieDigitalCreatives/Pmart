@@ -9,16 +9,16 @@ const __dirname = path.dirname(__filename);
 async function loginAsRole(page: Page, phone: string, role: string) {
   const reqContext = await request.newContext();
   
-  // 1. Send OTP
-  const sendRes = await reqContext.post('http://localhost:5000/api/auth/send-otp', { data: { phone } });
-  const sendJson = await sendRes.json();
-  const demoOtp = sendJson.demoOtp;
-  
-  // 2. Verify OTP
-  const verifyRes = await reqContext.post('http://localhost:5000/api/auth/verify-otp', {
-    data: { phone, otp: demoOtp, role }
+  // Call the new login endpoint which accepts { phone, password }
+  const loginRes = await reqContext.post('http://localhost:5000/api/auth/login', {
+    data: { phone, password: 'password123' }
   });
-  const verifyJson = await verifyRes.json();
+  
+  if (!loginRes.ok()) {
+    throw new Error(`Login failed for ${phone}: ${loginRes.status()} ${await loginRes.text()}`);
+  }
+  
+  const verifyJson = await loginRes.json();
   
   // 3. Inject token before navigation
   await page.addInitScript(({ token, user }: { token: string, user: any }) => {
@@ -154,12 +154,10 @@ test.describe.serial('PMART - 3-Role Final Browser E2E', () => {
     
     // Fetch OTP via the customer API
     const reqContext = await request.newContext();
-    const sendRes = await reqContext.post('http://localhost:5000/api/auth/send-otp', { data: { phone: '+10000000002' } });
-    const sendJson = await sendRes.json();
-    const verifyRes = await reqContext.post('http://localhost:5000/api/auth/verify-otp', {
-      data: { phone: '+10000000002', otp: sendJson.demoOtp, role: 'CUSTOMER' }
+    const loginRes = await reqContext.post('http://localhost:5000/api/auth/login', {
+      data: { phone: '+10000000002', password: 'password123' }
     });
-    const verifyJson = await verifyRes.json();
+    const verifyJson = await loginRes.json();
     
     const otpRes = await reqContext.get(`http://localhost:5000/api/orders/${orderId}/otp`, {
       headers: { Authorization: `Bearer ${verifyJson.accessToken}` }
@@ -181,12 +179,10 @@ test.describe.serial('PMART - 3-Role Final Browser E2E', () => {
   test('7. Rider: Deliver with correct OTP', async () => {
     // Use admin token for delivery operations since admin has permissions for all status transitions
     const reqContext = await request.newContext();
-    const sendRes = await reqContext.post('http://localhost:5000/api/auth/send-otp', { data: { phone: '+10000000001' } });
-    const sendJson = await sendRes.json();
-    const verifyRes = await reqContext.post('http://localhost:5000/api/auth/verify-otp', {
-      data: { phone: '+10000000001', otp: sendJson.demoOtp, role: 'ADMIN' }
+    const loginRes = await reqContext.post('http://localhost:5000/api/auth/login', {
+      data: { phone: '+10000000001', password: 'password123' }
     });
-    const adminToken = (await verifyRes.json()).accessToken;
+    const adminToken = (await loginRes.json()).accessToken;
     
     // Get the order ID from customer page URL
     const url = customerPage.url();

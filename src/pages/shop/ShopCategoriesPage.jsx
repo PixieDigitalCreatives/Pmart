@@ -3,6 +3,7 @@ import { categoryService } from '@/services/categoryService';
 import { Plus, Trash2 } from 'lucide-react';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useToast } from '@/context/ToastContext';
+import { PageHeader, Button, Modal, FormField, Input } from '@/components/ui';
 
 export const ShopCategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -54,15 +55,15 @@ export const ShopCategoriesPage = () => {
 
   return (
     <div className="shop-categories-page">
-      <div className="mb-6 flex justify-between items-center" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 className="text-xl font-bold text-dark">Darkstore Category Mapping</h1>
-          <p className="text-muted text-sm">Active category aisles and subcategories stocked in Sector 62 Hub</p>
-        </div>
-        <button className="btn btn-primary flex items-center gap-2" onClick={() => setIsAddOpen(true)}>
-          <Plus size={16} /> Add Category
-        </button>
-      </div>
+      <PageHeader
+        title="Darkstore Category Mapping"
+        subtitle="Active category aisles and subcategories stocked in Sector 62 Hub"
+        action={
+          <Button variant="primary" onClick={() => setIsAddOpen(true)}>
+            <Plus size={16} style={{ marginRight: '8px' }} /> Add Category
+          </Button>
+        }
+      />
 
       <div className="pmart-table-wrapper">
         <table className="pmart-table w-full">
@@ -89,29 +90,27 @@ export const ShopCategoriesPage = () => {
         </table>
       </div>
 
-      {isAddOpen && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="modal-content pmart-card" style={{ width: '400px', backgroundColor: '#fff', padding: '24px', borderRadius: '12px' }}>
-            <h3 className="font-bold text-lg mb-4">Add Category</h3>
-            <div className="form-group mb-3">
-              <label htmlFor="catName">Name</label>
-              <input id="catName" type="text" className="form-control w-full" value={newCat.name} onChange={e => setNewCat({...newCat, name: e.target.value})} />
-            </div>
-            <div className="form-group mb-3">
-              <label htmlFor="catSlug">Slug</label>
-              <input id="catSlug" type="text" className="form-control w-full" value={newCat.slug} onChange={e => setNewCat({...newCat, slug: e.target.value})} />
-            </div>
-            <div className="form-group mb-4">
-              <label htmlFor="catDesc">Description</label>
-              <input id="catDesc" type="text" className="form-control w-full" value={newCat.description} onChange={e => setNewCat({...newCat, description: e.target.value})} />
-            </div>
-            <div className="flex justify-end gap-2" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button className="btn btn-outline" onClick={() => setIsAddOpen(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSave}>Save</button>
-            </div>
+      <Modal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        title="Add Category"
+      >
+        <div className="space-y-4">
+          <FormField label="Name" htmlFor="catName">
+            <Input id="catName" type="text" value={newCat.name} onChange={e => setNewCat({...newCat, name: e.target.value})} />
+          </FormField>
+          <FormField label="Slug" htmlFor="catSlug">
+            <Input id="catSlug" type="text" value={newCat.slug} onChange={e => setNewCat({...newCat, slug: e.target.value})} />
+          </FormField>
+          <FormField label="Description" htmlFor="catDesc">
+            <Input id="catDesc" type="text" value={newCat.description} onChange={e => setNewCat({...newCat, description: e.target.value})} />
+          </FormField>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleSave}>Save</Button>
           </div>
         </div>
-      )}
+      </Modal>
 
       <ConfirmationModal
         isOpen={Boolean(deleteId)}

@@ -20,8 +20,10 @@ import {
   Check,
   ChevronRight,
   Banknote,
-  ShieldCheck
+  ShieldCheck,
+  PackageSearch
 } from 'lucide-react';
+import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
 import './ShopOrdersPage.scss';
 
 export const ShopOrdersPage = () => {
@@ -68,30 +70,28 @@ export const ShopOrdersPage = () => {
     const norm = normalizeOrderStatus(order.orderStatus || order.status);
     switch (norm) {
       case ORDER_STATUS.DELIVERED:
-        return <span className="badge badge-success">Delivered</span>;
+        return <StatusBadge status="Delivered" type="success" />;
       case ORDER_STATUS.ARRIVED:
-        return <span className="badge badge-info" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd' }}>Arrived</span>;
+        return <StatusBadge status="Arrived" type="info" />;
       case ORDER_STATUS.OUT_FOR_DELIVERY:
-        return <span className="badge badge-primary">Out for Delivery</span>;
+        return <StatusBadge status="Out for Delivery" type="primary" />;
       case ORDER_STATUS.READY_FOR_PICKUP:
-        return <span className="badge badge-info">Ready for Pickup</span>;
+        return <StatusBadge status="Ready for Pickup" type="info" />;
       case ORDER_STATUS.PREPARING:
-        return <span className="badge badge-warning">Preparing</span>;
+        return <StatusBadge status="Preparing" type="warning" />;
       case ORDER_STATUS.CONFIRMED:
-        return <span className="badge badge-warning">Confirmed</span>;
+        return <StatusBadge status="Confirmed" type="warning" />;
       default:
-        return <span className="badge badge-neutral">Placed</span>;
+        return <StatusBadge status="Placed" type="neutral" />;
     }
   };
 
   return (
     <div className="shop-orders-page">
-      <div className="orders-header-row">
-        <div>
-          <h1 className="page-heading">Darkstore Order Management</h1>
-          <p className="page-sub">Manage live packaging, rider assignment and dispatch</p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Darkstore Order Management"
+        subtitle="Manage live packaging, rider assignment and dispatch"
+      />
 
       {/* Tabs & Search Toolbar */}
       <div className="orders-toolbar-card">
@@ -141,8 +141,12 @@ export const ShopOrdersPage = () => {
           <tbody>
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="8" className="text-center py-8 text-muted">
-                  No orders found in this view.
+                <td colSpan="8" style={{ padding: 0 }}>
+                  <EmptyState
+                    icon={PackageSearch}
+                    title="No orders found"
+                    description="No orders match your current filters."
+                  />
                 </td>
               </tr>
             ) : (
@@ -165,20 +169,16 @@ export const ShopOrdersPage = () => {
                     </td>
                     <td>{getStatusBadge(o)}</td>
                     <td>
-                      <span
-                        className={`badge ${isCollected ? 'badge-success' : 'badge-warning'}`}
-                        style={{ fontSize: '11px', padding: '3px 8px' }}
-                      >
-                        {isCollected ? 'COLLECTED ✓' : 'PENDING'}
-                      </span>
+                      <StatusBadge 
+                        status={isCollected ? 'COLLECTED ✓' : 'PENDING'} 
+                        type={isCollected ? 'success' : 'warning'} 
+                      />
                     </td>
                     <td>
-                      <span
-                        className={`badge ${isVerified ? 'badge-success' : 'badge-neutral'}`}
-                        style={{ fontSize: '11px', padding: '3px 8px' }}
-                      >
-                        {isVerified ? 'VERIFIED ✓' : 'OTP PENDING'}
-                      </span>
+                      <StatusBadge 
+                        status={isVerified ? 'VERIFIED ✓' : 'OTP PENDING'} 
+                        type={isVerified ? 'success' : 'neutral'} 
+                      />
                     </td>
                     <td>
                       {o.rider ? (
@@ -188,9 +188,11 @@ export const ShopOrdersPage = () => {
                       )}
                     </td>
                     <td>
-                      <Link to={`/shop/orders/${o.id}`} className="btn btn-secondary btn-sm">
-                        <Eye size={13} />
-                        <span>Order Detail</span>
+                      <Link to={`/shop/orders/${o.id}`} style={{ textDecoration: 'none' }}>
+                        <Button variant="secondary" size="sm">
+                          <Eye size={13} style={{ marginRight: '4px' }} />
+                          <span>Order Detail</span>
+                        </Button>
                       </Link>
                     </td>
                   </tr>

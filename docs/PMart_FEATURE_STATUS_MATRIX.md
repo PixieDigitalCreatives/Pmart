@@ -32,7 +32,7 @@
 | **Rider** | Durable Order Progression | VERIFIED | OrderProgressionJob persisted to MongoDB; atomic lock; recovery sweeper on startup; 4/4 tests pass | P0 |
 | **Admin** | Settings Navigation & Persistence | VERIFIED | Fixed locator structure, prevented remounting form fields, and passed E2E tests | P1 |
 | **Admin** | Employee Modal Permission Labels | VERIFIED | Integrated PermissionSelector to map raw keys to human-readable UI labels | P2 |
-
+| **Frontend** | UI Components Standardization | VERIFIED | Refactored 12+ customer portal pages and admin/rider portals to use unified shared components (`Button`, `Input`). | P1 |
 **Legend:**
 - **VERIFIED**: E2E or automated testing passes successfully.
 - **PARTIALLY VERIFIED**: Works superficially, but gaps exist.

@@ -9,6 +9,7 @@ import {
 import { Search, Filter, Eye, Download, ChevronRight, Check, Play, Package, Bike } from 'lucide-react';
 import { ExportDataModal } from '../../components/admin/ExportDataModal';
 import { AssignRiderModal } from '../../components/admin/AssignRiderModal';
+import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
 import api from '../../services/apiClient';
 import './AdminOrdersPage.scss';
 
@@ -77,52 +78,21 @@ export const AdminOrdersPage = () => {
 
   const getOrderStatusBadge = (order) => {
     const norm = normalizeOrderStatus(order.status);
-    switch (norm) {
-      case ORDER_STATUS.DELIVERED:
-        return <span className="badge badge-success">DELIVERED</span>;
-      case ORDER_STATUS.ARRIVED:
-        return (
-          <span
-            className="badge badge-info"
-            style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd', fontWeight: 700 }}
-          >
-            ARRIVED
-          </span>
-        );
-      case ORDER_STATUS.OUT_FOR_DELIVERY:
-        return <span className="badge badge-primary">OUT FOR DELIVERY</span>;
-      case ORDER_STATUS.ASSIGNED:
-        return <span className="badge badge-primary" style={{ background: '#eef2ff', color: '#4f46e5', borderColor: '#c7d2fe' }}>ASSIGNED</span>;
-      case ORDER_STATUS.READY:
-      case ORDER_STATUS.READY_FOR_PICKUP:
-        return <span className="badge badge-info">READY FOR PICKUP</span>;
-      case ORDER_STATUS.PREPARING:
-        return <span className="badge badge-warning">PREPARING</span>;
-      case ORDER_STATUS.ACCEPTED:
-      case ORDER_STATUS.CONFIRMED:
-        return <span className="badge badge-warning">ACCEPTED</span>;
-      case ORDER_STATUS.PENDING:
-        return <span className="badge badge-neutral">PENDING</span>;
-      case ORDER_STATUS.REJECTED:
-      case ORDER_STATUS.CANCELLED:
-        return <span className="badge badge-danger" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}>{norm}</span>;
-      default:
-        return <span className="badge badge-neutral">{norm || 'PENDING'}</span>;
-    }
+    return <StatusBadge status={norm} />;
   };
 
   return (
     <div className="admin-orders-page">
-      <div className="orders-head-bar">
-        <div>
-          <h1 className="title">Central Orders Management</h1>
-          <p className="subtitle">Real-time audit log of all customer grocery transactions and COD verifications</p>
-        </div>
-        <button className="btn btn-secondary btn-sm" onClick={() => setIsExportOpen(true)}>
-          <Download size={14} />
-          <span>Export CSV</span>
-        </button>
-      </div>
+      <PageHeader 
+        title="Central Orders Management" 
+        subtitle="Real-time audit log of all customer grocery transactions and COD verifications"
+        action={
+          <Button variant="secondary" size="sm" onClick={() => setIsExportOpen(true)}>
+            <Download size={14} style={{ marginRight: '6px' }} />
+            <span>Export CSV</span>
+          </Button>
+        }
+      />
 
       {/* Filter Strip */}
       <div className="admin-filters-card">
@@ -186,8 +156,12 @@ export const AdminOrdersPage = () => {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan="10" className="text-center py-8 text-muted">
-                  No orders match current filters.
+                <td colSpan="10" style={{ padding: '0' }}>
+                  <EmptyState 
+                    icon={Package}
+                    title="No orders found"
+                    description="No orders match your current filters."
+                  />
                 </td>
               </tr>
             ) : (

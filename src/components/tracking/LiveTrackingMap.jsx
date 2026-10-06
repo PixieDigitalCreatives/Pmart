@@ -27,11 +27,12 @@ export const LiveTrackingMap = ({
   orderId = '',
   riderName = 'Rider',
   recenterTrigger = 0,
-  route = null
+  route = null,
+  routeError = false
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const markersRef = useRef({ rider: null, customer: null, hub: null });
+  const markersRef = useRef({ rider: null, customer: null, hub: null, animationFrame: null, hasFittedBounds: false });
   const [mapError, setMapError] = useState('');
   const [mapReady, setMapReady] = useState(false);
 
@@ -105,6 +106,9 @@ export const LiveTrackingMap = ({
 
     return () => {
       window.removeEventListener('resize', onResize);
+      if (markersRef.current.animationFrame) {
+        cancelAnimationFrame(markersRef.current.animationFrame);
+      }
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -185,20 +189,55 @@ export const LiveTrackingMap = ({
           .addTo(map.current);
         log('rider marker created', rLng, rLat);
       } else {
-        markersRef.current.rider.setLngLat([rLng, rLat]);
-        log('rider marker moved', rLng, rLat);
+        const startLngLat = markersRef.current.rider.getLngLat();
+        const endLngLat = [rLng, rLat];
+        
+        // Only animate if position actually changed
+        if (startLngLat.lng !== endLngLat[0] || startLngLat.lat !== endLngLat[1]) {
+          if (markersRef.current.animationFrame) {
+            cancelAnimationFrame(markersRef.current.animationFrame);
+          }
+          
+          const startTime = performance.now();
+          const duration = 1000;
+          
+          const animateMarker = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+            
+            const currentLng = startLngLat.lng + (endLngLat[0] - startLngLat.lng) * easeProgress;
+            const currentLat = startLngLat.lat + (endLngLat[1] - startLngLat.lat) * easeProgress;
+            
+            if (markersRef.current.rider) {
+              markersRef.current.rider.setLngLat([currentLng, currentLat]);
+            }
+            
+            if (progress < 1) {
+              markersRef.current.animationFrame = requestAnimationFrame(animateMarker);
+            } else {
+              markersRef.current.animationFrame = null;
+            }
+          };
+          
+          markersRef.current.animationFrame = requestAnimationFrame(animateMarker);
+        }
       }
     }
 
-    if (hasPoints) {
+    if (hasPoints && (!markersRef.current.hasFittedBounds || recenterTrigger)) {
       try {
         map.current.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 800 });
+        markersRef.current.hasFittedBounds = true;
       } catch {
         // fitBounds can fail on single-point bounds — flyTo instead
-        if (rLat && rLng) map.current.flyTo({ center: [rLng, rLat], zoom: 15 });
+        if (rLat && rLng) {
+          map.current.flyTo({ center: [rLng, rLat], zoom: 15 });
+          markersRef.current.hasFittedBounds = true;
+        }
       }
     }
-  }, [riderLocation, customerLocation, hubLocation, mapReady, riderName]);
+  }, [riderLocation, customerLocation, hubLocation, mapReady, riderName, recenterTrigger]);
 
   // Render Route
   useEffect(() => {
@@ -228,7 +267,7 @@ export const LiveTrackingMap = ({
             'line-width': 5,
             'line-opacity': 0.8
           }
-        }, 'waterway'); // Insert below labels if possible, but 'waterway' might not exist, usually just add to top or below symbol layers
+        }); // Removed 'waterway' parameter which causes missing layer bug in MapTiler STREETS_V2
       }
     } else {
       if (map.current.getLayer('route-line')) map.current.removeLayer('route-line');
@@ -267,6 +306,19 @@ export const LiveTrackingMap = ({
       {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
           <span className="text-gray-400 text-sm">Loading map...</span>
+        </div>
+      )}
+      
+      {/* Route Error Fallback */}
+      {routeError && (
+        <div className="absolute top-4 right-4 z-10 bg-white shadow-md border border-yellow-200 rounded-md p-3 flex items-start max-w-xs animate-in fade-in slide-in-from-top-2">
+          <div className="text-yellow-500 mr-2 mt-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800">Route Unavailable</h4>
+            <p className="text-xs text-gray-600 mt-0.5">Live tracking is active, but road directions cannot be generated at this time.</p>
+          </div>
         </div>
       )}
     </div>

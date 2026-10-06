@@ -1,8 +1,6 @@
-@import '../../styles/variables';
-
 .rider-onboarding {
   .auth-brand-side {
-    background: linear-gradient(135deg, $pmart-red, darken($pmart-red, 15%));
+    background: linear-gradient(135deg, $pmart-red, color.adjust($pmart-red, $lightness: -15%));
     
     .brand-tagline {
       background: rgba(255, 255, 255, 0.2);

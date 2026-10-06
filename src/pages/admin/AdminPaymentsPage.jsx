@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
 import { CreditCard, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { PageHeader, StatusBadge } from '@/components/ui';
 
 export const AdminPaymentsPage = () => {
   const [payments, setPayments] = useState([]);
@@ -15,10 +16,10 @@ export const AdminPaymentsPage = () => {
 
   return (
     <div className="admin-payments-page">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-dark">Payment Settlements & Ledger</h1>
-        <p className="text-muted text-sm">Real-time payment gateway transactions and daily darkstore payouts</p>
-      </div>
+      <PageHeader
+        title="Payment Settlements & Ledger"
+        subtitle="Real-time payment gateway transactions and daily darkstore payouts"
+      />
 
       <div className="pmart-table-wrapper">
         <table className="pmart-table">
@@ -42,9 +43,10 @@ export const AdminPaymentsPage = () => {
                 <td><span className="font-bold">₹{p.amount}</span></td>
                 <td><span className="badge badge-neutral">{p.method}</span></td>
                 <td>
-                  <span className={`badge ${p.status === 'Success' ? 'badge-success' : 'badge-warning'}`}>
-                    {p.status}
-                  </span>
+                  <StatusBadge 
+                    status={p.status} 
+                    type={p.status === 'Success' ? 'success' : 'warning'} 
+                  />
                 </td>
                 <td className="text-muted text-xs">{p.timestamp}</td>
               </tr>

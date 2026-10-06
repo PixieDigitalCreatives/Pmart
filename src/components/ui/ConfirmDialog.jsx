@@ -15,10 +15,10 @@ export const ConfirmDialog = ({
 }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <p style={{ margin: '0 0 24px', color: '#4B5563', lineHeight: 1.5 }}>
+      <p className="dialog-text">
         {message}
       </p>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+      <div className="dialog-actions">
         <Button variant="neutral" onClick={onClose} disabled={isConfirming} className="badge-neutral" style={{ padding: '8px 16px' }}>
           {cancelText}
         </Button>

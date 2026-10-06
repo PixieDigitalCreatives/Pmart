@@ -12,7 +12,7 @@ export class OrderAutomation {
   private static sweeperInterval: NodeJS.Timeout | null = null;
 
   static async scheduleRiderProgression(orderId: string | mongoose.Types.ObjectId, riderId: string | mongoose.Types.ObjectId, session?: mongoose.ClientSession) {
-    if (env.RIDER_PICKUP_DELAY_MS) {
+    if (env.RIDER_PICKUP_DELAY_MS && process.env.NODE_ENV !== 'production') {
       const executeAt = new Date(Date.now() + env.RIDER_PICKUP_DELAY_MS);
       const job = new OrderProgressionJob({
         order: orderId,
@@ -153,7 +153,7 @@ export class OrderAutomation {
       }
 
       // Schedule next phase
-      if (env.RIDER_OUT_FOR_DELIVERY_DELAY_MS) {
+      if (env.RIDER_OUT_FOR_DELIVERY_DELAY_MS && process.env.NODE_ENV !== 'production') {
         const executeAt = new Date(Date.now() + env.RIDER_OUT_FOR_DELIVERY_DELAY_MS);
         const nextJob = new OrderProgressionJob({
           order: orderId,

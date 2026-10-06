@@ -5,7 +5,6 @@ export const Select = forwardRef(({ className = '', error, options = [], childre
     <select
       ref={ref}
       className={`form-select ${error ? 'is-invalid' : ''} ${className}`.trim()}
-      style={{ borderColor: error ? '#EF4444' : undefined }}
       {...props}
     >
       {children || options.map(opt => (

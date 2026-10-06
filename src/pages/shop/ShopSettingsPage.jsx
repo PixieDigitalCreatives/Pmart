@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Save, Clock, MapPin, Store, Check } from 'lucide-react';
+import { PageHeader, Card, FormField, Input, Button } from '@/components/ui';
 
 export const ShopSettingsPage = () => {
   const [storeName, setStoreName] = useState('PMart Darkstore Hub — Sector 62');
@@ -16,12 +17,12 @@ export const ShopSettingsPage = () => {
 
   return (
     <div className="shop-settings-page">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-dark">Darkstore Settings</h1>
-        <p className="text-muted text-sm">Configure store operating hours, delivery radius, and facility info</p>
-      </div>
+      <PageHeader 
+        title="Darkstore Settings"
+        subtitle="Configure store operating hours, delivery radius, and facility info"
+      />
 
-      <div className="pmart-card max-w-2xl">
+      <Card className="max-w-2xl">
         {saved && (
           <div className="badge badge-success mb-4 p-2 text-sm flex items-center gap-2">
             <Check size={16} /> Store settings updated successfully!
@@ -29,58 +30,54 @@ export const ShopSettingsPage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="form-group">
-            <label>Store / Darkstore Name</label>
-            <input
+          <FormField label="Store / Darkstore Name" htmlFor="storeName">
+            <Input
+              id="storeName"
               type="text"
-              className="form-control"
               value={storeName}
               onChange={e => setStoreName(e.target.value)}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="form-group">
-            <label>Hub Manager Hotline</label>
-            <input
+          <FormField label="Hub Manager Hotline" htmlFor="storePhone">
+            <Input
+              id="storePhone"
               type="tel"
-              className="form-control"
               value={phone}
               onChange={e => setPhone(e.target.value)}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="form-group">
-            <label>Daily Operating Hours</label>
-            <input
+          <FormField label="Daily Operating Hours" htmlFor="storeHours">
+            <Input
+              id="storeHours"
               type="text"
-              className="form-control"
               value={hours}
               onChange={e => setHours(e.target.value)}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="form-group">
-            <label>Service Delivery Radius (in Kilometers)</label>
-            <input
+          <FormField label="Service Delivery Radius (in Kilometers)" htmlFor="storeRadius">
+            <Input
+              id="storeRadius"
               type="number"
               step="0.1"
-              className="form-control"
               value={radius}
               onChange={e => setRadius(e.target.value)}
               required
             />
-            <div className="form-hint">Standard quick-commerce radius is 2.5km to 3.5km</div>
-          </div>
+            <div className="form-hint" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Standard quick-commerce radius is 2.5km to 3.5km</div>
+          </FormField>
 
-          <button type="submit" className="btn btn-primary mt-4">
-            <Save size={16} />
+          <Button type="submit" variant="primary" style={{ marginTop: '16px' }}>
+            <Save size={16} style={{ marginRight: '8px' }} />
             <span>Save Hub Configuration</span>
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 };

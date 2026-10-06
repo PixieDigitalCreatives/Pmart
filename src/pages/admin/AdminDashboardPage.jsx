@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ArrowUpRight
 } from 'lucide-react';
+import { PageHeader, LoadingState, StatusBadge, Button } from '@/components/ui';
 import './AdminDashboardPage.scss';
 
 export const AdminDashboardPage = () => {
@@ -44,21 +45,23 @@ export const AdminDashboardPage = () => {
     // Cleanup handled implicitly, or add a ref if needed.
   }, []);
 
+  if (loading && !data) return <LoadingState text="Loading dashboard metrics..." fullHeight />;
+
   const kpis = data?.kpis;
 
   return (
     <div className="admin-dashboard-page">
-      <div className="page-header-block">
-        <div>
-          <h1 className="main-title">Platform Central Overview</h1>
-          <p className="sub-title">Real-time telemetry across Active Darkstores & Regional Micro-Fulfillment Hubs</p>
-        </div>
-        <div className="action-buttons-group">
-          <Link to="/admin/reports" className="btn btn-secondary btn-sm">
-            <span>Download SLA Audit Report</span>
+      <PageHeader 
+        title="Platform Central Overview" 
+        subtitle="Real-time telemetry across Active Darkstores & Regional Micro-Fulfillment Hubs"
+        action={
+          <Link to="/admin/reports">
+            <Button variant="secondary" size="sm">
+              Download SLA Audit Report
+            </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI Cards Row */}
       <div className="admin-kpi-grid">
@@ -183,7 +186,7 @@ export const AdminDashboardPage = () => {
                     <span className="font-semibold text-success">{metrics.avgFulfillmentTime}</span>
                   </td>
                   <td>
-                    <span className="badge badge-success">{status}</span>
+                    <StatusBadge status={status} />
                   </td>
                 </tr>
               )})}

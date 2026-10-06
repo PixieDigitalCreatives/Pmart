@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { ProductCard } from '@/components/product/ProductCard';
+import { Button } from '@/components/ui/Button';
 import { ChevronRight, Filter, ArrowUpDown } from 'lucide-react';
 import './CategoryPage.scss';
 
@@ -75,7 +76,7 @@ export const CategoryPage = () => {
     return (
       <div className="container py-8 text-center">
         <h3>Category not found</h3>
-        <Link to="/" className="btn btn-primary mt-4">Return to Home</Link>
+        <Button component={Link} to="/" variant="primary" className="mt-4">Return to Home</Button>
       </div>
     );
   }
@@ -160,9 +161,9 @@ export const CategoryPage = () => {
         {products.length === 0 ? (
           <div className="empty-category-notice">
             <p>No products available in this subcategory at the moment.</p>
-            <button className="btn btn-secondary mt-2" onClick={() => handleSubcategoryChange('All')}>
+            <Button variant="secondary" className="mt-2" onClick={() => handleSubcategoryChange('All')}>
               Show all products in {category?.name}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="category-products-grid">

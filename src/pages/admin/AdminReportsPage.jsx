@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '@/services/adminService';
-import { FileBarChart, Download, Calendar, Filter, TrendingUp, ShieldAlert } from 'lucide-react';
+import { FileBarChart, Download, Calendar, Filter, TrendingUp, ShieldAlert, FileText } from 'lucide-react';
 import { ExportDataModal } from '@/components/admin/ExportDataModal';
+import { PageHeader, Card, StatusBadge, Button, Select, LoadingState, EmptyState } from '@/components/ui';
 
 export const AdminReportsPage = () => {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -42,31 +43,30 @@ export const AdminReportsPage = () => {
 
   return (
     <div className="admin-reports-page">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-dark">Enterprise Intelligence & Reports</h1>
-          <p className="text-muted text-sm">Downloadable executive analytics and system audit trails</p>
-        </div>
-        
-        {activeTab === 'analytics' && (
-          <div className="flex gap-2">
-            <select
-              className="form-select text-sm"
-              style={{ width: '150px' }}
-              value={period}
-              onChange={e => setPeriod(e.target.value)}
-            >
-              <option value="today">Today</option>
-              <option value="this-week">This Week</option>
-              <option value="this-month">This Month</option>
-            </select>
-            <button className="btn btn-secondary btn-sm" onClick={() => setIsExportOpen(true)}>
-              <Download size={14} />
-              <span>Export Report</span>
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Enterprise Intelligence & Reports"
+        subtitle="Downloadable executive analytics and system audit trails"
+        action={
+          activeTab === 'analytics' && (
+            <div className="flex gap-2">
+              <Select
+                value={period}
+                onChange={e => setPeriod(e.target.value)}
+                style={{ width: '150px' }}
+                options={[
+                  { value: 'today', label: 'Today' },
+                  { value: 'this-week', label: 'This Week' },
+                  { value: 'this-month', label: 'This Month' }
+                ]}
+              />
+              <Button variant="secondary" size="sm" onClick={() => setIsExportOpen(true)}>
+                <Download size={14} style={{ marginRight: '6px' }} />
+                <span>Export Report</span>
+              </Button>
+            </div>
+          )
+        }
+      />
 
       {/* Tabs */}
       <div className="pmart-tabs mb-6 flex gap-4 border-b border-gray-200">
@@ -88,30 +88,29 @@ export const AdminReportsPage = () => {
       {activeTab === 'analytics' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div className="pmart-card">
+            <Card>
               <span className="text-muted text-xs font-semibold">GROSS PERIOD SALES</span>
               <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.totalSales?.toLocaleString('en-IN') || '0'}</div>
               <span className="text-success text-xs font-semibold mt-1 block"></span>
-            </div>
-            <div className="pmart-card">
+            </Card>
+            <Card>
               <span className="text-muted text-xs font-semibold">TOTAL ORDERS PROCESSED</span>
               <div className="text-2xl font-extrabold text-dark mt-1">{report?.totalOrders || 0}</div>
               <span className="text-muted text-xs mt-1 block"></span>
-            </div>
-            <div className="pmart-card">
+            </Card>
+            <Card>
               <span className="text-muted text-xs font-semibold">AVERAGE ORDER VALUE</span>
               <div className="text-2xl font-extrabold text-dark mt-1">₹{report?.avgTicketSize || 0}</div>
               <span className="text-muted text-xs mt-1 block"></span>
-            </div>
-            <div className="pmart-card">
+            </Card>
+            <Card>
               <span className="text-muted text-xs font-semibold">SLA BREACHES</span>
               <div className="text-2xl font-extrabold text-dark mt-1">{report?.slaBreaches || 0}</div>
               <span className="text-xs text-muted mt-1 block"></span>
-            </div>
+            </Card>
           </div>
 
-          <div className="pmart-card">
-            <h3 className="font-bold text-dark text-base mb-3">Gross Merchandise Value (GMV) by Category</h3>
+          <Card title="Gross Merchandise Value (GMV) by Category">
             <div className="pmart-table-wrapper">
               <table className="pmart-table">
                 <thead>
@@ -138,16 +137,15 @@ export const AdminReportsPage = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </>
       )}
 
       {/* Audit Logs Tab */}
       {activeTab === 'audit' && (
-        <div className="pmart-card">
-          <h3 className="font-bold text-dark text-base mb-3">System Audit Trail</h3>
+        <Card title="System Audit Trail">
           {auditLoading ? (
-            <div className="p-8 text-center text-gray-500">Loading audit logs...</div>
+            <LoadingState text="Loading audit logs..." />
           ) : (
             <div className="pmart-table-wrapper">
               <table className="pmart-table">
@@ -171,7 +169,7 @@ export const AdminReportsPage = () => {
                         <span className="text-xs text-gray-400 block">{log.user?.role}</span>
                       </td>
                       <td>
-                        <span className={`badge badge-secondary`}>{log.action}</span>
+                        <StatusBadge status={log.action} type="neutral" />
                       </td>
                       <td>{log.resource}</td>
                       <td className="font-mono text-xs">{log.resourceId || '-'}</td>
@@ -179,7 +177,13 @@ export const AdminReportsPage = () => {
                   ))}
                   {auditLogs.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-center py-6 text-gray-500">No audit logs found.</td>
+                      <td colSpan="5" style={{ padding: 0 }}>
+                        <EmptyState 
+                          icon={FileText}
+                          title="No audit logs found"
+                          description="No system audit logs were found for this criteria."
+                        />
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -210,7 +214,7 @@ export const AdminReportsPage = () => {
               )}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       <ExportDataModal

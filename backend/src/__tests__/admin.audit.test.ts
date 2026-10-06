@@ -133,7 +133,7 @@ describe('Admin Panel Release Readiness Audit', () => {
       const res = await request(app)
         .put('/api/admin/settings')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ freeDeliveryThreshold: 500, baseDeliveryFee: 20 });
+        .send({ freeDeliveryThreshold: 500, baseDeliveryFee: 20, platformHandlingFee: 10 });
       expect(res.status).toBe(200);
       expect(res.body.freeDeliveryThreshold).toBe(500);
     });

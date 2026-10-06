@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // FAQs will be fetched from API in the future
 import { LiveChatModal } from '@/components/common/LiveChatModal';
+import { Button } from '@/components/ui/Button';
 import {
   HelpCircle,
   ChevronDown,
@@ -50,9 +51,9 @@ export const HelpPage = () => {
             </div>
             <h4 className="card-title">24x7 Live Chat</h4>
             <p className="card-desc">Average response in under 60 seconds for active orders</p>
-            <button className="btn btn-outline-red btn-sm mt-auto" onClick={() => setIsChatOpen(true)}>
+            <Button variant="outline-red" size="sm" className="mt-auto" onClick={() => setIsChatOpen(true)}>
               Start Chat
-            </button>
+            </Button>
           </div>
 
           <div className="contact-card">
@@ -61,9 +62,9 @@ export const HelpPage = () => {
             </div>
             <h4 className="card-title">Priority Phone Support</h4>
             <p className="card-desc">Call toll-free 1800-889-PMART for urgent grocery assistance</p>
-            <a href="tel:18008897627" className="btn btn-outline-red btn-sm mt-auto">
+            <Button component="a" href="tel:18008897627" variant="outline-red" size="sm" className="mt-auto">
               Call Hotline
-            </a>
+            </Button>
           </div>
 
           <div className="contact-card">
@@ -72,9 +73,9 @@ export const HelpPage = () => {
             </div>
             <h4 className="card-title">Email Customer Care</h4>
             <p className="card-desc">Write to care@pmart.in for billing queries and invoices</p>
-            <a href="mailto:care@pmart.in" className="btn btn-outline-red btn-sm mt-auto">
+            <Button component="a" href="mailto:care@pmart.in" variant="outline-red" size="sm" className="mt-auto">
               Send Email
-            </a>
+            </Button>
           </div>
         </div>
 

@@ -15,8 +15,10 @@ import {
   ArrowRight,
   Plus,
   Home,
-  Briefcase
+  Briefcase,
+  ShoppingCart
 } from 'lucide-react';
+import { Button, EmptyState, Card } from '@/components/ui';
 import './CheckoutPage.scss';
 
 export const CheckoutPage = () => {
@@ -31,9 +33,17 @@ export const CheckoutPage = () => {
 
   if (items.length === 0) {
     return (
-      <div className="container py-12 text-center">
-        <h3>Your basket is empty</h3>
-        <Link to="/" className="btn btn-primary mt-4">Start Shopping</Link>
+      <div className="container py-12">
+        <EmptyState
+          icon={ShoppingCart}
+          title="Your basket is empty"
+          description="Start adding items to your cart."
+          action={
+            <Link to="/" style={{ textDecoration: 'none' }}>
+              <Button variant="primary">Start Shopping</Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -145,7 +155,7 @@ export const CheckoutPage = () => {
                 })() : (
                   <div className="no-address-state">
                     <p>Please select a delivery address</p>
-                    <button className="btn btn-outline btn-sm mt-2" onClick={() => setLocationModalOpen(true)}>Select Address</button>
+                    <Button variant="outline" size="sm" style={{ marginTop: '8px' }} onClick={() => setLocationModalOpen(true)}>Select Address</Button>
                   </div>
                 )}
               </div>
@@ -265,14 +275,17 @@ export const CheckoutPage = () => {
                 <span className="total-amount">₹{billSummary.grandTotal}</span>
               </div>
 
-              <button
-                className="btn btn-primary btn-lg btn-full place-order-btn"
+              <Button
+                variant="primary"
+                size="lg"
+                className="place-order-btn"
+                style={{ width: '100%' }}
                 onClick={handlePlaceOrder}
                 disabled={isPlacing}
               >
                 <span>{isPlacing ? 'Placing Order...' : `Place COD Order • ₹${billSummary.grandTotal}`}</span>
                 <ArrowRight size={18} />
-              </button>
+              </Button>
 
               <div className="safety-note">
                 <ShieldCheck size={14} className="shield" />

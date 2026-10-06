@@ -9,7 +9,17 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 const isDryRun = process.argv.includes('--dry-run');
 
 async function runRepair() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?retryWrites=true&w=majority&appName=pmart');
+  if (!process.env.MONGODB_URI) {
+    console.error('ERROR: MONGODB_URI environment variable is required.');
+    process.exit(1);
+  }
+  
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_SCRIPT_EXECUTION) {
+    console.error('ERROR: To run this script in production, set ALLOW_PROD_SCRIPT_EXECUTION=true');
+    process.exit(1);
+  }
+
+  await mongoose.connect(process.env.MONGODB_URI);
 
   console.log(`--- RIDER REPAIR ${isDryRun ? '(DRY RUN)' : '(LIVE)'} ---`);
   

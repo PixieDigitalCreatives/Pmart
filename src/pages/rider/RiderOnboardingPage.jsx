@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { User, Phone, ArrowRight, AlertCircle, CheckCircle2, Car, Key } from 'lucide-react';
+import { Button } from '@/components/ui';
 import './RiderOnboardingPage.scss';
 
 export const RiderOnboardingPage = () => {
@@ -195,15 +196,22 @@ export const RiderOnboardingPage = () => {
                 </div>
               </div>
 
-              <button
+              <Button
                 type="submit"
-                className="btn btn-primary btn-lg btn-full"
+                variant="primary"
+                size="lg"
+                className="w-full flex justify-center items-center gap-2 mt-4"
                 disabled={loading}
-                style={{ marginTop: '1rem' }}
+                loading={loading}
+                loadingText="Activating Profile..."
               >
-                <span>{loading ? 'Activating Profile...' : 'Complete Setup'}</span>
-                <ArrowRight size={18} />
-              </button>
+                {!loading && (
+                  <>
+                    <span>Complete Setup</span>
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </Button>
             </form>
           </div>
         </div>

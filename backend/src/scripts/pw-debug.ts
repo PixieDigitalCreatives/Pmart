@@ -8,7 +8,17 @@ import { chromium } from 'playwright';
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 async function run() {
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?retryWrites=true&w=majority&appName=pmart');
+  if (!process.env.MONGODB_URI) {
+    console.error('ERROR: MONGODB_URI environment variable is required.');
+    process.exit(1);
+  }
+  
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_SCRIPT_EXECUTION) {
+    console.error('ERROR: To run this script in production, set ALLOW_PROD_SCRIPT_EXECUTION=true');
+    process.exit(1);
+  }
+
+  await mongoose.connect(process.env.MONGODB_URI);
   
   const riders = await User.find({ role: UserRole.RIDER });
   if (riders.length === 0) {
@@ -19,7 +29,7 @@ async function run() {
   const rider = riders[0];
   const token = jwt.sign(
     { id: rider._id, role: rider.role, email: rider.email },
-    process.env.JWT_SECRET || 'production_secret_key_change_me_in_real_prod',
+    process.env.JWT_SECRET || 'fallback_secret_for_local_testing_only',
     { expiresIn: '1d' }
   );
 

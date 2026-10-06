@@ -58,15 +58,27 @@ export class UserController {
       delete req.body.user;
       
       if (req.user.role === 'CUSTOMER') {
+        const allowedUpdates: any = {};
+        if (req.body.fullName !== undefined) allowedUpdates.fullName = req.body.fullName;
+        if (req.body.email !== undefined) allowedUpdates.email = req.body.email;
+
         profile = await CustomerProfile.findOneAndUpdate(
           { user: (req.user as any)._id },
-          { $set: req.body },
+          { $set: allowedUpdates },
           { new: true, upsert: true }
         );
       } else if (req.user.role === 'RIDER') {
+        const allowedUpdates: any = {};
+        if (req.body.fullName !== undefined) allowedUpdates.fullName = req.body.fullName;
+        if (req.body.phone !== undefined) allowedUpdates.phone = req.body.phone;
+        if (req.body.vehicleType !== undefined) allowedUpdates.vehicleType = req.body.vehicleType;
+        if (req.body.vehicleNumber !== undefined) allowedUpdates.vehicleNumber = req.body.vehicleNumber;
+        if (req.body.licenseNumber !== undefined) allowedUpdates.licenseNumber = req.body.licenseNumber;
+        if (req.body.availabilityStatus !== undefined) allowedUpdates.availabilityStatus = req.body.availabilityStatus;
+
         profile = await RiderProfile.findOneAndUpdate(
           { user: (req.user as any)._id },
-          { $set: req.body },
+          { $set: allowedUpdates },
           { new: true, upsert: true }
         );
       }

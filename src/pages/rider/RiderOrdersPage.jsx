@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { riderService } from '@/services/riderService';
 import { Package, ArrowRight, MapPin, Clock } from 'lucide-react';
+import { PageHeader, Card, StatusBadge, Button, EmptyState } from '@/components/ui';
 
 export const RiderOrdersPage = () => {
   const [activeOrder, setActiveOrder] = useState(null);
@@ -20,16 +21,16 @@ export const RiderOrdersPage = () => {
 
   return (
     <div className="rider-orders-page">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-dark">Active Deliveries Queue</h1>
-        <p className="text-muted text-sm">Assigned orders awaiting delivery run</p>
-      </div>
+      <PageHeader 
+        title="Active Deliveries Queue"
+        subtitle="Assigned orders awaiting delivery run"
+      />
 
       {activeOrder ? (
-        <div className="pmart-card">
+        <Card>
           <div className="flex justify-between items-center mb-3">
             <span className="font-bold text-dark text-base">Order #{activeOrder.id}</span>
-            <span className="badge badge-primary">{activeOrder.status.replace('_', ' ')}</span>
+            <StatusBadge status={activeOrder.status.replace('_', ' ')} type="primary" />
           </div>
 
           <div className="space-y-2 text-sm text-secondary mb-4">
@@ -43,15 +44,21 @@ export const RiderOrdersPage = () => {
             </div>
           </div>
 
-          <Link to={`/rider/orders/${activeOrder.id}`} className="btn btn-primary btn-full">
-            <span>Open Delivery & Verify Handover</span>
-            <ArrowRight size={16} />
+          <Link to={`/rider/orders/${activeOrder.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <Button variant="primary" className="w-full flex justify-center items-center gap-2">
+              <span>Open Delivery & Verify Handover</span>
+              <ArrowRight size={16} />
+            </Button>
           </Link>
-        </div>
+        </Card>
       ) : (
-        <div className="pmart-card text-center py-8">
-          <p className="text-muted">No active orders right now.</p>
-        </div>
+        <Card className="text-center py-8">
+          <EmptyState
+            icon={Package}
+            title="No active orders"
+            description="You currently don't have any active deliveries assigned."
+          />
+        </Card>
       )}
     </div>
   );

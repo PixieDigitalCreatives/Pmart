@@ -8,7 +8,9 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
+  MapPinOff
 } from 'lucide-react';
+import { PageHeader, Button, EmptyState } from '@/components/ui';
 import { getFullAddressString } from '@/utils/addressUtils';
 import './AddressesPage.scss';
 
@@ -62,25 +64,28 @@ export const AddressesPage = () => {
   return (
     <div className="pmart-addresses-page">
       <div className="container">
-        <div className="page-header-row">
-          <div>
-            <h1 className="page-title">Manage Delivery Addresses</h1>
-            <p className="page-subtitle">Save your home, office, and frequent delivery locations</p>
-          </div>
-          <button className="btn btn-primary" onClick={openAddForm}>
-            <Plus size={16} />
-            <span>Add New Address</span>
-          </button>
-        </div>
+        <PageHeader
+          title="Manage Delivery Addresses"
+          subtitle="Save your home, office, and frequent delivery locations"
+          action={
+            <Button variant="primary" onClick={openAddForm}>
+              <Plus size={16} style={{ marginRight: '8px' }} />
+              <span>Add New Address</span>
+            </Button>
+          }
+        />
 
         {addressLoading && savedLocations.length === 0 && (
           <div className="py-8 text-center text-gray-500">Loading addresses...</div>
         )}
 
         {!addressLoading && savedLocations.length === 0 && (
-          <div className="py-8 text-center">
-            <MapPin size={32} className="mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-500">You haven't saved any addresses yet.</p>
+          <div style={{ marginTop: '32px' }}>
+            <EmptyState
+              icon={MapPinOff}
+              title="No saved addresses"
+              description="You haven't saved any addresses yet."
+            />
           </div>
         )}
 

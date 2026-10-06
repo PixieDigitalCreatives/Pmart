@@ -4,6 +4,7 @@ import { orderService } from '@/services/orderService';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { TrackingPanel } from '@/components/tracking/TrackingPanel';
+import { Button } from '@/components/ui';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import {
@@ -45,6 +46,7 @@ export const OrderTrackingPage = () => {
     status: liveStatus,
     trackingState,
     route,
+    routeError,
     recenterTrigger,
     recenter
   } = useLiveTracking(id);
@@ -110,7 +112,7 @@ export const OrderTrackingPage = () => {
     return (
       <div className="container py-12 text-center">
         <h3>Order not found</h3>
-        <Link to="/orders" className="btn btn-primary mt-4">View All Orders</Link>
+        <Button component={Link} to="/orders" variant="primary" className="mt-4">View All Orders</Button>
       </div>
     );
   }
@@ -193,6 +195,7 @@ export const OrderTrackingPage = () => {
                   customerLocation={customerLocation || order.deliveryAddress}
                   hubLocation={hubLocation || order.shop}
                   route={route}
+                  routeError={routeError}
                   etaMinutes={etaMinutes}
                   distanceKm={distanceKm}
                   trackingState={trackingState}

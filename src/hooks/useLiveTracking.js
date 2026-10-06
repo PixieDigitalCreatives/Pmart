@@ -21,6 +21,7 @@ export const useLiveTracking = (orderId) => {
   const [route, setRoute] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
   const [error, setError] = useState(null);
+  const [routeError, setRouteError] = useState(false);
   const [recenterCount, setRecenterCount] = useState(0);
 
   useEffect(() => {
@@ -44,13 +45,23 @@ export const useLiveTracking = (orderId) => {
 
       try {
         const routeData = await getRoute([rLoc.lng, rLoc.lat], [cLoc.lng, cLoc.lat]);
-        if (isMounted && routeData) {
-          setRoute(routeData.geometry);
-          setDistanceKm(Number((routeData.distanceMeters / 1000).toFixed(1)));
-          setEtaMinutes(Math.max(1, Math.ceil(routeData.durationSeconds / 60)));
+        if (isMounted) {
+          if (routeData) {
+            setRoute(routeData.geometry);
+            setDistanceKm(Number((routeData.distanceMeters / 1000).toFixed(1)));
+            setEtaMinutes(Math.max(1, Math.ceil(routeData.durationSeconds / 60)));
+            setRouteError(false);
+          } else {
+            setRoute(null);
+            setRouteError(true);
+          }
         }
       } catch (err) {
         log('Route fetch failed', err);
+        if (isMounted) {
+          setRoute(null);
+          setRouteError(true);
+        }
       }
     };
 
@@ -111,6 +122,7 @@ export const useLiveTracking = (orderId) => {
     status,
     trackingState,
     route,
+    routeError,
     isConnected,
     error,
     recenterTrigger: recenterCount,

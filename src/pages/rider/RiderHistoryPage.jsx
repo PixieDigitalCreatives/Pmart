@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { riderService } from '@/services/riderService';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { CheckCircle2, Clock, History } from 'lucide-react';
+import { PageHeader, Card, StatusBadge, EmptyState } from '@/components/ui';
 
 export const RiderHistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -16,22 +17,26 @@ export const RiderHistoryPage = () => {
 
   return (
     <div className="rider-history-page">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-dark">Completed Runs</h1>
-        <p className="text-muted text-sm">Past successful customer grocery deliveries</p>
-      </div>
+      <PageHeader 
+        title="Completed Runs"
+        subtitle="Past successful customer grocery deliveries"
+      />
 
       <div className="space-y-3">
         {history.length === 0 && (
-          <div className="pmart-card text-center py-8">
-            <p className="text-muted">No completed deliveries yet.</p>
-          </div>
+          <Card className="text-center py-8">
+            <EmptyState 
+              icon={History}
+              title="No completed deliveries yet"
+              description="Your completed runs will appear here."
+            />
+          </Card>
         )}
         {history.map((order) => (
-          <div key={order.id} className="pmart-card">
+          <Card key={order.id}>
             <div className="flex justify-between items-center mb-2">
               <span className="font-bold text-dark text-sm">#{order.orderNumber || order.id}</span>
-              <span className="badge badge-success">Completed</span>
+              <StatusBadge status="Completed" type="success" />
             </div>
             <div className="text-xs text-secondary mb-1">
               Customer: {order.customer?.name || 'N/A'} • {order.items?.length || 0} items
@@ -46,7 +51,7 @@ export const RiderHistoryPage = () => {
               </span>
               <span className="font-bold text-dark">Total: ₹{order.totalAmount || 0}</span>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

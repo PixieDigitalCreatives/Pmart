@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { PageHeader, Button, StatusBadge, Card } from '@/components/ui';
 import './ShopDashboardPage.scss';
 
 export const ShopDashboardPage = () => {
@@ -37,30 +38,32 @@ export const ShopDashboardPage = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'delivered':
-        return <span className="badge badge-success">Delivered</span>;
+        return <StatusBadge status="Delivered" type="success" />;
       case 'out_for_delivery':
-        return <span className="badge badge-primary">Out for Delivery</span>;
+        return <StatusBadge status="Out for Delivery" type="primary" />;
       case 'preparing':
-        return <span className="badge badge-warning">Preparing</span>;
+        return <StatusBadge status="Preparing" type="warning" />;
       case 'ready':
-        return <span className="badge badge-info">Ready to Dispatch</span>;
+        return <StatusBadge status="Ready to Dispatch" type="info" />;
       default:
-        return <span className="badge badge-neutral">Order Placed</span>;
+        return <StatusBadge status="Order Placed" type="neutral" />;
     }
   };
 
   return (
     <div className="shop-dashboard-page">
       {/* Top Header */}
-      <div className="dashboard-page-header">
-        <div>
-          <h1 className="dash-title">Darkstore Operations Dashboard</h1>
-          <p className="dash-subtitle">Real-time fulfillment metrics for P Mart Sasaram Hub (GT Road)</p>
-        </div>
-        <Link to="/shop/products/new" className="btn btn-primary">
-          + Add New Product
-        </Link>
-      </div>
+      <PageHeader
+        title="Darkstore Operations Dashboard"
+        subtitle="Real-time fulfillment metrics for P Mart Sasaram Hub (GT Road)"
+        action={
+          <Link to="/shop/products/new" style={{ textDecoration: 'none' }}>
+            <Button variant="primary">
+              + Add New Product
+            </Button>
+          </Link>
+        }
+      />
 
       {/* KPI Cards Row */}
       <div className="kpi-cards-grid">
@@ -196,9 +199,11 @@ export const ShopDashboardPage = () => {
                     </span>
                   </td>
                   <td>
-                    <Link to={`/shop/orders/${o.id}`} className="btn btn-secondary btn-sm action-view-btn">
-                      <Eye size={13} />
-                      <span>Manage</span>
+                    <Link to={`/shop/orders/${o.id}`} style={{ textDecoration: 'none' }}>
+                      <Button variant="secondary" size="sm" className="action-view-btn">
+                        <Eye size={13} style={{ marginRight: '4px' }} />
+                        <span>Manage</span>
+                      </Button>
                     </Link>
                   </td>
                 </tr>
@@ -247,14 +252,14 @@ export const ShopDashboardPage = () => {
                 <span className="item-name">Amul Taaza Milk 1L</span>
                 <span className="stock-level">Only 12 packs remaining</span>
               </div>
-              <span className="badge badge-error">Restock Now</span>
+              <StatusBadge status="Restock Now" type="error" />
             </div>
             <div className="stock-alert-item">
               <div className="stock-info">
                 <span className="item-name">Mother Dairy Classic Dahi 400g</span>
                 <span className="stock-level">Only 8 tubs remaining</span>
               </div>
-              <span className="badge badge-warning">Low Stock</span>
+              <StatusBadge status="Low Stock" type="warning" />
             </div>
           </div>
         </div>

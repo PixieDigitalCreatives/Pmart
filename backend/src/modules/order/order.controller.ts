@@ -245,7 +245,8 @@ export class OrderController {
 
         const totalAmount = subTotal + deliveryFee;
 
-        const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const crypto = require('crypto');
+        const orderNumber = `ORD-${Date.now()}-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
         const { normalizeCoordinates } = require('../../utils/geo');
         const [lng, lat] = normalizeCoordinates(finalDeliveryAddress.coordinates.lng, finalDeliveryAddress.coordinates.lat);

@@ -13,6 +13,7 @@ import {
   MapPin,
   AlertCircle
 } from 'lucide-react';
+import { Card, StatusBadge, Button, EmptyState } from '@/components/ui';
 import './RiderDashboardPage.scss';
 
 export const RiderDashboardPage = () => {
@@ -60,7 +61,7 @@ export const RiderDashboardPage = () => {
             <div className="card-top">
               <div className="order-id-group">
                 <span className="order-id">Order #{activeOrder.id || activeOrder.orderNumber || 'Unknown'}</span>
-                <span className="badge badge-primary">{(activeOrder.status || '').replace('_', ' ')}</span>
+                <StatusBadge status={(activeOrder.status || '').replace('_', ' ')} type="primary" />
               </div>
               <span className="eta-countdown">ETA: Unavailable</span>
             </div>
@@ -98,30 +99,36 @@ export const RiderDashboardPage = () => {
             </div>
 
             {/* Primary Action Button */}
-            <Link to={`/rider/orders/${activeOrder.id}`} className="btn btn-primary btn-lg btn-full navigate-cta">
-              <Navigation size={18} />
-              <span>Open Delivery Navigation & Verify</span>
-              <ArrowRight size={18} />
+            <Link to={`/rider/orders/${activeOrder.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+              <Button variant="primary" size="lg" className="w-full flex items-center justify-between mt-4">
+                <div className="flex items-center gap-2">
+                  <Navigation size={18} />
+                  <span>Open Delivery Navigation & Verify</span>
+                </div>
+                <ArrowRight size={18} />
+              </Button>
             </Link>
           </div>
         ) : (
-          <div className="pmart-card text-center py-8">
-            <CheckCircle2 size={36} className="text-success mx-auto mb-2" />
-            <h3 className="font-bold text-dark">No active deliveries right now</h3>
-            <p className="text-muted text-sm mt-1">Stay online! You will be automatically assigned darkstore orders.</p>
-          </div>
+          <Card className="text-center py-8">
+            <EmptyState
+              icon={CheckCircle2}
+              title="No active deliveries right now"
+              description="Stay online! You will be automatically assigned darkstore orders."
+            />
+          </Card>
         )}
       </div>
 
       {/* Quick Delivery Checklist */}
-      <div className="pmart-card mt-5">
+      <Card className="mt-5">
         <h4 className="font-bold text-sm text-dark mb-2">Fleet Safety & Service Checklist</h4>
         <ul className="text-xs text-secondary space-y-1.5 list-disc pl-4">
           <li>Check thermally insulated delivery bag before leaving the hub</li>
           <li>Wear safety helmet & PMart fleet uniform</li>
           <li>Always verify the 4-digit OTP from customer before marking delivered</li>
         </ul>
-      </div>
+      </Card>
     </div>
   );
 };

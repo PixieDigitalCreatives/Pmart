@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveDeliveryMap } from '../../components/admin/LiveDeliveryMap';
+import { PageHeader, StatusBadge } from '@/components/ui';
 import { io } from 'socket.io-client';
 import api from '../../services/apiClient';
 import './AdminLiveDeliveriesPage.scss';
@@ -115,18 +116,16 @@ export const AdminLiveDeliveriesPage = () => {
   return (
     <div className="admin-live-deliveries-page">
       {/* Top Header */}
-      <div className="page-header-row">
-        <div>
-          <h1 className="page-title">Real-Time Fleet & Delivery Operations</h1>
-          <p className="page-subtitle">
-            Live GPS telemetry of darkstore dispatch, moving riders, and active express customer drop-offs
-          </p>
-        </div>
-        <div className="header-stats-badge">
-          <span className="live-pulsing-dot" />
-          <span>{deliveries.length} Active Deliveries</span>
-        </div>
-      </div>
+      <PageHeader
+        title="Real-Time Fleet & Delivery Operations"
+        subtitle="Live GPS telemetry of darkstore dispatch, moving riders, and active express customer drop-offs"
+        action={
+          <div className="header-stats-badge">
+            <span className="live-pulsing-dot" />
+            <span>{deliveries.length} Active Deliveries</span>
+          </div>
+        }
+      />
 
       {/* Filter & Search Bar */}
       <div className="delivery-filter-bar">
@@ -181,9 +180,7 @@ export const AdminLiveDeliveriesPage = () => {
                     <p className="rider-sub">{selectedDelivery.rider?.vehicleNumber || 'No vehicle'} • ⭐ {selectedDelivery.rider?.rating || 'N/A'}</p>
                   </div>
                 </div>
-                <span className={`status-badge-chip ${selectedDelivery.status.toLowerCase()}`}>
-                  {selectedDelivery.status.replace(/_/g, ' ')}
-                </span>
+                <StatusBadge status={selectedDelivery.status.replace(/_/g, ' ')} type="neutral" />
               </div>
 
               <div className="panel-body">

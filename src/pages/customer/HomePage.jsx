@@ -5,6 +5,7 @@ import { categoryService } from '@/services/categoryService';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
 import { ShieldCheck, ArrowRight, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
 import './HomePage.scss';
 
 export const HomePage = () => {
@@ -67,10 +68,10 @@ export const HomePage = () => {
               </p>
 
               <div className="hero-actions">
-                <Link to="/category/fruits-vegetables" className="btn btn-primary btn-lg hero-cta">
+                <Button component={Link} to="/category/fruits-vegetables" variant="primary" size="lg" className="hero-cta">
                   <span>Shop Fresh Groceries</span>
                   <ArrowRight size={18} />
-                </Link>
+                </Button>
                 <div className="hero-guarantee">
                   <ShieldCheck size={18} className="shield-icon" />
                   <span>100% Quality Guaranteed</span>

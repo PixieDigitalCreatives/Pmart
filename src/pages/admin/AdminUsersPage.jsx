@@ -5,6 +5,7 @@ import { AddRiderModal } from '../../components/admin/AddRiderModal';
 import { EditRiderModal } from '../../components/admin/EditRiderModal';
 import { AddEmployeeModal } from '../../components/admin/AddEmployeeModal';
 import { EditEmployeeModal } from '../../components/admin/EditEmployeeModal';
+import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
 
 export const AdminUsersPage = () => {
   const [activeTab, setActiveTab] = useState('customers');
@@ -38,17 +39,17 @@ export const AdminUsersPage = () => {
 
   return (
     <div className="admin-users-page">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-dark">Platform User Directory</h1>
-          <p className="text-muted text-sm">Central identity directory across all 4 system roles</p>
-        </div>
-        {activeTab === 'riders' && (
-          <button className="btn btn-primary" onClick={() => setIsAddRiderOpen(true)}>
-            <Plus size={16} /> Add Rider
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Platform User Directory"
+        subtitle="Central identity directory across all 4 system roles"
+        action={
+          activeTab === 'riders' && (
+            <Button variant="primary" onClick={() => setIsAddRiderOpen(true)}>
+              <Plus size={16} style={{ marginRight: '8px' }} /> Add Rider
+            </Button>
+          )
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 border-b pb-3 mb-5">
@@ -58,13 +59,14 @@ export const AdminUsersPage = () => {
           { id: 'riders', label: 'Fleet Riders' },
           { id: 'admins', label: 'System Administrators' }
         ].map(t => (
-          <button
+          <Button
             key={t.id}
-            className={`btn btn-sm ${activeTab === t.id ? 'btn-dark' : 'btn-secondary'}`}
+            variant={activeTab === t.id ? 'dark' : 'secondary'}
+            size="sm"
             onClick={() => setActiveTab(t.id)}
           >
             {t.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -90,7 +92,7 @@ export const AdminUsersPage = () => {
                   <td>{c.email}</td>
                   <td>{c.orders} orders</td>
                   <td className="font-bold">₹{c.spent?.toLocaleString()}</td>
-                  <td><span className="badge badge-success">{c.status}</span></td>
+                  <td><StatusBadge status={c.status} type={c.status === 'Active' ? 'success' : 'neutral'} /></td>
                 </tr>
               ))}
             </tbody>
@@ -118,7 +120,7 @@ export const AdminUsersPage = () => {
                   <td>{s.name}</td>
                   <td>{s.phone}</td>
                   <td>{s.operatingHours}</td>
-                  <td><span className="badge badge-success">{s.status}</span></td>
+                  <td><StatusBadge status={s.status} type={s.status === 'Active' ? 'success' : 'neutral'} /></td>
                 </tr>
               ))}
             </tbody>
@@ -130,11 +132,17 @@ export const AdminUsersPage = () => {
       {activeTab === 'riders' && (
         <div className="pmart-table-wrapper">
           {riders.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500 mb-4">No riders found.</p>
-              <button className="btn btn-primary" onClick={() => setIsAddRiderOpen(true)}>
-                <Plus size={16} /> Add Rider
-              </button>
+            <div className="p-8">
+              <EmptyState
+                icon={Bike}
+                title="No riders found"
+                description="There are currently no riders in the system."
+                action={
+                  <Button variant="primary" onClick={() => setIsAddRiderOpen(true)}>
+                    <Plus size={16} style={{ marginRight: '8px' }} /> Add Rider
+                  </Button>
+                }
+              />
             </div>
           ) : (
             <table className="pmart-table">
@@ -159,19 +167,23 @@ export const AdminUsersPage = () => {
                     <td>{r.assignedShopName || 'Unassigned'}</td>
                     <td>{r.totalDeliveries || 0} completed</td>
                     <td className="font-bold text-dark">★ {r.rating || '5.0'}</td>
-                    <td><span className={`badge ${r.isActive ? 'badge-success' : 'badge-danger'}`}>{r.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td><StatusBadge status={r.isActive ? 'Active' : 'Inactive'} type={r.isActive ? 'success' : 'danger'} /></td>
                     <td>
-                      <button 
-                        className="btn btn-sm btn-secondary mr-2"
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        style={{ marginRight: '8px' }}
                         onClick={() => {
                           setSelectedRider(r);
                           setIsEditRiderOpen(true);
                         }}
                       >
                         Edit
-                      </button>
-                      <button 
-                        className={`btn btn-sm ${r.isActive ? 'btn-danger' : 'btn-success'} mr-2`}
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant={r.isActive ? 'danger' : 'success'}
+                        style={{ marginRight: '8px' }}
                         onClick={async () => {
                           if (r.status === 'BUSY' && r.isActive) {
                             alert('Cannot deactivate a rider with an active delivery.');
@@ -186,9 +198,10 @@ export const AdminUsersPage = () => {
                         }}
                       >
                         {r.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-danger"
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="danger"
                         onClick={async () => {
                           if (r.status === 'BUSY') {
                             alert('Cannot delete a rider with an active delivery.');
@@ -206,7 +219,7 @@ export const AdminUsersPage = () => {
                         }}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -235,9 +248,9 @@ export const AdminUsersPage = () => {
       {activeTab === 'admins' && (
         <div className="pmart-table-wrapper">
           <div className="flex justify-end mb-4 pr-4">
-            <button className="btn btn-primary" onClick={() => setIsAddEmployeeOpen(true)}>
-              <Plus size={16} /> Add Employee
-            </button>
+            <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
+              <Plus size={16} style={{ marginRight: '8px' }} /> Add Employee
+            </Button>
           </div>
           <table className="pmart-table">
             <thead>
@@ -255,9 +268,7 @@ export const AdminUsersPage = () => {
                 <tr key={e.id}>
                   <td className="font-semibold text-dark">{e.name}</td>
                   <td>
-                    <span className={`badge ${e.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary'}`}>
-                      {e.role}
-                    </span>
+                    <StatusBadge status={e.role} type={e.role === 'ADMIN' ? 'primary' : 'neutral'} />
                   </td>
                   <td>
                     <div>{e.phone}</div>
@@ -272,20 +283,23 @@ export const AdminUsersPage = () => {
                       </span>
                     )}
                   </td>
-                  <td><span className={`badge ${e.isActive ? 'badge-success' : 'badge-danger'}`}>{e.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td><StatusBadge status={e.isActive ? 'Active' : 'Inactive'} type={e.isActive ? 'success' : 'danger'} /></td>
                   <td>
-                    <button 
-                      className="btn btn-sm btn-secondary mr-2"
+                    <Button 
+                      size="sm"
+                      variant="secondary"
+                      style={{ marginRight: '8px' }}
                       onClick={() => {
                         setSelectedEmployee(e);
                         setIsEditEmployeeOpen(true);
                       }}
                     >
                       Edit
-                    </button>
+                    </Button>
                     {e.role !== 'ADMIN' && (
-                      <button 
-                        className="btn btn-sm btn-danger"
+                      <Button 
+                        size="sm"
+                        variant="danger"
                         onClick={async () => {
                           if (!window.confirm(`Are you sure you want to delete employee ${e.name}?`)) return;
                           try {
@@ -297,14 +311,20 @@ export const AdminUsersPage = () => {
                         }}
                       >
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
               ))}
               {employees.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-gray-500">No employees found.</td>
+                  <td colSpan="6" style={{ padding: 0 }}>
+                    <EmptyState
+                      icon={Shield}
+                      title="No employees found"
+                      description="There are currently no employees in the system."
+                    />
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -19,8 +19,10 @@ import {
   ShoppingBag,
   Eye,
   Navigation,
-  Calendar
+  Calendar,
+  PackageX
 } from 'lucide-react';
+import { PageHeader, Button, EmptyState, Card } from '@/components/ui';
 import './OrdersPage.scss';
 
 export const OrdersPage = () => {
@@ -114,10 +116,10 @@ export const OrdersPage = () => {
   return (
     <div className="pmart-orders-page">
       <div className="container">
-        <div className="page-header">
-          <h1 className="page-title">My Orders</h1>
-          <p className="page-subtitle">Track active grocery deliveries or reorder your regular favorites</p>
-        </div>
+        <PageHeader
+          title="My Orders"
+          subtitle="Track active grocery deliveries or reorder your regular favorites"
+        />
 
         {/* Filter Tabs */}
         <div className="orders-filter-tabs">
@@ -138,11 +140,17 @@ export const OrdersPage = () => {
 
         {/* Orders List */}
         {orders.length === 0 ? (
-          <div className="no-orders-box">
-            <Package size={44} className="no-orders-icon" />
-            <h3>No orders found in this section</h3>
-            <p>Start filling your cart with fresh fruits, dairy and everyday essentials.</p>
-            <Link to="/" className="btn btn-primary mt-4">Start Shopping</Link>
+          <div style={{ marginTop: '32px' }}>
+            <EmptyState
+              icon={PackageX}
+              title="No orders found in this section"
+              description="Start filling your cart with fresh fruits, dairy and everyday essentials."
+              action={
+                <Link to="/" style={{ textDecoration: 'none' }}>
+                  <Button variant="primary">Start Shopping</Button>
+                </Link>
+              }
+            />
           </div>
         ) : (
           <div className="orders-cards-list">
@@ -151,7 +159,7 @@ export const OrdersPage = () => {
               const isActive = norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED || norm === ORDER_STATUS.PREPARING || norm === ORDER_STATUS.READY || norm === ORDER_STATUS.ASSIGNED || norm === ORDER_STATUS.PICKED_UP;
 
               return (
-                <div key={order.id} className="order-history-card">
+                <Card key={order.id} className="order-history-card">
                   {/* Card Header: ID, Date, Status */}
                   <div className="order-card-header">
                     <div className="order-meta-group">
@@ -202,39 +210,44 @@ export const OrdersPage = () => {
                         compact={true}
                       />
                     </div>
-                    <div className="footer-actions">
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm reorder-btn"
+                    <div className="footer-actions" style={{ display: 'flex', gap: '8px' }}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="reorder-btn"
                         onClick={() => handleReorder(order)}
                       >
-                        <RefreshCw size={13} />
+                        <RefreshCw size={13} style={{ marginRight: '4px' }} />
                         <span>Reorder</span>
-                      </button>
+                      </Button>
 
                       {/* Dedicated View Order Button */}
                       <Link
                         to={`/orders/${order.id}`}
-                        className="btn btn-outline-secondary btn-sm view-order-btn"
+                        style={{ textDecoration: 'none' }}
                       >
-                        <Eye size={13} />
-                        <span>View Order</span>
+                        <Button variant="outline" size="sm" className="view-order-btn">
+                          <Eye size={13} style={{ marginRight: '4px' }} />
+                          <span>View Order</span>
+                        </Button>
                       </Link>
 
                       {/* Track Order CTA for Active Deliveries */}
                       {isActive && (
                         <Link
                           to={`/orders/${order.id}`}
-                          className="btn btn-primary btn-sm track-order-btn"
+                          style={{ textDecoration: 'none' }}
                         >
-                          <Navigation size={13} />
-                          <span>Track Order</span>
-                          <ArrowRight size={13} />
+                          <Button variant="primary" size="sm" className="track-order-btn">
+                            <Navigation size={13} style={{ marginRight: '4px' }} />
+                            <span>Track Order</span>
+                            <ArrowRight size={13} style={{ marginLeft: '4px' }} />
+                          </Button>
                         </Link>
                       )}
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

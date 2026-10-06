@@ -22,22 +22,22 @@ async function run() {
   let admin = await User.findOne({ email: 'admin@e2e.com' });
   if (!admin) {
     const res = await User.insertOne({
-      name: 'E2E Admin', phone: '+10000000001', email: 'admin@e2e.com', password: passwordHash, role: 'ADMIN', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Admin', phone: '+10000000001', email: 'admin@e2e.com', passwordHash: passwordHash, role: 'ADMIN', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     admin = { _id: res.insertedId };
   } else {
-    await User.updateOne({ email: 'admin@e2e.com' }, { $set: { phone: '+10000000001' } });
+    await User.updateOne({ email: 'admin@e2e.com' }, { $set: { phone: '+10000000001', passwordHash } });
   }
 
   // 2. Create Customer
   let customer = await User.findOne({ email: 'customer@e2e.com' });
   if (!customer) {
     const res = await User.insertOne({
-      name: 'E2E Customer', phone: '+10000000002', email: 'customer@e2e.com', password: passwordHash, role: 'CUSTOMER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Customer', phone: '+10000000002', email: 'customer@e2e.com', passwordHash: passwordHash, role: 'CUSTOMER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     customer = { _id: res.insertedId };
   } else {
-    await User.updateOne({ email: 'customer@e2e.com' }, { $set: { phone: '+10000000002' } });
+    await User.updateOne({ email: 'customer@e2e.com' }, { $set: { phone: '+10000000002', passwordHash } });
   }
 
   const Address = mongoose.connection.collection('addresses');
@@ -84,7 +84,7 @@ async function run() {
   let rider = await User.findOne({ email: 'rider@e2e.com' });
   if (!rider) {
     const res = await User.insertOne({
-      name: 'E2E Rider', phone: '+10000000003', email: 'rider@e2e.com', password: passwordHash, role: 'RIDER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
+      name: 'E2E Rider', phone: '+10000000003', email: 'rider@e2e.com', passwordHash: passwordHash, role: 'RIDER', isActive: true, profileComplete: true, createdAt: new Date(), updatedAt: new Date()
     });
     rider = { _id: res.insertedId };
     
@@ -119,7 +119,21 @@ async function run() {
     );
   }
   
-  // 3.5 Create Shop
+  // 3.5 Create Category
+  const Category = mongoose.connection.collection('categories');
+  let category = await Category.findOne({ slug: 'electronics' });
+  if (!category) {
+    const res = await Category.insertOne({
+      name: 'Electronics',
+      slug: 'electronics',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    category = { _id: res.insertedId };
+  }
+
+  // 3.6 Create Shop
   const Shop = mongoose.connection.collection('shops');
   let shop = await Shop.findOne({ name: 'E2E Test Shop' });
   if (!shop) {
@@ -144,16 +158,28 @@ async function run() {
       stockCount: 100,
       inStock: true,
       categorySlug: 'electronics',
+      category: category._id,
       isActive: true,
       image: 'https://example.com/test.jpg',
       shop: shop._id,
+      tags: ['daily-essentials', 'most-bought', 'fresh-picks'],
+      unit: '1 pc',
       createdAt: new Date(),
       updatedAt: new Date()
     });
   } else {
     await Product.updateOne(
       { name: 'E2E Test Product' }, 
-      { $set: { stockCount: 100, inStock: true, isActive: true, shop: shop._id } }
+      { $set: { 
+          stockCount: 100, 
+          inStock: true, 
+          isActive: true, 
+          shop: shop._id, 
+          category: category._id,
+          tags: ['daily-essentials', 'most-bought', 'fresh-picks'],
+          unit: '1 pc'
+        } 
+      }
     );
   }
 

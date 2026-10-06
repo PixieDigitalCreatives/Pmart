@@ -27,6 +27,7 @@ import {
   Banknote,
   KeyRound
 } from 'lucide-react';
+import { Button, StatusBadge, Card } from '@/components/ui';
 import './ShopOrderDetailPage.scss';
 
 export const ShopOrderDetailPage = () => {
@@ -86,7 +87,9 @@ export const ShopOrderDetailPage = () => {
     return (
       <div className="p-6">
         <h3>Order not found</h3>
-        <Link to="/shop/orders" className="btn btn-primary mt-4">Back to Orders</Link>
+        <Link to="/shop/orders" style={{ textDecoration: 'none' }}>
+          <Button variant="primary" className="mt-4">Back to Orders</Button>
+        </Link>
       </div>
     );
   }
@@ -124,23 +127,21 @@ export const ShopOrderDetailPage = () => {
         <div className="status-indicator-box">
           <div className="flex items-center gap-2">
             <span className="status-label">Current Stage:</span>
-            <span className={`badge ${
-              isDelivered ? 'badge-success' :
-              isArrived ? 'badge-info' :
-              isOutForDelivery ? 'badge-primary' : 'badge-warning'
-            } status-chip`}>
-              {currentStatus.replace(/_/g, ' ')}
-            </span>
+            <StatusBadge 
+              status={currentStatus.replace(/_/g, ' ')} 
+              type={isDelivered ? 'success' : isArrived ? 'info' : isOutForDelivery ? 'primary' : 'warning'} 
+            />
           </div>
           {(isOutForDelivery || isArrived) && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm track-rider-top-btn"
+            <Button
+              variant="primary"
+              size="sm"
+              className="track-rider-top-btn"
               onClick={() => setIsTrackRiderOpen(true)}
             >
-              <Navigation size={14} />
+              <Navigation size={14} style={{ marginRight: '8px' }} />
               <span>Track Rider</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -232,15 +233,15 @@ export const ShopOrderDetailPage = () => {
             <Lock size={14} />
             <span>Manual delivery override is locked. Delivery completion strictly requires customer OTP verification by the rider.</span>
           </div>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={true}
             style={{ opacity: 0.65, cursor: 'not-allowed', fontSize: '12px' }}
             title="Shop owners cannot mark an order as delivered without verified customer OTP"
           >
             {isDelivered ? '✓ Order Delivered' : '🔒 Mark Delivered (Requires OTP)'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -317,27 +318,30 @@ export const ShopOrderDetailPage = () => {
             <p className="actions-subtext">Progress the darkstore packaging workflow</p>
 
             <div className="action-buttons-stack">
-              <button
-                className="btn btn-secondary btn-full stage-btn"
+              <Button
+                variant="secondary"
+                className="btn-full stage-btn"
                 onClick={() => handleStatusChange(ORDER_STATUS.CONFIRMED)}
                 disabled={!isPlaced}
               >
                 1. Accept Order
-              </button>
-              <button
-                className="btn btn-secondary btn-full stage-btn"
+              </Button>
+              <Button
+                variant="secondary"
+                className="btn-full stage-btn"
                 onClick={() => handleStatusChange(ORDER_STATUS.PREPARING)}
                 disabled={!isConfirmed}
               >
                 2. Mark as Preparing / In Packing
-              </button>
-              <button
-                className="btn btn-primary btn-full stage-btn"
+              </Button>
+              <Button
+                variant="primary"
+                className="btn-full stage-btn"
                 onClick={() => handleStatusChange(ORDER_STATUS.READY_FOR_PICKUP)}
                 disabled={!isPreparing}
               >
                 3. Mark Ready for Rider Pickup
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -362,13 +366,15 @@ export const ShopOrderDetailPage = () => {
                 </select>
               </div>
 
-              <button
+              <Button
                 type="submit"
-                className="btn btn-dark btn-full"
+                variant="dark"
+                className="btn-full"
                 disabled={!selectedRiderId}
+                style={{ width: '100%', marginTop: '16px' }}
               >
                 Assign Fleet Partner
-              </button>
+              </Button>
             </form>
 
             {order?.rider && (
@@ -383,14 +389,16 @@ export const ShopOrderDetailPage = () => {
                 </div>
 
                 {(isOutForDelivery || isArrived) && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-red btn-sm btn-full mt-3"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="btn-full mt-3"
                     onClick={() => setIsTrackRiderOpen(true)}
+                    style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
                   >
-                    <Navigation size={14} />
+                    <Navigation size={14} style={{ marginRight: '8px' }} />
                     <span>Track Rider Live</span>
-                  </button>
+                  </Button>
                 )}
               </div>
             )}

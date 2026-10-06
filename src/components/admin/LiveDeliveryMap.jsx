@@ -19,9 +19,11 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef({});
+  const hasFittedBoundsRef = useRef(false);
   const [mapError, setMapError] = useState('');
   const [mapReady, setMapReady] = useState(false);
   const [activeRoute, setActiveRoute] = useState(null);
+  const [routeError, setRouteError] = useState(false);
 
   const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
 
@@ -87,6 +89,9 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
 
     return () => {
       window.removeEventListener('resize', onResize);
+      Object.values(markersRef.current).forEach(m => {
+        if (m.animationFrame) cancelAnimationFrame(m.animationFrame);
+      });
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -104,6 +109,9 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
       if (!currentIds.has(id)) {
         markersRef.current[id].riderMarker?.remove();
         markersRef.current[id].customerMarker?.remove();
+        if (markersRef.current[id].animationFrame) {
+          cancelAnimationFrame(markersRef.current[id].animationFrame);
+        }
         delete markersRef.current[id];
       }
     });
@@ -150,8 +158,38 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
       }
 
       if (markersRef.current[id] && markersRef.current[id].riderMarker) {
-        markersRef.current[id].riderMarker.setLngLat([rLng, rLat]);
-        log('rider marker moved', id, rLng, rLat);
+        const startLngLat = markersRef.current[id].riderMarker.getLngLat();
+        const endLngLat = [rLng, rLat];
+        
+        if (startLngLat.lng !== endLngLat[0] || startLngLat.lat !== endLngLat[1]) {
+          if (markersRef.current[id].animationFrame) {
+            cancelAnimationFrame(markersRef.current[id].animationFrame);
+          }
+          
+          const startTime = performance.now();
+          const duration = 1000;
+          
+          const animateMarker = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+            
+            const currentLng = startLngLat.lng + (endLngLat[0] - startLngLat.lng) * easeProgress;
+            const currentLat = startLngLat.lat + (endLngLat[1] - startLngLat.lat) * easeProgress;
+            
+            if (markersRef.current[id] && markersRef.current[id].riderMarker) {
+              markersRef.current[id].riderMarker.setLngLat([currentLng, currentLat]);
+            }
+            
+            if (progress < 1) {
+              markersRef.current[id].animationFrame = requestAnimationFrame(animateMarker);
+            } else {
+              markersRef.current[id].animationFrame = null;
+            }
+          };
+          
+          markersRef.current[id].animationFrame = requestAnimationFrame(animateMarker);
+        }
       } else {
         const popup = new maptilersdk.Popup({ offset: 25 }).setHTML(`
           <div style="color:#111;padding:6px;font-family:sans-serif;font-size:13px">
@@ -181,13 +219,14 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
           log('customer marker created', id, cLng, cLat);
         }
 
-        markersRef.current[id] = { riderMarker, customerMarker };
+        markersRef.current[id] = { riderMarker, customerMarker, animationFrame: null };
       }
     });
 
-    if (hasPoints) {
+    if (hasPoints && !hasFittedBoundsRef.current) {
       try {
         map.current.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
+        hasFittedBoundsRef.current = true;
       } catch {
         // ignore
       }
@@ -210,14 +249,25 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
       if (rLat && rLng && cLat && cLng) {
         try {
           const routeData = await getRoute([rLng, rLat], [cLng, cLat]);
-          if (isMounted && routeData) {
-            setActiveRoute(routeData.geometry);
+          if (isMounted) {
+            if (routeData) {
+              setActiveRoute(routeData.geometry);
+              setRouteError(false);
+            } else {
+              setActiveRoute(null);
+              setRouteError(true);
+            }
           }
         } catch (e) {
           log('Admin route fetch failed', e);
+          if (isMounted) {
+            setActiveRoute(null);
+            setRouteError(true);
+          }
         }
       } else {
         setActiveRoute(null);
+        setRouteError(false);
       }
     };
     fetchSelectedRoute();
@@ -280,6 +330,19 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
       {!mapReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
           <span className="text-gray-400 text-sm">Loading map...</span>
+        </div>
+      )}
+
+      {/* Route Error Fallback */}
+      {routeError && selectedDelivery && (
+        <div className="absolute top-4 right-4 z-10 bg-white shadow-md border border-yellow-200 rounded-md p-3 flex items-start max-w-xs animate-in fade-in slide-in-from-top-2">
+          <div className="text-yellow-500 mr-2 mt-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800">Route Unavailable</h4>
+            <p className="text-xs text-gray-600 mt-0.5">Live tracking active, but route unavailable.</p>
+          </div>
         </div>
       )}
     </div>

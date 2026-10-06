@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { deliveryService } from '@/services/deliveryService';
+import { getRoute } from '@/services/routingService';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { riderLocationService } from '@/services/riderLocationService';
 import { CollectPaymentSection } from '@/components/delivery/CollectPaymentSection';
@@ -28,6 +29,7 @@ import {
   Banknote,
   Loader2
 } from 'lucide-react';
+import { Button, Card } from '@/components/ui';
 import './RiderOrderDetailPage.scss';
 
 export const RiderOrderDetailPage = () => {
@@ -40,6 +42,10 @@ export const RiderOrderDetailPage = () => {
   const [actionNotice, setActionNotice] = useState('');
   const [isGpsActive, setIsGpsActive] = useState(true);
   const [liveGpsCoords, setLiveGpsCoords] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [routeError, setRouteError] = useState(false);
+  
+  const lastRouteFetchTime = useRef(0);
 
   const fetchOrder = async () => {
     try {
@@ -57,19 +63,44 @@ export const RiderOrderDetailPage = () => {
     fetchOrder();
   }, [id]);
 
-  // Activate location tracking when order is out for delivery or arrived
   useEffect(() => {
     const norm = normalizeOrderStatus(order?.orderStatus || order?.status);
     if ((norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED) && isGpsActive) {
       riderLocationService.startBroadcasting(order.id || order._id || id, (loc) => {
         setLiveGpsCoords(loc);
+        
+        // Fetch route if we have destination
+        const cLat = order?.deliveryAddress?.coordinates?.lat || order?.deliveryAddress?.location?.coordinates?.[1];
+        const cLng = order?.deliveryAddress?.coordinates?.lng || order?.deliveryAddress?.location?.coordinates?.[0];
+        
+        if (cLat && cLng && loc?.lat && loc?.lng) {
+          const now = Date.now();
+          if (now - lastRouteFetchTime.current > 10000) {
+            lastRouteFetchTime.current = now;
+            getRoute([loc.lng, loc.lat], [cLng, cLat])
+              .then(routeData => {
+                if (routeData) {
+                  setRoute(routeData.geometry);
+                  setRouteError(false);
+                } else {
+                  setRoute(null);
+                  setRouteError(true);
+                }
+              })
+              .catch(err => {
+                console.error("Rider route fetch failed", err);
+                setRoute(null);
+                setRouteError(true);
+              });
+          }
+        }
       });
     } else {
       riderLocationService.stopBroadcasting();
     }
 
     return () => riderLocationService.stopBroadcasting();
-  }, [order?.status, order?.orderStatus, isGpsActive, order?.id]);
+  }, [order?.status, order?.orderStatus, isGpsActive, order?.id, order?.deliveryAddress]);
 
   const handleStageUpdate = async (stage) => {
     if (isProcessing) return;
@@ -144,7 +175,13 @@ export const RiderOrderDetailPage = () => {
     return (
       <div className="p-6 text-center">
         <h3>Order not found</h3>
-        <Link to="/rider" className="btn btn-primary mt-3">Back to Rider Hub</Link>
+        <Button 
+          variant="primary" 
+          className="mt-3" 
+          onClick={() => navigate('/rider')}
+        >
+          Back to Rider Hub
+        </Button>
       </div>
     );
   }
@@ -243,20 +280,23 @@ export const RiderOrderDetailPage = () => {
               </span>
             )}
           </div>
-          <button
+          <Button
             type="button"
-            className="btn btn-secondary btn-sm"
+            variant="secondary"
+            size="sm"
             style={{ padding: '3px 8px', fontSize: '11px' }}
             onClick={() => setIsGpsActive(!isGpsActive)}
           >
             {isGpsActive ? 'Pause GPS' : 'Resume GPS'}
-          </button>
+          </Button>
         </div>
 
         <LiveTrackingMap
           riderLocation={liveGpsCoords || order?.rider?.location}
           customerLocation={order?.deliveryAddress}
           hubLocation={order?.shop}
+          route={route}
+          routeError={routeError}
           height="280px"
           riderName="You (Partner)"
           orderId={order?.id || order?._id}
@@ -311,45 +351,48 @@ export const RiderOrderDetailPage = () => {
       {/* 6. PRIMARY ACTION CONTROLS BAR (Mobile-First Sticky/Stacked) */}
       <div className="rider-action-bar">
         {(currentStatus === ORDER_STATUS.READY_FOR_PICKUP || currentStatus === ORDER_STATUS.READY || currentStatus === ORDER_STATUS.ASSIGNED) && (
-          <button
-            className="btn btn-primary btn-lg btn-full"
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full flex items-center justify-center gap-2"
             onClick={handlePickup}
             disabled={isProcessing}
           >
             <Navigation size={18} />
             <span>Confirm Picked Up</span>
-          </button>
+          </Button>
         )}
 
         {currentStatus === ORDER_STATUS.PICKED_UP && (
-          <button
-            className="btn btn-primary btn-lg btn-full"
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full flex items-center justify-center gap-2"
             onClick={() => handleStageUpdate(ORDER_STATUS.OUT_FOR_DELIVERY)}
             disabled={isProcessing}
           >
             <Navigation size={18} />
             <span>Start Delivery Run</span>
-          </button>
+          </Button>
         )}
 
         {isOutForDelivery && (
-          <button
-            className="btn btn-primary btn-lg btn-full arrived-cta-btn"
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full flex items-center justify-center gap-2 arrived-cta-btn"
             onClick={handleArrivedAtCustomer}
             disabled={isProcessing}
+            loading={isProcessing}
+            loadingText="Updating Status..."
           >
-            {isProcessing ? (
-              <>
-                <Loader2 size={18} className="spinner" />
-                <span>Updating Status...</span>
-              </>
-            ) : (
+            {!isProcessing && (
               <>
                 <MapPin size={18} />
                 <span>Arrived at Customer</span>
               </>
             )}
-          </button>
+          </Button>
         )}
 
         {isArrived && !isCashCollected && (

@@ -9,6 +9,7 @@ export const Button = ({
   isLoading = false,
   disabled = false,
   className = '',
+  component: Component = 'button',
   onClick,
   ...props 
 }) => {
@@ -18,8 +19,8 @@ export const Button = ({
   const fullWidthClass = size === 'full' ? 'btn-full' : '';
 
   return (
-    <button
-      type={type}
+    <Component
+      type={Component === 'button' ? type : undefined}
       className={`${baseClass} ${variantClass} ${sizeClass} ${fullWidthClass} ${className}`.trim().replace(/\s+/g, ' ')}
       disabled={isLoading || disabled}
       onClick={onClick}
@@ -31,6 +32,6 @@ export const Button = ({
           {children}
         </span>
       ) : children}
-    </button>
+    </Component>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
+import { Button } from '@/components/ui/Button';
 import {
   ShoppingBag,
   Plus,
@@ -36,9 +37,9 @@ export const CartPage = () => {
             </div>
             <h2>Your cart is empty</h2>
             <p>You haven't added anything to your cart yet. Explore our fresh fruits, vegetables, and daily staples.</p>
-            <Link to="/category/fruits-vegetables" className="btn btn-primary btn-lg mt-4">
+            <Button component={Link} to="/category/fruits-vegetables" variant="primary" size="lg" className="mt-4">
               Browse Fresh Groceries
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -197,13 +198,15 @@ export const CartPage = () => {
                 <span className="grand-amt">₹{finalGrandTotal}</span>
               </div>
 
-              <button
-                className="btn btn-primary btn-lg btn-full checkout-action-btn"
+              <Button
+                variant="primary"
+                size="lg"
+                className="btn-full checkout-action-btn"
                 onClick={() => navigate('/checkout')}
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight size={18} />
-              </button>
+              </Button>
 
               <div className="cancellation-policy-note">
                 <ShieldCheck size={14} className="shield" />

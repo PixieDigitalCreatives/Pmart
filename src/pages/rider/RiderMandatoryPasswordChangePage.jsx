@@ -4,6 +4,7 @@ import { authService } from '@/services/authService';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Loader2 } from 'lucide-react';
+import { Input, Button, Card } from '@/components/ui';
 
 export const RiderMandatoryPasswordChangePage = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -67,64 +68,57 @@ export const RiderMandatoryPasswordChangePage = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <Card>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Initial Password
               </label>
-              <div className="mt-1">
-                <input
-                  type="password"
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pmart-primary focus:border-pmart-primary sm:text-sm"
-                />
-              </div>
+              <Input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 New Password
               </label>
-              <div className="mt-1">
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pmart-primary focus:border-pmart-primary sm:text-sm"
-                />
-              </div>
+              <Input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm New Password
               </label>
-              <div className="mt-1">
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-pmart-primary focus:border-pmart-primary sm:text-sm"
-                />
-              </div>
+              <Input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
             </div>
 
             <div>
-              <button
+              <Button
                 type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pmart-primary hover:bg-pmart-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pmart-primary disabled:opacity-50"
+                variant="primary"
+                className="w-full justify-center"
+                loading={loading}
+                loadingText="Changing Password..."
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Change Password'}
-              </button>
+                {!loading && 'Change Password'}
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

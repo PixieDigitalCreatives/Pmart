@@ -8,8 +8,19 @@ import { errorHandler } from './middleware/error.middleware';
 const app = express();
 
 app.use(helmet());
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
 app.use(cors({
-  origin: true, // Allow any origin to avoid CORS issues in dev, especially with IPs/127.0.0.1
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

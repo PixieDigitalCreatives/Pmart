@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 const API_URL = 'http://localhost:5000/api';
-const SECRET = 'production_secret_key_change_me_in_real_prod';
+const SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_testing_only';
 
 async function runLiveTest() {
   if (process.env.NODE_ENV === 'production' || process.env.VITE_API_URL?.includes('pmart')) {
@@ -13,7 +13,11 @@ async function runLiveTest() {
   }
   console.log('--- STARTING LIVE API TEST ---');
 
-  await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?retryWrites=true&w=majority&appName=pmart');
+  if (!process.env.MONGODB_URI) {
+    console.error('ERROR: MONGODB_URI environment variable is required.');
+    process.exit(1);
+  }
+  await mongoose.connect(process.env.MONGODB_URI);
 
 
   const User = mongoose.connection.collection('users');

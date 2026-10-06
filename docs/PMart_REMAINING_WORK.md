@@ -43,6 +43,12 @@
 **Expected behavior:** Mapped to readable labels: View Dashboard, Manage Orders, etc. Backend keys unchanged.
 **Status:** ✅ COMPLETED
 
+### ID: 012
+**Title:** UI Component Standardization (Customer Portal)
+**Current behavior:** Customer portal pages use raw Bootstrap-like classes (`btn btn-primary`) resulting in visual drift and duplicated DOM logic.
+**Expected behavior:** All pages migrate to the shared polymorphic `<Button>` and unified `<Input>` components.
+**Status:** ✅ COMPLETED (Migrated ProfilePage, AddressesPage, OrdersPage, CheckoutPage, HomePage, ProductDetailPage, CartPage, HelpPage, CategoryPage, and OrderTrackingPage.)
+
 ## P2 — Improvements
 ### ID: 005
 **Title:** Route Caching Optimization

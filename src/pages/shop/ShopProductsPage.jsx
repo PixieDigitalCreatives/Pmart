@@ -5,6 +5,7 @@ import { categoryService } from '@/services/categoryService';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useToast } from '@/context/ToastContext';
 import { Package, Plus, Search, Edit, Trash2, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { PageHeader, Button, StatusBadge, Modal, FormField, Input, Select } from '@/components/ui';
 import './ShopProductsPage.scss';
 
 export const ShopProductsPage = () => {
@@ -108,16 +109,16 @@ export const ShopProductsPage = () => {
 
   return (
     <div className="shop-products-page">
-      <div className="products-top-bar flex justify-between items-center mb-6">
-        <div>
-          <h1 className="page-heading text-xl font-bold">Hub Product Catalog</h1>
-          <p className="page-sub text-muted">Manage inventory, prices, stock levels, and SKUs</p>
-        </div>
-        <button className="btn btn-primary flex items-center gap-2" onClick={openAddModal}>
-          <Plus size={16} />
-          <span>Add Product</span>
-        </button>
-      </div>
+      <PageHeader 
+        title="Hub Product Catalog"
+        subtitle="Manage inventory, prices, stock levels, and SKUs"
+        action={
+          <Button variant="primary" onClick={openAddModal}>
+            <Plus size={16} style={{ marginRight: '8px' }} />
+            <span>Add Product</span>
+          </Button>
+        }
+      />
 
       <div className="products-toolbar mb-4 flex justify-between">
         <div className="search-box flex items-center border p-2 rounded w-64">
@@ -157,9 +158,9 @@ export const ShopProductsPage = () => {
                 <td className="py-3">{p.stockCount}</td>
                 <td className="py-3">
                   {p.isActive === false ? (
-                    <span className="badge badge-error text-danger">Inactive</span>
+                    <StatusBadge status="Inactive" type="error" />
                   ) : (
-                    <span className="badge badge-success text-success">Active</span>
+                    <StatusBadge status="Active" type="success" />
                   )}
                 </td>
                 <td className="py-3 text-right">
@@ -178,48 +179,48 @@ export const ShopProductsPage = () => {
         </table>
       </div>
 
-      {isModalOpen && (
-        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="modal-content pmart-card" style={{ width: '500px', backgroundColor: '#fff', padding: '24px', borderRadius: '12px' }}>
-            <h3 className="font-bold text-lg mb-4">{editingProduct ? 'Edit Product' : 'Add Product'}</h3>
-            <div className="grid grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group mb-3" style={{ gridColumn: 'span 2' }}>
-                <label htmlFor="prodName">Product Name</label>
-                <input id="prodName" type="text" className="form-control w-full" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div className="form-group mb-3">
-                <label htmlFor="prodSku">SKU</label>
-                <input id="prodSku" type="text" className="form-control w-full" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} />
-              </div>
-              <div className="form-group mb-3">
-                <label htmlFor="prodPrice">Price</label>
-                <input id="prodPrice" type="number" className="form-control w-full" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
-              </div>
-              <div className="form-group mb-3">
-                <label htmlFor="prodCat">Category</label>
-                <select id="prodCat" name="category" className="form-control w-full" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                  <option value="">Select Category</option>
-                  {categories.map(c => (
-                    <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group mb-3">
-                <label htmlFor="prodStock">Stock Quantity</label>
-                <input id="prodStock" type="number" className="form-control w-full" value={formData.stockCount} onChange={e => setFormData({...formData, stockCount: e.target.value})} />
-              </div>
-              <div className="form-group mb-4 flex items-center gap-2" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} />
-                <label htmlFor="isActive" className="mb-0 cursor-pointer">Is Active</label>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button className="btn btn-outline" onClick={() => setIsModalOpen(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveProduct}>Save</button>
-            </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingProduct ? 'Edit Product' : 'Add Product'}
+      >
+        <div className="grid grid-cols-2 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ gridColumn: 'span 2' }}>
+            <FormField label="Product Name" htmlFor="prodName">
+              <Input id="prodName" type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            </FormField>
+          </div>
+          <FormField label="SKU" htmlFor="prodSku">
+            <Input id="prodSku" type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} />
+          </FormField>
+          <FormField label="Price" htmlFor="prodPrice">
+            <Input id="prodPrice" type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+          </FormField>
+          <FormField label="Category" htmlFor="prodCat">
+            <Select 
+              id="prodCat" 
+              name="category" 
+              value={formData.category} 
+              onChange={e => setFormData({...formData, category: e.target.value})}
+              options={[
+                { value: '', label: 'Select Category' },
+                ...categories.map(c => ({ value: c.id || c._id, label: c.name }))
+              ]}
+            />
+          </FormField>
+          <FormField label="Stock Quantity" htmlFor="prodStock">
+            <Input id="prodStock" type="number" value={formData.stockCount} onChange={e => setFormData({...formData, stockCount: e.target.value})} />
+          </FormField>
+          <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" id="isActive" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} />
+            <label htmlFor="isActive" className="mb-0 cursor-pointer">Is Active</label>
           </div>
         </div>
-      )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+          <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+          <Button variant="primary" onClick={handleSaveProduct}>Save</Button>
+        </div>
+      </Modal>
 
       <ConfirmationModal
         isOpen={Boolean(productToDelete)}
