@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Banknote, User, AlertCircle, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
-import { paymentService } from '@/services/paymentService';
+import { deliveryService } from '@/services/deliveryService';
 import './CollectPaymentSection.scss';
 import { Button } from '@/components/ui';
 
@@ -16,7 +16,7 @@ export const CollectPaymentSection = ({
 
   const hasValidAmount = order.totalAmount !== undefined && order.totalAmount !== null;
   const payableAmount = hasValidAmount ? order.totalAmount : 'Unavailable';
-  const customerName = order.customer?.fullName || order.customer?.name || 'Customer';
+  const customerName = order.customer?.name || order.deliveryAddress?.recipientName || 'Customer';
   const paymentStatus = order.paymentStatus || 'PENDING';
   const isAlreadyCollected = paymentStatus === 'COLLECTED';
 
@@ -27,12 +27,11 @@ export const CollectPaymentSection = ({
     setErrorMessage('');
 
     try {
-      const orderId = order.id || order._id;
-      await paymentService.markPaymentCollected(orderId);
-      onPaymentSuccess();
+      const result = await deliveryService.collectCash(order.id || order._id);
+      onPaymentSuccess(result.order);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.message || 'Payment confirmation failed. Please check network connection.');
+      setErrorMessage(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -44,7 +43,7 @@ export const CollectPaymentSection = ({
         <div className="title-group">
           <div className="badge-chip">CASH COLLECTION</div>
           <h2 className="section-main-heading">Collect Payment</h2>
-          <span className="order-ref-tag">Order #{order.id}</span>
+          <span className="order-ref-tag">Order #{order.orderNumber}</span>
         </div>
       </div>
 
@@ -107,7 +106,7 @@ export const CollectPaymentSection = ({
 
         <div className="payment-flow-reminder">
           <ShieldCheck size={16} className="reminder-shield" />
-          <span>Confirm cash is in hand before proceeding to OTP verification.</span>
+          <span>Confirm the cash is in hand before verifying the delivery code.</span>
         </div>
 
         {/* Primary Action Button */}

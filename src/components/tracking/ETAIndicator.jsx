@@ -1,11 +1,10 @@
 import React from 'react';
-import { Clock, Navigation, Zap } from 'lucide-react';
+import { Clock, Navigation } from 'lucide-react';
 import './ETAIndicator.scss';
 
 export const ETAIndicator = ({
   etaMinutes,
-  distanceKm,
-  trackingState = 'TRACKING_ACTIVE'
+  distanceKm
 }) => {
   const getEtaHeadline = () => {
     if (etaMinutes === undefined || etaMinutes === null) return 'Calculating ETA...';
@@ -16,9 +15,9 @@ export const ETAIndicator = ({
 
   const getSubtext = () => {
     if (etaMinutes === undefined || etaMinutes === null) return 'Waiting for rider location...';
-    if (etaMinutes <= 2) return 'Your delivery partner has reached your gate';
+    if (etaMinutes <= 2) return 'Your delivery partner is almost there';
     if (etaMinutes <= 5) return 'Approaching your location via fastest route';
-    return 'Rider on the way from PMart Darkstore';
+    return 'Your delivery partner is on the way';
   };
 
   return (

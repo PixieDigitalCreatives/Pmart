@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation as useRouteLocation, useSearchParams } from 'react-router-dom';
-import { Search, MapPin, ShoppingBag, User, Tag, Package, ChevronDown, Menu, X } from 'lucide-react';
+import { Search, MapPin, ShoppingBag, User, Tag, Package, ChevronDown, X } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, homeForRole } from '@/context/AuthContext';
+import { getFullAddressString } from '@/utils/addressUtils';
 import './Header.scss';
 import { Input, Button } from '@/components/ui';
+
+const shortAddress = (loc) => {
+  const full = getFullAddressString(loc);
+  return full.length > 30 ? full.slice(0, 30) + '…' : full;
+};
 
 export const Header = () => {
   const { totalQuantity, billSummary, setIsCartOpen } = useCart();
@@ -17,8 +23,20 @@ export const Header = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const searchInputRef = useRef(null);
+  const profileMenuRef = useRef(null);
+  const portalPath = user && user.role !== 'CUSTOMER' ? homeForRole(user.role) : null;
+
+  // Close the profile menu on outside click or route change.
+  useEffect(() => {
+    if (!isProfileMenuOpen) return undefined;
+    const onDown = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) setIsProfileMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [isProfileMenuOpen]);
+  useEffect(() => setIsProfileMenuOpen(false), [routeLocation.pathname]);
 
   // Sync searchQuery with URL query parameter when on /search
   useEffect(() => {
@@ -86,13 +104,13 @@ export const Header = () => {
             </div>
             <div className="location-text">
               <div className="delivery-time-tag">
-                <span className="bold-time">Express Delivery</span>
+                <span className="bold-time">Deliver to</span>
               </div>
               <div className="location-address">
                 <span className="address-line">
                   {selectedLocation ? (
                     <span className="address-formatted">
-                      <strong>{selectedLocation.tag}</strong> {selectedLocation.address ? `- ${selectedLocation.address.slice(0, 30)}...` : ''}
+                      <strong>{selectedLocation.tag}</strong> {shortAddress(selectedLocation) ? `- ${shortAddress(selectedLocation)}` : ''}
                     </span>
                   ) : 'Select Location'}
                 </span>
@@ -143,7 +161,7 @@ export const Header = () => {
           </Link>
 
           {/* User Profile */}
-          <div className="profile-dropdown-wrapper">
+          <div className="profile-dropdown-wrapper" ref={profileMenuRef}>
             {isAuthenticated ? (
               <Button
                 className="profile-btn"
@@ -169,15 +187,24 @@ export const Header = () => {
                   <div className="user-phone">{user?.phone}</div>
                 </div>
                 <div className="menu-divider" />
-                <Link to="/profile" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
-                  My Profile
-                </Link>
-                <Link to="/orders" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
-                  Order History
-                </Link>
-                <Link to="/addresses" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
-                  Saved Addresses
-                </Link>
+                {portalPath && (
+                  <Link to={portalPath} className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
+                    Open {user.role === 'RIDER' ? 'rider app' : user.role === 'SHOP_OWNER' ? 'store portal' : 'admin console'}
+                  </Link>
+                )}
+                {!portalPath && (
+                  <>
+                  <Link to="/profile" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
+                    My Profile
+                  </Link>
+                  <Link to="/orders" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
+                    Order History
+                  </Link>
+                  <Link to="/addresses" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
+                    Saved Addresses
+                  </Link>
+                  </>
+                )}
                 <Link to="/help" className="menu-item" onClick={() => setIsProfileMenuOpen(false)}>
                   Help & FAQs
                 </Link>

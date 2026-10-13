@@ -1,5 +1,7 @@
 # PMart Security Findings Ledger
 
+> **HISTORICAL DOCUMENT — superseded on 2026-10-13.** This describes the code and database before the rebuild (TypeScript backend, old collections, seed data and the Playwright suite, all since removed). File names, collections and test references below may no longer exist. Current state: [Developer Handover Report](PMart_DEVELOPER_HANDOVER_REPORT.md), [Database Reference](PMart_DATABASE_REFERENCE.md), [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) and [SECURITY.md](../SECURITY.md).
+
 | ID | Finding | Severity | Evidence / Location | Remediation | Verification Status | Risk |
 |---|---|---|---|---|---|---|
 | SEC-001 | Hardcoded Secrets in Scripts | P0 (Immediate) | `backend/src/scripts/pw-debug.ts`, `backend/src/scripts/repair-rider-profiles.ts`, `backend/src/scripts/test-live-flow.ts` (MongoDB URIs & fallback JWT secrets) | Migrate to `process.env` exclusively, remove hardcoded URIs/passwords, invalidate any real credentials exposed. | Fixed | Low |

@@ -1,18 +1,15 @@
 import React from 'react';
-import { Phone, ShieldCheck, Bike, Star, MessageSquare } from 'lucide-react';
+import { Phone, Bike } from 'lucide-react';
+import { ORDER_STATUS_LABELS } from '@/types/orderTypes';
 import './RiderInfoCard.scss';
 
 export const RiderInfoCard = ({
-  rider = {},
+  rider,
   orderId = '',
-  status = 'Out for Delivery',
-  onContactClick = null
+  status = ''
 }) => {
-  const riderName = rider.name;
-  const phone = rider.phone;
-  const vehicle = rider.vehicleType;
-  const vehicleNumber = rider.vehicleNumber;
-  const rating = rider.rating;
+  if (!rider) return null;
+  const { name: riderName, phone, vehicleType: vehicle, vehicleNumber } = rider;
 
   return (
     <div className="pmart-rider-info-card">
@@ -22,9 +19,6 @@ export const RiderInfoCard = ({
           <div className="avatar-circle">
             <Bike size={20} className="avatar-icon" />
           </div>
-          <span className="verified-badge" title="Background verified partner">
-            <ShieldCheck size={11} />
-          </span>
         </div>
 
         {/* Details */}
@@ -38,18 +32,13 @@ export const RiderInfoCard = ({
           </div>
         </div>
 
-        {/* Rating */}
-        <div className="rider-rating-badge">
-          <Star size={12} className="star-icon" />
-          <span>{rating}</span>
-        </div>
       </div>
 
       {/* Footer Strip with Order ID, Status & Action */}
       <div className="rider-action-strip">
         <div className="order-status-badge">
           <span className="status-label">Order #{orderId}</span>
-          <span className="status-pill-val">Out for Delivery</span>
+          <span className="status-pill-val">{ORDER_STATUS_LABELS[status] || status}</span>
         </div>
 
         <div className="contact-actions">
@@ -59,7 +48,7 @@ export const RiderInfoCard = ({
             title="Call delivery partner"
           >
             <Phone size={14} />
-            <span>Call Partner</span>
+            <span>Call rider</span>
           </a>
         </div>
       </div>

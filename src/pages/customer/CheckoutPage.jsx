@@ -1,240 +1,163 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
-import { useAuth } from '@/context/AuthContext';
 import { orderService } from '@/services/orderService';
+import apiClient, { apiErrorMessage } from '@/services/apiClient';
 import { CODPaymentCard } from '@/components/order/CODPaymentCard';
-import { PAYMENT_METHOD, PAYMENT_STATUS } from '@/types/orderTypes';
-import {
-  MapPin,
-  CheckCircle2,
-  Banknote,
-  ShieldCheck,
-  Clock,
-  ArrowRight,
-  Plus,
-  Home,
-  Briefcase,
-  ShoppingCart
-} from 'lucide-react';
-import { Button, EmptyState, Card } from '@/components/ui';
+import { getFullAddressString } from '@/utils/addressUtils';
+import { MapPin, ArrowRight, ShoppingCart, AlertCircle, Home, Briefcase } from 'lucide-react';
+import { Button, EmptyState } from '@/components/ui';
 import './CheckoutPage.scss';
+
+const newIdempotencyKey = () =>
+  (window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^\w-]/g, '');
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, billSummary, clearCart, refreshCart } = useCart();
-  const { savedLocations, selectedLocation, selectLocation, setLocationModalOpen } = useLocation();
-  const { user } = useAuth();
+  const { selectedLocation, setLocationModalOpen } = useLocation();
 
-  const [deliveryNote, setDeliveryNote] = useState('Ring the doorbell twice. Please handle fragile produce carefully.');
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHOD.COD);
-  const [isPlacing, setIsPlacing] = useState(false);
+  const [note, setNote] = useState('');
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState('');
+  const [serviceability, setServiceability] = useState(null);
+  // One key per checkout attempt, so a retried or double-clicked submit cannot create two orders.
+  const idempotencyKey = useRef(newIdempotencyKey());
+
+  const address = selectedLocation && !selectedLocation.isDetected ? selectedLocation : null;
+
+  useEffect(() => {
+    setServiceability(null);
+    if (!address?.location?.coordinates) return;
+    const [lng, lat] = address.location.coordinates;
+    apiClient
+      .post('/addresses/serviceability', { lat, lng })
+      .then((res) => setServiceability(res.data.data))
+      .catch(() => setServiceability(null));
+  }, [address?._id]);
 
   if (items.length === 0) {
     return (
       <div className="container py-12">
-        <EmptyState
-          icon={ShoppingCart}
-          title="Your basket is empty"
-          description="Start adding items to your cart."
-          action={
-            <Link to="/" style={{ textDecoration: 'none' }}>
-              <Button variant="primary">Start Shopping</Button>
-            </Link>
-          }
-        />
+        <EmptyState icon={ShoppingCart} title="Your cart is empty" description="Add products to place an order." action={<Button component={Link} to="/" variant="primary">Start shopping</Button>} />
       </div>
     );
   }
 
-  const handlePlaceOrder = async () => {
-    console.log('[CHECKOUT] Place order clicked');
-    setIsPlacing(true);
+  const blocked = !address || (serviceability && !serviceability.serviceable);
+
+  const placeOrder = async () => {
+    if (!address) {
+      setError('Choose a saved delivery address first.');
+      return;
+    }
+    setPlacing(true);
+    setError('');
     try {
-      console.log('[CHECKOUT] Validating checkout');
-      const chosenAddr = selectedLocation;
-      console.log('[CHECKOUT] Selected address:', !!chosenAddr);
-      console.log('[CHECKOUT] Payment method:', paymentMethod);
-      console.log('[CHECKOUT] Cart items:', items.length);
-      
-      if (!chosenAddr) {
-        alert('Please select a delivery address');
-        setIsPlacing(false);
-        return;
-      }
-
-      if (chosenAddr.isDetected || !chosenAddr._id) {
-        alert('Please save this address with complete details (House No, Flat, etc.) before placing the order.');
-        setIsPlacing(false);
-        return;
-      }
-
-      const orderPayload = {
-        items,
-        paymentMethod: paymentMethod,
-        deliveryInstructions: deliveryNote,
-        addressId: chosenAddr._id
-      };
-
-      console.log('[CHECKOUT] Sending checkout request', orderPayload);
-      const newOrder = await orderService.createOrder(orderPayload);
+      const order = await orderService.checkout({ addressId: address._id, items, deliveryInstructions: note.trim(), idempotencyKey: idempotencyKey.current });
       clearCart();
-      setIsPlacing(false);
-      navigate(`/orders/${newOrder.id}`);
+      navigate(`/orders/${order._id}`, { replace: true });
     } catch (err) {
-      console.error('[CHECKOUT] Error:', err);
-      
-      const resData = err?.response?.data;
-      if (resData?.code === 'PRODUCT_NOT_FOUND' || resData?.code === 'INSUFFICIENT_STOCK') {
-        alert(resData.message || 'One item in your cart is no longer available in the requested quantity. Your cart has been refreshed.');
-        if (refreshCart) {
-          await refreshCart();
-        }
-      } else {
-        alert(resData?.message || err.message || 'Failed to place order. Please try again.');
+      const code = err.response?.data?.code;
+      setError(apiErrorMessage(err, 'Could not place the order. Please try again.'));
+      if (['INSUFFICIENT_STOCK', 'PRODUCT_NOT_FOUND', 'IDEMPOTENCY_MISMATCH'].includes(code)) {
+        idempotencyKey.current = newIdempotencyKey();
+        await refreshCart();
       }
-      setIsPlacing(false);
+    } finally {
+      setPlacing(false);
     }
   };
+
+  const LabelIcon = address?.label === 'HOME' ? Home : address?.label === 'WORK' ? Briefcase : MapPin;
 
   return (
     <div className="pmart-checkout-page">
       <div className="container">
         <div className="checkout-page-title">
-          <h1>Secure Checkout</h1>
-          <div className="security-tag">
-            <ShieldCheck size={16} />
-            <span>256-Bit SSL Encrypted Payment</span>
-          </div>
+          <h1>Checkout</h1>
         </div>
 
         <div className="checkout-grid-layout">
-          {/* Main Form Sections */}
           <div className="checkout-main-col">
-            {/* Step 1: Delivery Address */}
             <section className="checkout-section-card">
               <div className="section-head">
                 <div className="step-num">1</div>
                 <div>
-                  <h3 className="step-title">Delivery Address</h3>
-                  <p className="step-subtitle">Express delivery to your selected address</p>
+                  <h3 className="step-title">Delivery address</h3>
                 </div>
               </div>
-
               <div className="selected-delivery-address">
-                {selectedLocation ? (() => {
-                  const addr = selectedLocation;
-                  return (
-                    <div className="selected-addr-card">
-                      <div className="addr-top-flex">
-                        <div className="tag-box">
-                          {addr.tag === 'Home' || addr.label === 'HOME' ? <Home size={16} /> : (addr.tag === 'Work' || addr.label === 'WORK' ? <Briefcase size={16} /> : <MapPin size={16} />)}
-                          <span className="font-bold ml-1">{addr.tag || addr.label}</span>
-                        </div>
-                        <Button className="change-btn" onClick={() => setLocationModalOpen(true)}>Change</Button>
+                {address ? (
+                  <div className="selected-addr-card">
+                    <div className="addr-top-flex">
+                      <div className="tag-box">
+                        <LabelIcon size={16} />
+                        <span className="font-bold ml-1">{address.tag}</span>
                       </div>
-                      
-                      <div className="addr-recipient">
-                        <strong>{addr.recipientName || user?.name || 'Customer'}</strong>
-                      </div>
-                      
-                      <div className="addr-details">
-                        {addr.formattedAddress || [addr.houseNumber, addr.buildingName, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')}
-                      </div>
-                      
-                      <div className="addr-phone">
-                        +91 {addr.recipientPhone || user?.phone || 'N/A'}
-                      </div>
-                      
-                      {addr.isDetected && (
-                        <p className="text-red-500 text-sm mt-2">Please save this address with complete details before placing an order.</p>
-                      )}
+                      <Button className="change-btn" onClick={() => setLocationModalOpen(true)}>
+                        Change
+                      </Button>
                     </div>
-                  );
-                })() : (
+                    <div className="addr-recipient">
+                      <strong>{address.recipientName}</strong>
+                    </div>
+                    <div className="addr-details">{getFullAddressString(address)}</div>
+                    <div className="addr-phone">{address.recipientPhone}</div>
+                    {serviceability && !serviceability.serviceable && (
+                      <div className="alert alert-error mt-3">
+                        <AlertCircle size={16} />
+                        <span>{serviceability.message}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
                   <div className="no-address-state">
-                    <p>Please select a delivery address</p>
-                    <Button variant="outline" size="sm" style={{ marginTop: '8px' }} onClick={() => setLocationModalOpen(true)}>Select Address</Button>
+                    <p>{selectedLocation?.isDetected ? 'Save your current location as an address to deliver there.' : 'Choose where we should deliver.'}</p>
+                    <Button variant="outline" size="sm" style={{ marginTop: '8px' }} onClick={() => setLocationModalOpen(true)}>
+                      Select address
+                    </Button>
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Step 2: Delivery Instructions */}
             <section className="checkout-section-card">
               <div className="section-head">
                 <div className="step-num">2</div>
                 <div>
-                  <h3 className="step-title">Delivery Instructions</h3>
-                  <p className="step-subtitle">Help your delivery partner locate your doorstep effortlessly</p>
+                  <h3 className="step-title">Delivery instructions</h3>
+                  <p className="step-subtitle">Optional note for the store and rider</p>
                 </div>
               </div>
-
-              <div className="instruction-quick-pills">
-                <Button
-                  type="button"
-                  className="note-pill"
-                  onClick={() => setDeliveryNote('Leave package with security guard at the gate.')}
-                >
-                  Leave with security
-                </Button>
-                <Button
-                  type="button"
-                  className="note-pill"
-                  onClick={() => setDeliveryNote('Do not ring doorbell, baby is sleeping.')}
-                >
-                  Do not ring bell
-                </Button>
-                <Button
-                  type="button"
-                  className="note-pill"
-                  onClick={() => setDeliveryNote('Leave at doorstep and send OTP on WhatsApp.')}
-                >
-                  Leave at door
-                </Button>
-              </div>
-
               <textarea
                 className="form-control delivery-note-input"
                 rows="2"
-                placeholder="Add special instructions for delivery partner (optional)..."
-                value={deliveryNote}
-                onChange={(e) => setDeliveryNote(e.target.value)}
+                maxLength={300}
+                placeholder="e.g. Call when you reach the gate"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
               />
             </section>
 
-            {/* Step 3: Payment Method (COD Only) */}
             <section className="checkout-section-card">
               <div className="section-head">
                 <div className="step-num">3</div>
                 <div>
-                  <h3 className="step-title">Payment Method</h3>
-                  <p className="step-subtitle">Cash on Delivery (COD) only for your neighborhood</p>
+                  <h3 className="step-title">Payment</h3>
+                  <p className="step-subtitle">Cash on delivery</p>
                 </div>
               </div>
-
               <div className="payment-options-list">
-                <CODPaymentCard
-                  amount={billSummary.grandTotal}
-                  selected={true}
-                  onSelect={() => setPaymentMethod(PAYMENT_METHOD.COD)}
-                />
+                <CODPaymentCard amount={billSummary.grandTotal} selected onSelect={() => {}} />
               </div>
             </section>
           </div>
 
-          {/* Right Column: Order Summary & Place CTA */}
           <div className="checkout-summary-col">
             <div className="summary-box">
-              <div className="eta-badge-row">
-                <Clock size={16} className="clock" />
-                <span>Delivering in <strong>10–12 Mins</strong></span>
-              </div>
-
-              <h3 className="box-title">Order Summary ({items.length} items)</h3>
-
-              {/* Items preview */}
+              <h3 className="box-title">Order summary ({items.length} {items.length === 1 ? 'item' : 'items'})</h3>
               <div className="items-preview-list">
                 {items.map((i) => (
                   <div key={i.id} className="item-row">
@@ -242,55 +165,43 @@ export const CheckoutPage = () => {
                       <span className="qty-tag">{i.quantity}x</span>
                       <span className="item-title">{i.name}</span>
                     </div>
-                    <span className="item-amt">₹{i.price * i.quantity}</span>
+                    <span className="item-amt">₹{Math.round(i.price * i.quantity * 100) / 100}</span>
                   </div>
                 ))}
               </div>
-
               <div className="divider" />
-
               <div className="calc-row">
-                <span>Item Total</span>
+                <span>Item total</span>
                 <span>₹{billSummary.itemTotal}</span>
               </div>
               <div className="calc-row">
-                <span>Delivery Fee</span>
+                <span>Delivery fee</span>
                 <span>{billSummary.deliveryFee === 0 ? <strong className="text-success">FREE</strong> : `₹${billSummary.deliveryFee}`}</span>
               </div>
-              <div className="calc-row">
-                <span>Platform Handling Fee</span>
-                <span>₹{billSummary.platformFee}</span>
-              </div>
-              {billSummary.savings > 0 && (
-                <div className="calc-row savings">
-                  <span>Total Discount</span>
-                  <span>-₹{billSummary.savings}</span>
+              {billSummary.platformFee > 0 && (
+                <div className="calc-row">
+                  <span>Handling fee</span>
+                  <span>₹{billSummary.platformFee}</span>
                 </div>
               )}
-
               <div className="divider" />
-
               <div className="calc-row total-row">
-                <span>Total to Pay</span>
+                <span>Total to pay</span>
                 <span className="total-amount">₹{billSummary.grandTotal}</span>
               </div>
 
-              <Button
-                variant="primary"
-                size="lg"
-                className="place-order-btn"
-                style={{ width: '100%' }}
-                onClick={handlePlaceOrder}
-                disabled={isPlacing}
-              >
-                <span>{isPlacing ? 'Placing Order...' : `Place COD Order • ₹${billSummary.grandTotal}`}</span>
-                <ArrowRight size={18} />
-              </Button>
+              {error && (
+                <div className="alert alert-error mt-3" role="alert">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
 
-              <div className="safety-note">
-                <ShieldCheck size={14} className="shield" />
-                <span>Pay ₹{billSummary.grandTotal} cash upon doorstep delivery</span>
-              </div>
+              <Button variant="primary" size="lg" className="place-order-btn mt-3" style={{ width: '100%' }} onClick={placeOrder} isLoading={placing} disabled={placing || blocked}>
+                <span>{placing ? 'Placing order…' : `Place order • ₹${billSummary.grandTotal}`}</span>
+                {!placing && <ArrowRight size={18} />}
+              </Button>
+              <p className="muted-note mt-2 text-center">Pay in cash when your order arrives.</p>
             </div>
           </div>
         </div>

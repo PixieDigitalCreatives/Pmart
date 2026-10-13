@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pmart-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "6173", "--strictPort"],
+      "env": { "PMART_API_TARGET": "http://localhost:5003" },
+      "port": 6173
+    },
+    {
+      "name": "pmart-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/src/server.js"],
+      "env": { "PORT": "5007" },
+      "port": 5007
+    }
+  ]
+}

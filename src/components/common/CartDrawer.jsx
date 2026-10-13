@@ -13,8 +13,7 @@ export const CartDrawer = () => {
     items,
     totalQuantity,
     billSummary,
-    updateQuantity,
-    removeItem
+    updateQuantity
   } = useCart();
 
   const navigate = useNavigate();
@@ -31,8 +30,8 @@ export const CartDrawer = () => {
     navigate('/cart');
   };
 
-  const freeDeliveryThreshold = 299;
-  const remainingForFreeDelivery = Math.max(0, freeDeliveryThreshold - billSummary.itemTotal);
+  const freeDeliveryThreshold = billSummary.freeDeliveryThreshold;
+  const remainingForFreeDelivery = billSummary.amountToFreeDelivery;
 
   return (
     <AnimatePresence>
@@ -70,16 +69,15 @@ export const CartDrawer = () => {
               </div>
               <h4 className="empty-title">Your cart is empty</h4>
               <p className="empty-desc">
-                Looks like you haven't added anything yet. Explore farm-fresh produce and daily grocery essentials!
+                Looks like you haven't added anything yet.
               </p>
               <Button
-                
                 onClick={() => {
                   setIsCartOpen(false);
-                  navigate('/category/fruits-vegetables');
+                  navigate('/');
                 }}
               >
-                Browse Fresh Groceries
+                Start shopping
               </Button>
             </div>
           ) : (

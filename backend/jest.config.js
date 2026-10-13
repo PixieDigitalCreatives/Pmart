@@ -1,11 +1,6 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
-  transformIgnorePatterns: [
-    "node_modules/(?!(jose|firebase-admin)/)"
-  ],
-  testPathIgnorePatterns: [
-    "/node_modules/",
-    "/dist/"
-  ]
+  testMatch: ['<rootDir>/tests/**/*.test.js'],
+  setupFiles: ['<rootDir>/tests/setup-env.js'],
+  testTimeout: 60000
 };

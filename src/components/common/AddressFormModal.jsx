@@ -3,12 +3,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Navigation, MapPin, Loader2, AlertCircle, Search } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import apiClient from '@/services/apiClient';
+import apiClient, { apiErrorMessage } from '@/services/apiClient';
+import { locationService } from '@/services/locationService';
 import { useAuth } from '@/context/AuthContext';
 import './AddressFormModal.scss';
 import { Input, Button } from '@/components/ui';
 
-const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY || 'Ex3uk6dmjLzOoVUhieWZ';
+const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY;
+// Initial map view only (centre of India); an address is never saved without the user placing the pin.
+const DEFAULT_VIEW = { center: [78.9629, 22.5937], zoom: 4 };
+
+const toTenDigits = (phone = '') => {
+  const digits = String(phone).replace(/\D/g, '');
+  return digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+};
+
+const EMPTY_FORM = {
+  recipientName: '',
+  recipientPhone: '',
+  houseNumber: '',
+  buildingName: '',
+  floor: '',
+  street: '',
+  area: '',
+  landmark: '',
+  city: '',
+  district: '',
+  state: '',
+  pincode: '',
+  label: 'HOME',
+  deliveryInstructions: '',
+  isDefault: false,
+  location: null,
+  formattedAddress: ''
+};
 
 export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDetect }) => {
   const { user } = useAuth();
@@ -27,43 +55,25 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
   const [searchLoading, setSearchLoading] = useState(false);
   const searchTimeout = useRef(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    recipientName: '',
-    recipientPhone: '',
-    houseNumber: '',
-    buildingName: '',
-    floor: '',
-    street: '',
-    area: '',
-    landmark: '',
-    city: '',
-    district: '',
-    state: '',
-    pincode: '',
-    tag: 'HOME',
-    deliveryInstructions: '',
-    isDefault: false,
-    location: { type: 'Point', coordinates: [77.3910, 28.5355] },
-    formattedAddress: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [geocodeNotice, setGeocodeNotice] = useState('');
 
   useEffect(() => {
     if (isOpen) {
+      setError('');
+      setGeocodeNotice('');
       if (initialData) {
         setFormData({
+          ...EMPTY_FORM,
           ...initialData,
+          label: initialData.label || 'OTHER',
           recipientName: initialData.recipientName || user?.name || '',
-          recipientPhone: initialData.recipientPhone || user?.phone || '',
-          location: initialData.location || { type: 'Point', coordinates: [77.3910, 28.5355] }
+          recipientPhone: toTenDigits(initialData.recipientPhone || user?.phone || ''),
+          location: initialData.location || null
         });
         setStep(2); // Jump to details if editing
       } else {
-        setFormData(prev => ({
-          ...prev,
-          recipientName: user?.name || '',
-          recipientPhone: user?.phone || ''
-        }));
+        setFormData({ ...EMPTY_FORM, recipientName: user?.name || '', recipientPhone: toTenDigits(user?.phone || '') });
         setStep(1);
         if (autoDetect) {
           setTimeout(() => {
@@ -79,16 +89,17 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
   }, [isOpen, initialData, user, autoDetect]);
 
   useEffect(() => {
-    if (isOpen && step === 1 && mapContainer.current && !map.current) {
+    if (isOpen && step === 1 && mapContainer.current && !map.current && MAPTILER_KEY) {
+      const start = formData.location?.coordinates;
       map.current = new maplibregl.Map({
         container: mapContainer.current,
         style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
-        center: formData.location.coordinates,
-        zoom: 15
+        center: start || DEFAULT_VIEW.center,
+        zoom: start ? 15 : DEFAULT_VIEW.zoom
       });
 
       marker.current = new maplibregl.Marker({ color: '#F20D18', draggable: true })
-        .setLngLat(formData.location.coordinates)
+        .setLngLat(start || DEFAULT_VIEW.center)
         .addTo(map.current);
 
       let dragTimeout;
@@ -111,37 +122,54 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
       }, 200);
     }
 
+    // The map container only exists on step 1, so drop the map whenever the step changes or the modal closes;
+    // it is recreated (at the pinned location) when the user returns to the map.
     return () => {
-      if (!isOpen && map.current) {
+      if (map.current) {
         map.current.remove();
         map.current = null;
+        marker.current = null;
       }
     };
   }, [isOpen, step]);
 
+  const applyGeocode = (data) =>
+    setFormData((prev) => ({
+      ...prev,
+      formattedAddress: data.formattedAddress || prev.formattedAddress,
+      street: data.street || prev.street,
+      area: data.area || prev.area,
+      city: data.city || prev.city,
+      district: data.district || prev.district,
+      state: data.state || prev.state,
+      pincode: String(data.pincode || '').replace(/\D/g, '') || prev.pincode,
+      country: data.country || 'India'
+    }));
+
+  // The pin position is always kept; looking up the street address is best effort.
   const handleMapMove = async (lng, lat) => {
     setLoading(true);
     setError('');
+    setGeocodeNotice('');
+    setFormData((prev) => ({ ...prev, location: { type: 'Point', coordinates: [lng, lat] } }));
     try {
       const res = await apiClient.post('/addresses/reverse-geocode', { lat, lng });
       if (res.data?.success) {
-        const data = res.data.data;
-        setFormData(prev => ({
-          ...prev,
-          location: { type: 'Point', coordinates: [lng, lat] },
-          formattedAddress: data.formattedAddress,
-          street: data.street || prev.street,
-          area: data.area || prev.area,
-          city: data.city || prev.city,
-          district: data.district || prev.district,
-          state: data.state || prev.state,
-          pincode: data.pincode || prev.pincode,
-          country: data.country || 'India'
-        }));
+        applyGeocode(res.data.data);
+        return;
       }
-    } catch (err) {
-      console.error('Reverse geocode failed:', err);
-      setError('Couldn\'t identify this location. Move the pin or search for your area.');
+      throw new Error('no result');
+    } catch {
+      try {
+        const data = await locationService.reverseGeocode(lat, lng);
+        if (data) {
+          applyGeocode(data);
+          return;
+        }
+      } catch {
+        // fall through
+      }
+      setGeocodeNotice('We could not look up this address. Please type the details on the next step.');
     } finally {
       setLoading(false);
     }
@@ -161,7 +189,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
           }
           handleMapMove(longitude, latitude);
         },
-        (err) => {
+        () => {
           setError('Location permission was denied. Enable location access and try again.');
           setLoading(false);
         },
@@ -217,51 +245,38 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
   };
 
   const handleSave = async () => {
-    console.log('[DEBUG] handleSave called');
+    if (!formData.location?.coordinates) {
+      setError('Place the pin on your location first.');
+      setStep(1);
+      return;
+    }
     if (!formData.recipientName || !formData.recipientPhone || !formData.houseNumber || !formData.city || !formData.state || !formData.pincode) {
-      console.log('[DEBUG] handleSave validation failed: missing fields');
-      setError('Please fill in all required fields (Name, Phone, House Number, City, State, Pincode)');
+      setError('Please fill in all required fields (name, phone, house number, city, state, pincode).');
       return;
     }
-    
-    if (!/^\d{10}$/.test(formData.recipientPhone.replace(/\D/g, ''))) {
-      console.log('[DEBUG] handleSave validation failed: invalid phone');
-      setError('Please enter a valid 10-digit phone number');
+    if (!/^\d{10}$/.test(toTenDigits(formData.recipientPhone))) {
+      setError('Enter a valid 10-digit phone number.');
       return;
     }
-
-    if (!/^\d{6}$/.test(formData.pincode)) {
-      console.log('[DEBUG] handleSave validation failed: invalid pincode');
-      setError('Please enter a valid 6-digit pincode');
+    const pincode = String(formData.pincode).replace(/\s/g, '');
+    if (!/^\d{6}$/.test(pincode)) {
+      setError('Enter a valid 6-digit pincode.');
       return;
     }
 
-    // Check serviceability
-    console.log('[DEBUG] handleSave: setting loading true');
     setLoading(true);
     try {
-      console.log('[DEBUG] handleSave: checking serviceability');
-      const srvRes = await apiClient.post('/addresses/serviceability', {
-        lat: formData.location.coordinates[1],
-        lng: formData.location.coordinates[0]
-      });
-      console.log('[DEBUG] handleSave: serviceability response', srvRes.data);
+      const [lng, lat] = formData.location.coordinates;
+      const srvRes = await apiClient.post('/addresses/serviceability', { lat, lng });
       if (!srvRes.data?.data?.serviceable) {
-        console.log('[DEBUG] handleSave: not serviceable');
-        setError(srvRes.data?.data?.message || 'Currently not delivering to this location');
-        setLoading(false);
+        setError(srvRes.data?.data?.message || 'We do not deliver to this location yet.');
         return;
       }
-      
-      console.log('[DEBUG] handleSave: calling onSave');
-      await onSave(formData);
-      console.log('[DEBUG] handleSave: onSave completed, calling onClose');
+      await onSave({ ...formData, pincode, recipientPhone: toTenDigits(formData.recipientPhone) });
       onClose();
     } catch (err) {
-      console.log('[DEBUG] handleSave: caught error', err);
-      setError(err.response?.data?.message || 'Failed to save address');
+      setError(apiErrorMessage(err, 'Failed to save address.'));
     } finally {
-      console.log('[DEBUG] handleSave: finally block');
       setLoading(false);
     }
   };
@@ -308,11 +323,19 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                   
                   {searchResults.length > 0 && (
                     <div className="search-results-dropdown">
-                      {searchResults.map((result) => (
-                        <div 
-                          key={result.id} 
+                      {searchResults.map((result, index) => (
+                        <div
+                          key={`${result.id}-${index}`}
                           className="search-result-item"
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleSelectSearchResult(result)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleSelectSearchResult(result);
+                            }
+                          }}
                         >
                           <MapPin size={16} className="pin-icon" />
                           <div className="result-text">
@@ -329,9 +352,14 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                   {loading ? <Loader2 className="spinning" size={18} /> : <Navigation size={18} />}
                   Use Current Location
                 </Button>
-                <div className="map-container" ref={mapContainer}></div>
+                {MAPTILER_KEY ? (
+                  <div className="map-container" ref={mapContainer}></div>
+                ) : (
+                  <div className="alert alert-warning">The map is not configured. Use "Use Current Location" to place your address.</div>
+                )}
+                {geocodeNotice && <div className="alert alert-info mt-2">{geocodeNotice}</div>}
                 <div className="map-address-preview">
-                  <p className="preview-label">Location detected</p>
+                  <p className="preview-label">{formData.location ? 'Pinned location' : 'Tap the map or search to place the pin'}</p>
                   {formData.formattedAddress ? (
                     <div className="location-summary">
                       {formData.street && <strong>{formData.street}</strong>}
@@ -344,9 +372,9 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                     <p className="preview-text">Move marker to select location</p>
                   )}
                 </div>
-                <Button 
-                  className="w-100" 
-                  disabled={loading || !formData.formattedAddress}
+                <Button
+                  className="w-100"
+                  disabled={loading || !formData.location}
                   onClick={() => setStep(2)}
                 >
                   Enter Complete Address
@@ -359,86 +387,86 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                 
                 <h4 className="section-title">Address Details</h4>
                 <div className="form-group">
-                  <label htmlFor="auto-id-needed">House / Flat / Building *</label>
-                  <Input type="text" value={formData.houseNumber} onChange={e => setFormData({...formData, houseNumber: e.target.value})} />
+                  <label htmlFor="addr-houseNumber">House / Flat / Building *</label>
+                  <Input id="addr-houseNumber" type="text" value={formData.houseNumber} onChange={e => setFormData({...formData, houseNumber: e.target.value})} />
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">Apartment / Society</label>
-                    <Input type="text" value={formData.buildingName} onChange={e => setFormData({...formData, buildingName: e.target.value})} />
+                    <label htmlFor="addr-buildingName">Apartment / Society</label>
+                    <Input id="addr-buildingName" type="text" value={formData.buildingName} onChange={e => setFormData({...formData, buildingName: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">Floor</label>
-                    <Input type="text" value={formData.floor} onChange={e => setFormData({...formData, floor: e.target.value})} />
+                    <label htmlFor="addr-floor">Floor</label>
+                    <Input id="addr-floor" type="text" value={formData.floor} onChange={e => setFormData({...formData, floor: e.target.value})} />
                   </div>
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">Street / Road</label>
-                    <Input type="text" value={formData.street} onChange={e => setFormData({...formData, street: e.target.value})} />
+                    <label htmlFor="addr-street">Street / Road</label>
+                    <Input id="addr-street" type="text" value={formData.street} onChange={e => setFormData({...formData, street: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">Area / Locality</label>
-                    <Input type="text" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                    <label htmlFor="addr-area">Area / Locality</label>
+                    <Input id="addr-area" type="text" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="auto-id-needed">Landmark</label>
-                  <Input type="text" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} />
+                  <label htmlFor="addr-landmark">Landmark</label>
+                  <Input id="addr-landmark" type="text" value={formData.landmark} onChange={e => setFormData({...formData, landmark: e.target.value})} />
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">City *</label>
-                    <Input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                    <label htmlFor="addr-city">City *</label>
+                    <Input id="addr-city" type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">State *</label>
-                    <Input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
+                    <label htmlFor="addr-state">State *</label>
+                    <Input id="addr-state" type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
                   </div>
                 </div>
                 <div className="row">
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">Pincode *</label>
-                    <Input type="text" value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
+                    <label htmlFor="addr-pincode">Pincode *</label>
+                    <Input id="addr-pincode" type="text" inputMode="numeric" maxLength={7} value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
                   </div>
                   <div className="form-group col">
-                    <label htmlFor="auto-id-needed">District</label>
-                    <Input type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} />
+                    <label htmlFor="addr-district">District</label>
+                    <Input id="addr-district" type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} />
                   </div>
                 </div>
                 
                 <h4 className="section-title mt-4">Deliver to</h4>
                 <div className="form-group">
-                  <label htmlFor="auto-id-needed">Full Name *</label>
-                  <Input type="text" value={formData.recipientName} onChange={e => setFormData({...formData, recipientName: e.target.value})} />
+                  <label htmlFor="addr-recipientName">Full Name *</label>
+                  <Input id="addr-recipientName" type="text" value={formData.recipientName} onChange={e => setFormData({...formData, recipientName: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="auto-id-needed">Phone Number *</label>
-                  <Input type="text" value={formData.recipientPhone} onChange={e => setFormData({...formData, recipientPhone: e.target.value})} />
+                  <label htmlFor="addr-recipientPhone">Phone Number *</label>
+                  <Input id="addr-recipientPhone" type="tel" inputMode="numeric" maxLength={14} value={formData.recipientPhone} onChange={e => setFormData({...formData, recipientPhone: e.target.value})} />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="auto-id-needed">Delivery Instructions (Optional)</label>
-                  <Input type="text" placeholder="e.g. Leave at security gate" value={formData.deliveryInstructions} onChange={e => setFormData({...formData, deliveryInstructions: e.target.value})} />
+                  <label htmlFor="addr-deliveryInstructions">Delivery Instructions (Optional)</label>
+                  <Input id="addr-deliveryInstructions" type="text" placeholder="e.g. Leave at security gate" value={formData.deliveryInstructions} onChange={e => setFormData({...formData, deliveryInstructions: e.target.value})} />
                 </div>
                 
                 <div className="label-selector">
-                  <label htmlFor="auto-id-needed">Address Type</label>
-                  <div className="tags">
-                    {['HOME', 'WORK', 'OTHER'].map(tag => (
-                      <Button 
-                        key={tag} 
-                        className={`tag-btn ${formData.tag === tag ? 'active' : ''}`}
-                        onClick={() => setFormData({...formData, tag})}
+                  <span className="field-label" id="addr-label-type">Address Type</span>
+                  <div className="tags" role="group" aria-labelledby="addr-label-type">
+                    {['HOME', 'WORK', 'OTHER'].map(label => (
+                      <Button
+                        key={label}
+                        className={`tag-btn ${formData.label === label ? 'active' : ''}`}
+                        onClick={() => setFormData({...formData, label})}
                       >
-                        {tag}
+                        {label}
                       </Button>
                     ))}
                   </div>
                 </div>
 
                 <div className="default-toggle">
-                  <label htmlFor="auto-id-needed" className="checkbox-label">
+                  <label className="checkbox-label">
                     <input type="checkbox" checked={formData.isDefault} onChange={e => setFormData({...formData, isDefault: e.target.checked})} />
                     Make this my default address
                   </label>

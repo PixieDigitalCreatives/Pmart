@@ -1,39 +1,22 @@
-import apiClient from './apiClient';
-import { ORDER_STATUS, PAYMENT_STATUS, DELIVERY_VERIFICATION_STATUS } from '../types/orderTypes';
-import { orderService } from './orderService';
+import apiClient, { apiErrorMessage } from './apiClient';
+import { mapOrder } from './orderService';
 
-export const deliveryService = {
-  /**
-   * Rider marks that they have reached the customer doorstep.
-   * Order status transitions to ARRIVED.
-   */
-  async arriveAtCustomer(orderId) {
-    try {
-      const response = await apiClient.put(`/orders/${orderId}/status`, { status: ORDER_STATUS.ARRIVED });
-      return response.data?.data || response.data;
-    } catch (e) {
-      console.error('[ARRIVE ERROR]', e.response?.data);
-      throw e;
-    }
-  },
-
-  /**
-   * Completes the delivery after verifying all prerequisite conditions:
-   * 1. Status is ARRIVED
-   * 2. Payment is COLLECTED
-   * 3. Delivery OTP is OTP_VERIFIED
-   */
-  async completeDelivery(orderId) {
-    const response = await apiClient.post(`/orders/${orderId}/deliver`);
-    return {
-      success: true,
-      order: response.data?.data || response.data,
-      message: response.data?.message || 'Delivery Completed Successfully.'
-    };
-  },
-
-  async pickupOrder(orderId) {
-    const response = await apiClient.post(`/rider/orders/${orderId}/pickup`);
-    return response.data?.data?.order || response.data?.order || response.data?.data || response.data;
+const call = async (request) => {
+  try {
+    const res = await request();
+    return { order: mapOrder(res.data.data), message: res.data.message };
+  } catch (error) {
+    throw new Error(apiErrorMessage(error));
   }
+};
+
+/** Rider-side handover steps. Each returns { order, message } or throws an Error with a readable message. */
+export const deliveryService = {
+  startDeliveryRun: (orderId) => call(() => apiClient.put(`/orders/${orderId}/status`, { status: 'OUT_FOR_DELIVERY' })),
+  markArrived: (orderId) => call(() => apiClient.put(`/orders/${orderId}/status`, { status: 'ARRIVED' })),
+  markFailed: (orderId, reason) => call(() => apiClient.put(`/orders/${orderId}/status`, { status: 'DELIVERY_FAILED', reason })),
+  collectCash: (orderId) => call(() => apiClient.put(`/orders/${orderId}/payment-status`, { paymentStatus: 'COLLECTED' })),
+  verifyOtp: (orderId, otp) => call(() => apiClient.post(`/orders/${orderId}/verify-otp`, { otp: String(otp).trim() })),
+  regenerateOtp: (orderId) => call(() => apiClient.post(`/orders/${orderId}/resend-otp`)),
+  complete: (orderId) => call(() => apiClient.post(`/orders/${orderId}/deliver`))
 };

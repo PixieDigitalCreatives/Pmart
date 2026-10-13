@@ -1,47 +1,40 @@
 import apiClient from './apiClient';
 
 export const categoryService = {
-  // Get all categories
   async getCategories() {
-    const response = await apiClient.get('/categories');
-    return response.data.data;
+    const res = await apiClient.get('/categories');
+    return res.data.data;
   },
 
-  async getAdminCategories() {
-    const response = await apiClient.get('/admin/categories');
-    return response.data.data;
-  },
-
-  // Get single category by slug
   async getCategoryBySlug(slug) {
-    const response = await apiClient.get(`/categories/${slug}`);
-    return response.data.data;
+    const res = await apiClient.get(`/categories/${encodeURIComponent(slug)}`);
+    return res.data.data;
   },
 
-  // Get subcategories for a given category
-  async getSubcategories(slug) {
-    const response = await apiClient.get(`/categories/${slug}`);
-    return response.data.data.subcategories || [];
+  // ----- Management -----
+
+  async getManagedCategories() {
+    const res = await apiClient.get('/manage/categories');
+    return res.data.data;
   },
 
-  // Admin / CRUD operations
   async createCategory(data) {
-    const response = await apiClient.post('/categories', data);
-    return response.data;
+    const res = await apiClient.post('/manage/categories', data);
+    return res.data.data;
   },
 
   async updateCategory(id, data) {
-    const response = await apiClient.put(`/categories/${id}`, data);
-    return response.data;
+    const res = await apiClient.put(`/manage/categories/${id}`, data);
+    return res.data.data;
   },
 
-  async updateCategoryStatus(id, isActive) {
-    const response = await apiClient.patch(`/categories/${id}/status`, { isActive });
-    return response.data;
+  async setCategoryActive(id, isActive) {
+    const res = await apiClient.patch(`/manage/categories/${id}/status`, { isActive });
+    return res.data.data;
   },
 
   async deleteCategory(id) {
-    const response = await apiClient.delete(`/categories/${id}`);
-    return response.data;
+    const res = await apiClient.delete(`/manage/categories/${id}`);
+    return res.data;
   }
 };

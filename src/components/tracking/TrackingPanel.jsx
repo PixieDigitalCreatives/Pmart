@@ -4,7 +4,6 @@ import { TrackingStatus } from './TrackingStatus';
 import { ETAIndicator } from './ETAIndicator';
 import { RiderInfoCard } from './RiderInfoCard';
 import { DeliveryOTP } from './DeliveryOTP';
-import { OrderTimeline } from '@/components/order/OrderTimeline';
 import './TrackingPanel.scss';
 
 export const TrackingPanel = ({
@@ -38,48 +37,42 @@ export const TrackingPanel = ({
       {/* 3. Rider Information & Contact Card */}
       <RiderInfoCard
         rider={rider || order?.rider}
-        orderId={order?.id}
+        orderId={order?.orderNumber}
         status={order?.status}
       />
 
-      {/* 4. Store Dispatch Hub Location */}
-      <div className="pmart-store-location-card">
-        <div className="store-badge-header">
-          <span className="store-pill">FULFILLMENT DARKSTORE</span>
-          <a
-            href="https://maps.app.goo.gl/rpyAd9tmiLKiQFyQ9"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="store-gmaps-link"
-            title="Open exact location on Google Maps"
-          >
-            Google Maps ↗
-          </a>
-        </div>
-        <div className="store-main-row">
-          <div className="store-pin-circle">P</div>
-          <div className="store-meta">
-            <h4 className="store-title">{order?.shop?.name || 'P Mart Sasaram'}</h4>
-            <p className="store-address-text">
-              {order?.shop?.address 
-                ? (typeof order.shop.address === 'string' 
-                  ? order.shop.address 
-                  : `${order.shop.address.street || ''}, ${order.shop.address.city || ''}, ${order.shop.address.state || ''} ${order.shop.address.pincode || ''}`.replace(/^[,\s]+|[,\s]+$/g, '').replace(/,\s*,/g, ','))
-                : 'P Mart, Panjar Colony, Near Sasaram Junction, Sasaram, Bihar 821115'}
-            </p>
-            <span className="store-geo-tag">📍 GPS: 24.9588592° N, 84.0155717° E</span>
+      {/* 4. Store the order is dispatched from */}
+      {order?.shop && (
+        <div className="pmart-store-location-card">
+          <div className="store-badge-header">
+            <span className="store-pill">DISPATCHED FROM</span>
+            {order.shop.location && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${order.shop.location.lat},${order.shop.location.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="store-gmaps-link"
+              >
+                Google Maps ↗
+              </a>
+            )}
+          </div>
+          <div className="store-main-row">
+            <div className="store-pin-circle">{(order.shop.name || 'S').charAt(0).toUpperCase()}</div>
+            <div className="store-meta">
+              <h4 className="store-title">{order.shop.name}</h4>
+              {order.shop.address && (
+                <p className="store-address-text">
+                  {[order.shop.address.street, order.shop.address.area, order.shop.address.city, order.shop.address.state, order.shop.address.pincode].filter(Boolean).join(', ')}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 5. Delivery Verification OTP */}
-      <DeliveryOTP otp={otp || order?.deliveryOtp} isNearby={isNearby} status={order?.status || order?.orderStatus} />
-
-      {/* 5. Existing PMart Order Timeline */}
-      {/* <div className="tracking-timeline-card">
-        <h4 className="timeline-title">Fulfillment Progress</h4>
-        <OrderTimeline timeline={order?.timeline || []} />
-      </div> */}
+      {/* 5. Delivery code */}
+      <DeliveryOTP otp={otp} isNearby={isNearby} status={order?.status} />
     </motion.div>
   );
 };

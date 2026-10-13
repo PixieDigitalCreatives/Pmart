@@ -1,131 +1,65 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { trackingService } from '@/services/trackingService';
 import { getRoute } from '@/services/routingService';
 
-const isDev = import.meta.env.DEV;
-const log = (...args) => { if (isDev) console.log('[useLiveTracking]', ...args); };
+const ROUTE_REFRESH_MS = 10000;
 
 /**
- * useLiveTracking Hook
- * Subscribes to real-time location and status updates for an order.
+ * Live tracking for one order: rider position, destination, store, and a road route with ETA.
+ * ETA/distance come from the routing service; they stay null if no route is available.
  */
 export const useLiveTracking = (orderId) => {
-  const [trackingData, setTrackingData] = useState(null);
-  const [riderLocation, setRiderLocation] = useState(null);
-  const [customerLocation, setCustomerLocation] = useState(null);
-  const [hubLocation, setHubLocation] = useState(null);
+  const [state, setState] = useState({ status: null, rider: null, riderLocation: null, customerLocation: null, hubLocation: null });
+  const [route, setRoute] = useState(null);
+  const [routeError, setRouteError] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState(null);
   const [distanceKm, setDistanceKm] = useState(null);
-  const [status, setStatus] = useState(null);
-  const [trackingState, setTrackingState] = useState('TRACKING_LOADING');
-  const [route, setRoute] = useState(null);
-  const [isConnected, setIsConnected] = useState(true);
-  const [error, setError] = useState(null);
-  const [routeError, setRouteError] = useState(false);
   const [recenterCount, setRecenterCount] = useState(0);
+  const lastRouteAt = useRef(0);
 
   useEffect(() => {
-    if (!orderId) return;
-
-    log('subscribing to tracking for orderId:', orderId);
-    setTrackingState('TRACKING_LOADING');
-    setIsConnected(true);
-    setError(null);
-
-    let isMounted = true;
-    let lastRouteFetchTime = 0;
-    let currentRiderLoc = null;
-    let currentCustLoc = null;
-
-    const fetchRouteDebounced = async (rLoc, cLoc) => {
-      const now = Date.now();
-      // Only fetch route every 10 seconds to avoid spamming the routing API
-      if (now - lastRouteFetchTime < 10000) return;
-      lastRouteFetchTime = now;
-
-      try {
-        const routeData = await getRoute([rLoc.lng, rLoc.lat], [cLoc.lng, cLoc.lat]);
-        if (isMounted) {
-          if (routeData) {
-            setRoute(routeData.geometry);
-            setDistanceKm(Number((routeData.distanceMeters / 1000).toFixed(1)));
-            setEtaMinutes(Math.max(1, Math.ceil(routeData.durationSeconds / 60)));
-            setRouteError(false);
-          } else {
-            setRoute(null);
-            setRouteError(true);
-          }
-        }
-      } catch (err) {
-        log('Route fetch failed', err);
-        if (isMounted) {
-          setRoute(null);
-          setRouteError(true);
-        }
-      }
-    };
-
-    const unsubscribe = trackingService.subscribeToTracking(orderId, (update) => {
-      const payload = update.data || update;
-      log('tracking update received, keys:', Object.keys(payload));
-
-      if (payload.customerLocation?.coordinates) {
-        currentCustLoc = payload.customerLocation.coordinates;
-        setCustomerLocation(currentCustLoc);
-      } else if (payload.deliveryAddress?.coordinates) {
-        currentCustLoc = payload.deliveryAddress.coordinates;
-        setCustomerLocation(currentCustLoc);
-      }
-
-      // Handle Rider GPS update
-      if (payload.tracking?.location?.lat) {
-        currentRiderLoc = { lat: payload.tracking.location.lat, lng: payload.tracking.location.lng };
-        setRiderLocation(currentRiderLoc);
-        
-        // Fetch Route if we have both locations
-        if (currentCustLoc) {
-          fetchRouteDebounced(currentRiderLoc, currentCustLoc);
-        }
-      }
-
-      // Only update the rest if it's a full tracking snapshot (not just a GPS relay)
-      if (payload.customerLocation !== undefined || payload.status !== undefined || payload.deliveryAddress !== undefined) {
-        setTrackingData(payload);
-        setHubLocation(payload.hubLocation || payload.shop?.address);
-        if (payload.status) setStatus(payload.status);
-        if (payload.trackingState) setTrackingState(payload.trackingState);
-        setIsConnected(true);
-      } else if (payload.trackingState) {
-        // Minimal socket relay — just update state
-        setTrackingState(payload.trackingState);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      log('unsubscribing from tracking for orderId:', orderId);
-      unsubscribe();
-    };
+    if (!orderId) return undefined;
+    const unsubscribe = trackingService.subscribe(orderId, (patch) => setState((prev) => ({ ...prev, ...patch })));
+    return unsubscribe;
   }, [orderId]);
 
-  const recenter = useCallback(() => {
-    setRecenterCount((c) => c + 1);
-  }, []);
+  const { riderLocation, customerLocation } = state;
+
+  useEffect(() => {
+    if (!riderLocation || !customerLocation) return;
+    const now = Date.now();
+    if (now - lastRouteAt.current < ROUTE_REFRESH_MS) return;
+    lastRouteAt.current = now;
+
+    let cancelled = false;
+    getRoute([riderLocation.lng, riderLocation.lat], [customerLocation.lng, customerLocation.lat])
+      .then((data) => {
+        if (cancelled) return;
+        if (data) {
+          setRoute(data.geometry);
+          setDistanceKm(Number((data.distanceMeters / 1000).toFixed(1)));
+          setEtaMinutes(Math.max(1, Math.ceil(data.durationSeconds / 60)));
+          setRouteError(false);
+        } else {
+          setRouteError(true);
+        }
+      })
+      .catch(() => !cancelled && setRouteError(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [riderLocation, customerLocation]);
+
+  const recenter = useCallback(() => setRecenterCount((c) => c + 1), []);
 
   return {
-    trackingData,
-    riderLocation,
-    customerLocation,
-    hubLocation,
-    etaMinutes,
-    distanceKm,
-    status,
-    trackingState,
+    ...state,
+    trackingState: riderLocation ? 'TRACKING_ACTIVE' : 'TRACKING_WAITING',
     route,
     routeError,
-    isConnected,
-    error,
+    etaMinutes,
+    distanceKm,
     recenterTrigger: recenterCount,
-    recenter,
+    recenter
   };
 };

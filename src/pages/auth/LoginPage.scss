@@ -1,4 +1,4 @@
-﻿// ─── Auth Page Shell ────────────────────────────────────────────────────────
+// ─── Auth Page Shell ────────────────────────────────────────────────────────
 .pmart-auth-page {
   min-height: 100vh;
   display: flex;
@@ -139,6 +139,30 @@
 
   @include mobile {
     padding: 28px 20px;
+  }
+
+  .auth-compact-brand {
+    display: none;
+
+    @include tablet-down {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+
+      img {
+        height: 36px;
+        width: auto;
+      }
+
+      span {
+        font-size: 12.5px;
+        font-weight: $font-weight-medium;
+        color: $text-muted;
+        border-left: 1px solid $border-color;
+        padding-left: 10px;
+      }
+    }
   }
 
   .action-header {

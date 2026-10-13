@@ -1,7 +1,13 @@
 import React from 'react';
-import { MapPin, ChevronDown, Clock } from 'lucide-react';
+import { ChevronDown, Clock } from 'lucide-react';
 import { useLocation } from '@/context/LocationContext';
+import { getFullAddressString } from '@/utils/addressUtils';
 import './MobileLocationStrip.scss';
+
+const shortAddress = (loc) => {
+  const full = getFullAddressString(loc);
+  return full.length > 30 ? full.slice(0, 30) + '…' : full;
+};
 
 export const MobileLocationStrip = () => {
   const { selectedLocation, setLocationModalOpen } = useLocation();
@@ -17,7 +23,7 @@ export const MobileLocationStrip = () => {
           <div className="address-snippet">
             <span className="location-tag">{selectedLocation?.tag || 'Delivery'}</span>
             <span className="dot">•</span>
-            <span className="address-text">{selectedLocation?.address?.slice(0, 30) || 'Select location'}...</span>
+            <span className="address-text">{(selectedLocation && shortAddress(selectedLocation)) || 'Select location'}</span>
           </div>
         </div>
         <ChevronDown size={14} className="chevron" />

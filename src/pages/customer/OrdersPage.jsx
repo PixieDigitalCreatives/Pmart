@@ -1,255 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { useCart } from '@/context/CartContext';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
-import {
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  normalizeOrderStatus,
-  getCustomerOrderStatus
-} from '@/types/orderTypes';
-import {
-  Package,
-  Clock,
-  CheckCircle2,
-  ChevronRight,
-  ArrowRight,
-  RefreshCw,
-  ShoppingBag,
-  Eye,
-  Navigation,
-  Calendar,
-  PackageX
-} from 'lucide-react';
-import { PageHeader, Button, EmptyState, Card } from '@/components/ui';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, ACTIVE_ORDER_STATUSES, PAST_ORDER_STATUSES } from '@/types/orderTypes';
+import { RefreshCw, Eye, PackageX, Package } from 'lucide-react';
+import { PageHeader, Button, EmptyState, Card, StatusBadge, LoadingState } from '@/components/ui';
 import './OrdersPage.scss';
 
+const TABS = [
+  { id: 'all', label: 'All orders', status: undefined },
+  { id: 'active', label: 'In progress', status: ACTIVE_ORDER_STATUSES.join(',') },
+  { id: 'past', label: 'Past orders', status: PAST_ORDER_STATUSES.join(',') }
+];
+
 export const OrdersPage = () => {
-  const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('all');
-  const [loading, setLoading] = useState(true);
   const { addItem, setIsCartOpen } = useCart();
-  const navigate = useNavigate();
+  const [tab, setTab] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, pages: 1 });
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(
+    async (page = 1) => {
+      const status = TABS.find((t) => t.id === tab).status;
+      const res = await orderService.getOrders({ status, page, limit: 10 });
+      setOrders(res.orders);
+      setPagination(res.pagination);
+      setLoading(false);
+    },
+    [tab]
+  );
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchOrders = async () => {
-      setLoading(true);
-      const data = await orderService.getOrders({ status: activeTab });
-      if (isMounted) {
-        setOrders(data);
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    load(1).catch(() => setLoading(false));
+    const interval = setInterval(() => load(pagination.page).catch(() => {}), 20000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 3000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [activeTab]);
-
-  const handleReorder = (order) => {
-    order.items.forEach((item) => {
-      addItem(item, item.quantity);
-    });
+  const reorder = (order) => {
+    order.items.forEach((item) => addItem({ _id: item.product, name: item.name, price: item.price, mrp: item.mrp, unit: item.unit, imageUrl: item.imageUrl }, item.quantity));
     setIsCartOpen(true);
-  };
-
-  const getStatusBadge = (order) => {
-    const norm = getCustomerOrderStatus(order.orderStatus || order.status);
-    switch (norm) {
-      case ORDER_STATUS.DELIVERED:
-        return (
-          <span className="order-status-pill delivered">
-            <span className="dot green" />
-            <span>Delivered</span>
-          </span>
-        );
-      case ORDER_STATUS.ARRIVED:
-        return (
-          <span className="order-status-pill arrived">
-            <span className="dot blue" />
-            <span>Rider Arrived</span>
-          </span>
-        );
-      case ORDER_STATUS.OUT_FOR_DELIVERY:
-        return (
-          <span className="order-status-pill active-run">
-            <span className="dot pulse" />
-            <span>Out for Delivery</span>
-          </span>
-        );
-      case ORDER_STATUS.READY_FOR_PICKUP:
-        return (
-          <span className="order-status-pill ready">
-            <span className="dot blue" />
-            <span>Ready for Pickup</span>
-          </span>
-        );
-      case ORDER_STATUS.PREPARING:
-        return (
-          <span className="order-status-pill preparing">
-            <span className="dot amber" />
-            <span>Preparing</span>
-          </span>
-        );
-      case ORDER_STATUS.CANCELLED:
-        return (
-          <span className="order-status-pill cancelled">
-            <span className="dot red" />
-            <span>Cancelled</span>
-          </span>
-        );
-      default:
-        return (
-          <span className="order-status-pill placed">
-            <span className="dot amber" />
-            <span>Order Placed</span>
-          </span>
-        );
-    }
   };
 
   return (
     <div className="pmart-orders-page">
       <div className="container">
-        <PageHeader
-          title="My Orders"
-          subtitle="Track active grocery deliveries or reorder your regular favorites"
-        />
+        <PageHeader title="My orders" subtitle="Track deliveries and reorder your regulars" />
 
-        {/* Filter Tabs */}
         <div className="orders-filter-tabs">
-          {[
-            { id: 'all', label: 'All Orders' },
-            { id: 'out_for_delivery', label: 'Active Deliveries' },
-            { id: 'delivered', label: 'Past Orders' }
-          ].map((tab) => (
-            <Button
-              key={tab.id}
-              className={`filter-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span>{tab.label}</span>
+          {TABS.map((t) => (
+            <Button key={t.id} className={`filter-tab-btn ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+              <span>{t.label}</span>
             </Button>
           ))}
         </div>
 
-        {/* Orders List */}
-        {orders.length === 0 ? (
+        {loading ? (
+          <LoadingState text="Loading orders..." />
+        ) : orders.length === 0 ? (
           <div style={{ marginTop: '32px' }}>
-            <EmptyState
-              icon={PackageX}
-              title="No orders found in this section"
-              description="Start filling your cart with fresh fruits, dairy and everyday essentials."
-              action={
-                <Link to="/" style={{ textDecoration: 'none' }}>
-                  <Button variant="primary">Start Shopping</Button>
-                </Link>
-              }
-            />
+            <EmptyState icon={PackageX} title="No orders here yet" description="Orders you place will appear here." action={<Button component={Link} to="/" variant="primary">Start shopping</Button>} />
           </div>
         ) : (
           <div className="orders-cards-list">
-            {orders.map((order) => {
-              const norm = getCustomerOrderStatus(order.orderStatus || order.status);
-              const isActive = norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED || norm === ORDER_STATUS.PREPARING || norm === ORDER_STATUS.READY || norm === ORDER_STATUS.ASSIGNED || norm === ORDER_STATUS.PICKED_UP;
-
-              return (
-                <Card key={order.id} className="order-history-card">
-                  {/* Card Header: ID, Date, Status */}
-                  <div className="order-card-header">
-                    <div className="order-meta-group">
-                      <span className="order-id">#{order.id}</span>
-                      <span className="dot">•</span>
-                      <span className="order-date">
-                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <div className="status-wrap">{getStatusBadge(order)}</div>
+            {orders.map((order) => (
+              <Card key={order._id} className="order-history-card">
+                <div className="order-card-header">
+                  <div className="order-meta-group">
+                    <span className="order-id">#{order.orderNumber}</span>
+                    <span className="dot">•</span>
+                    <span className="order-date">
+                      {new Date(order.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
+                  <div className="status-wrap">
+                    <StatusBadge status={ORDER_STATUS_LABELS[order.status] || order.status} type={ORDER_STATUS_TONE[order.status] || 'neutral'} />
+                  </div>
+                </div>
 
-                  {/* Items Preview */}
-                  <div className="order-items-preview">
-                    <div className="item-thumbnails-group">
-                      {order.items.slice(0, 4).map((item, idx) => (
-                        <div key={idx} className="thumb-box" title={item.name}>
-                          <img src={item.imageUrl || item.image} alt={item.name} />
-                        </div>
-                      ))}
-                      {order.items.length > 4 && (
-                        <div className="more-count">+{order.items.length - 4}</div>
-                      )}
-                    </div>
-                    <div className="items-text-summary">
-                      <div className="summary-names">
-                        {order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                <div className="order-items-preview">
+                  <div className="item-thumbnails-group">
+                    {order.items.slice(0, 4).map((item) => (
+                      <div key={String(item.product)} className="thumb-box" title={item.name}>
+                        {item.imageUrl ? <img src={item.imageUrl} alt={item.name} /> : <Package size={20} className="text-gray-400" />}
                       </div>
-                      <div className="items-total-tag">
-                        Total: <strong>₹{order.billing?.grandTotal}</strong> • {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                      </div>
+                    ))}
+                    {order.items.length > 4 && <div className="more-count">+{order.items.length - 4}</div>}
+                  </div>
+                  <div className="items-text-summary">
+                    <div className="summary-names">{order.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}</div>
+                    <div className="items-total-tag">
+                      Total: <strong>₹{order.totalAmount}</strong> • {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
                     </div>
                   </div>
+                </div>
 
-                  {/* Footer Actions */}
-                  <div className="order-card-footer">
-                    <div className="footer-left">
-                      <PaymentStatusBadge
-                        paymentStatus={order.paymentStatus}
-                        paymentMethod={order.paymentMethod || order.payment?.method || 'COD'}
-                        amount={order.billing?.grandTotal}
-                        compact={true}
-                      />
-                    </div>
-                    <div className="footer-actions" style={{ display: 'flex', gap: '8px' }}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="reorder-btn"
-                        onClick={() => handleReorder(order)}
-                      >
-                        <RefreshCw size={13} style={{ marginRight: '4px' }} />
-                        <span>Reorder</span>
-                      </Button>
-
-                      {/* Dedicated View Order Button */}
-                      <Link
-                        to={`/orders/${order.id}`}
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <Button variant="outline" size="sm" className="view-order-btn">
-                          <Eye size={13} style={{ marginRight: '4px' }} />
-                          <span>View Order</span>
-                        </Button>
-                      </Link>
-
-                      {/* Track Order CTA for Active Deliveries */}
-                      {isActive && (
-                        <Link
-                          to={`/orders/${order.id}`}
-                          style={{ textDecoration: 'none' }}
-                        >
-                          <Button variant="primary" size="sm" className="track-order-btn">
-                            <Navigation size={13} style={{ marginRight: '4px' }} />
-                            <span>Track Order</span>
-                            <ArrowRight size={13} style={{ marginLeft: '4px' }} />
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
+                <div className="order-card-footer">
+                  <div className="footer-left">
+                    <PaymentStatusBadge paymentStatus={order.paymentStatus} orderStatus={order.status} paymentMethod={order.paymentMethod} amount={order.totalAmount} compact />
                   </div>
-                </Card>
-              );
-            })}
+                  <div className="footer-actions" style={{ display: 'flex', gap: '8px' }}>
+                    <Button variant="secondary" size="sm" className="reorder-btn" onClick={() => reorder(order)}>
+                      <RefreshCw size={13} style={{ marginRight: '4px' }} />
+                      <span>Reorder</span>
+                    </Button>
+                    <Button component={Link} to={`/orders/${order._id}`} variant={ACTIVE_ORDER_STATUSES.includes(order.status) ? 'primary' : 'outline'} size="sm">
+                      <Eye size={13} style={{ marginRight: '4px' }} />
+                      <span>{ACTIVE_ORDER_STATUSES.includes(order.status) ? 'Track order' : 'View order'}</span>
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+
+            {pagination.pages > 1 && (
+              <div className="actions-row" style={{ justifyContent: 'center' }}>
+                <Button variant="secondary" size="sm" disabled={pagination.page <= 1} onClick={() => load(pagination.page - 1)}>
+                  Previous
+                </Button>
+                <span className="muted-note">
+                  Page {pagination.page} of {pagination.pages}
+                </span>
+                <Button variant="secondary" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => load(pagination.page + 1)}>
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

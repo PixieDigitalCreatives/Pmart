@@ -1,263 +1,132 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
-import { auth, googleProvider, signInWithPopup } from '@/config/firebase';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth, homeForRole } from '@/context/AuthContext';
+import { apiErrorMessage } from '@/services/apiClient';
+import { AuthShell } from '@/components/common/AuthShell';
+import { GoogleSignInButton } from '@/components/common/GoogleSignInButton';
 import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
-import './LoginPage.scss';
 
-// Validates a mobile number — must be digits only (with optional leading +/country code).
-function validatePhone(raw) {
-  const stripped = raw.trim().replace(/[\s\-().]/g, '');
-  return /^\+?[0-9]{7,15}$/.test(stripped);
-}
+const isPhoneLike = (raw) => /^\+?[0-9]{10,15}$/.test(raw.trim().replace(/[\s\-().]/g, ''));
 
+/**
+ * Two modes:
+ * - new visitor: sign up with name, mobile and password (or Google);
+ * - Google sign-up that still needs a mobile number and password: completes the profile.
+ */
 export const RegisterPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { googleLogin, completeProfile, isAuthenticated, user } = useAuth();
+  const { register, googleLogin, completeProfile, isAuthenticated, user } = useAuth();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  // Form fields for Step 2
+  const completing = isAuthenticated && user && user.role === 'CUSTOMER' && !user.profileComplete;
+
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // When user becomes authenticated and profile is incomplete, prefill name
   useEffect(() => {
-    if (isAuthenticated && user && !user.profileComplete) {
-      if (!name && user.name) {
-        setName(user.name);
-      }
-    }
-  }, [isAuthenticated, user, name]);
+    if (completing && !name && user.name) setName(user.name);
+  }, [completing, user, name]);
 
-  // Redirect fully authenticated & complete users to their respective home
   useEffect(() => {
-    if (isAuthenticated && user && user.profileComplete) {
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/register' && from !== '/login') {
-        navigate(from, { replace: true });
-        return;
-      }
-      const roleRoutes = { SHOP_OWNER: '/shop', RIDER: '/rider', ADMIN: '/admin' };
-      navigate(roleRoutes[user.role] || '/', { replace: true });
-    }
-  }, [isAuthenticated, user, navigate, location]);
+    if (isAuthenticated && user && !completing) navigate(homeForRole(user.role), { replace: true });
+  }, [isAuthenticated, user, completing, navigate]);
 
-  const handleGoogleSignUp = async () => {
+  const validate = () => {
+    if (!name.trim()) return 'Enter your full name.';
+    if (!isPhoneLike(phone)) return 'Enter a valid 10-digit mobile number.';
+    if (password.length < 8) return 'Password must be at least 8 characters.';
+    if (password !== confirmPassword) return 'Passwords do not match.';
+    return '';
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const problem = validate();
+    setError(problem);
+    if (problem) return;
+
+    setLoading(true);
+    try {
+      if (completing) {
+        await completeProfile({ name: name.trim(), phone: phone.trim(), password, confirmPassword });
+      } else {
+        await register(name.trim(), phone.trim(), password);
+      }
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Registration failed. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleToken = async (idToken) => {
     setLoading(true);
     setError('');
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
       await googleLogin(idToken);
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError(err.message || 'Google registration failed. Please try again.');
-      }
+      setError(apiErrorMessage(err, 'Google sign-up failed.'));
     } finally {
       setLoading(false);
     }
   };
-
-  const handleCompleteRegistration = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!name.trim()) {
-      setError('Please enter your full name.');
-      return;
-    }
-
-    if (!validatePhone(phone)) {
-      setError('Please enter a valid mobile number (digits only, e.g. +91 98765 43210).');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const stripped = phone.trim().replace(/[\s\-().]/g, '');
-      const normalizedPhone = stripped.startsWith('+') ? stripped : `+91${stripped}`;
-      
-      const result = await completeProfile({ 
-        name: name.trim(), 
-        phone: normalizedPhone, 
-        password, 
-        confirmPassword 
-      });
-      
-      if (result.success) {
-        // AppRoutes/RoleGuard or the useEffect above will redirect them automatically
-        // once user.profileComplete becomes true in context.
-      }
-    } catch (err) {
-      const serverMsg = err.response?.data?.message;
-      const netMsg = err.message === 'Network Error'
-          ? `Backend unreachable at ${import.meta.env.VITE_API_BASE_URL || '/api'}. Is the server running?`
-          : null;
-      setError(serverMsg || netMsg || err.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Determine state
-  const isProfileCompletionRequired = isAuthenticated && user && !user.profileComplete;
 
   return (
-    <div className="pmart-auth-page">
-      <div className="auth-card-container">
-        {/* ── Left: Brand Panel ── */}
-        <div className="auth-brand-side">
-          <div className="brand-header">
-            <img src="/Pmart.png" alt="PMart" className="auth-logo" />
-            <span className="brand-tagline">Grocery and More</span>
-          </div>
+    <AuthShell
+      heading="Groceries from your nearby PMart store."
+      subheading="Create an account to order and track deliveries."
+      title={completing ? 'Finish setting up your account' : 'Create your account'}
+      subtitle={completing ? 'Add your mobile number and a password to continue.' : 'It takes less than a minute.'}
+      footer={
+        !completing && (
+          <p>
+            Already have an account?{' '}
+            <Link to="/login" className="auth-toggle-btn">
+              Sign in
+            </Link>
+          </p>
+        )
+      }
+    >
+      {error && <ErrorMessage message={error} />}
+      {!completing && <GoogleSignInButton label="Sign up with Google" onToken={handleGoogleToken} onError={setError} disabled={loading} />}
 
-          <div className="brand-hero-msg">
-            <h2>Superfast groceries, delivered with precision.</h2>
-            <p>
-              One unified portal for customers, darkstore fulfillment operators,
-              delivery fleet heroes, and operations administrators.
-            </p>
-          </div>
-
-          <div className="brand-trust-points">
-            <div className="trust-point">
-              <ShieldCheck size={18} className="shield-icon" />
-              <span>Secure authentication</span>
-            </div>
-            <div className="trust-point">
-              <Sparkles size={18} className="shield-icon" />
-              <span>Fast &amp; seamless experience</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right: Auth Form Panel ── */}
-        <div className="auth-action-side">
-          {/* Heading */}
-          <div className="action-header">
-            <h2>{isProfileCompletionRequired ? 'Complete Registration' : 'Create an Account'}</h2>
-            <p>{isProfileCompletionRequired ? 'Please provide the remaining details to activate your account.' : 'Sign up to get started'}</p>
-          </div>
-
-          {/* Error banner */}
-          {error && <ErrorMessage message={error} />}
-
-          {!isProfileCompletionRequired ? (
-            /* STEP 1: Google Registration */
-            <>
-              <Button
-                id="google-signup-btn"
-                type="button"
-                className="google-oauth-btn"
-                onClick={handleGoogleSignUp}
-                disabled={loading}
-                aria-label="Continue with Google"
-                style={{ marginTop: '20px' }}
-              >
-                <img
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                  alt=""
-                  className="google-icon"
-                />
-                <span>Continue with Google</span>
-              </Button>
-
-              <div className="auth-footer" style={{ marginTop: 'auto' }}>
-                <p>
-                  Already have an account?{' '}
-                  <Link to="/login" className="auth-toggle-btn" style={{ textDecoration: 'none', display: 'inline', color: '#F20D18', fontWeight: 600 }}>
-                    Sign In
-                  </Link>
-                </p>
-              </div>
-            </>
-          ) : (
-            /* STEP 2: Profile Completion */
-            <form onSubmit={handleCompleteRegistration} className="auth-form" noValidate>
-              <FormField label="Full Name">
-                <Input
-                  id="auth-name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="e.g. Shyam Mohan"
-                  autoComplete="name"
-                  disabled={loading}
-                />
-              </FormField>
-
-              <FormField label="Mobile Number" hint="Enter digits only. This number will not be verified by OTP.">
-                <Input
-                  id="auth-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  placeholder="+91 98765 43210"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  disabled={loading}
-                />
-              </FormField>
-
-              <FormField label="Password">
-                <Input
-                  id="auth-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Create a password (min. 6 chars)"
-                  autoComplete="new-password"
-                  minLength={6}
-                  disabled={loading}
-                />
-              </FormField>
-
-              <FormField label="Confirm Password">
-                <Input
-                  id="auth-confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  placeholder="Re-enter your password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  disabled={loading}
-                />
-              </FormField>
-
-              <Button
-                id="signup-submit-btn"
-                type="submit"
-                size="full"
-                isLoading={loading}
-                style={{ marginTop: '16px' }}
-              >
-                Sign Up
-              </Button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        <FormField label="Full name" htmlFor="auth-name">
+          <Input id="auth-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={100} disabled={loading} />
+        </FormField>
+        <FormField label="Mobile number" htmlFor="auth-phone">
+          <Input
+            id="auth-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="10-digit mobile number"
+            autoComplete="tel"
+            inputMode="tel"
+            disabled={loading}
+          />
+        </FormField>
+        <FormField label="Password" htmlFor="auth-password" hint="At least 8 characters">
+          <Input id="auth-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
+        </FormField>
+        <FormField label="Confirm password" htmlFor="auth-confirm-password">
+          <Input
+            id="auth-confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            disabled={loading}
+          />
+        </FormField>
+        <Button id="signup-submit-btn" type="submit" size="full" isLoading={loading} style={{ marginTop: '16px' }}>
+          {completing ? 'Save and continue' : 'Create account'}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };

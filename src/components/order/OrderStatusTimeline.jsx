@@ -1,10 +1,10 @@
 import React from 'react';
-import { Check, CircleDot, Clock, ShieldCheck, MapPin } from 'lucide-react';
-import { ORDER_PROGRESSION_STAGES, normalizeOrderStatus, ORDER_STATUS, getCustomerOrderStatus } from '@/types/orderTypes';
+import { Check, CircleDot } from 'lucide-react';
+import { ORDER_PROGRESSION_STAGES, ORDER_STATUS, getCustomerOrderStatus } from '@/types/orderTypes';
 import './OrderStatusTimeline.scss';
 
 export const OrderStatusTimeline = ({
-  status = ORDER_STATUS.PLACED,
+  status = ORDER_STATUS.PENDING,
   timeline = null,
   compact = false
 }) => {

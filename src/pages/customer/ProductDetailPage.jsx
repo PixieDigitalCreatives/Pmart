@@ -3,290 +3,211 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { useCart } from '@/context/CartContext';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
-import {
-  Clock,
-  Star,
-  ShieldCheck,
-  RotateCcw,
-  Plus,
-  Minus,
-  ShoppingBag,
-  ArrowRight,
-  ChevronRight,
-  Share2,
-  Check
-} from 'lucide-react';
+import { Plus, Minus, ShoppingBag, ArrowRight, ChevronRight, Share2, Check, Package, Store } from 'lucide-react';
+import { Button, EmptyState, LoadingState } from '@/components/ui';
 import './ProductDetailPage.scss';
-import { Button } from '@/components/ui';
 
 export const ProductDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addItem, getItemQuantity, updateQuantity, setIsCartOpen } = useCart();
+  const { addItem, getItemQuantity, updateQuantity } = useCart();
 
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState('');
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const loadProduct = async () => {
-      setLoading(true);
-      try {
-        const prod = await productService.getProductBySlug(slug);
-        setProduct(prod);
-        setSelectedImage(prod.imageUrl || prod.image);
-
-        // Fetch related products in the same category
-        const rel = await productService.getProducts({ category: prod.categorySlug, limit: 6 });
-        setRelatedProducts(rel.products.filter(p => (p._id || p.id) !== (prod._id || prod.id)));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProduct();
+    let cancelled = false;
+    setLoading(true);
+    productService
+      .getProductBySlug(slug)
+      .then(async (p) => {
+        if (cancelled) return;
+        setProduct(p);
+        setSelectedImage(p.imageUrl || '');
+        const rel = await productService.getProducts({ category: p.categorySlug, limit: 12 });
+        if (!cancelled) setRelated(rel.products.filter((r) => r._id !== p._id));
+      })
+      .catch(() => !cancelled && setProduct(null))
+      .finally(() => !cancelled && setLoading(false));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
-  if (loading) {
-    return (
-      <div className="container py-12 text-center">
-        <p>Loading product details...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState text="Loading product..." />;
 
   if (!product) {
     return (
-      <div className="container py-12 text-center">
-        <h3>Product not found</h3>
-        <Button component={Link} to="/" variant="primary" className="mt-4">Back to Shop</Button>
+      <div className="container py-12">
+        <EmptyState icon={Package} title="Product not found" description="It may be out of the catalog." action={<Button component={Link} to="/" variant="primary">Back to shop</Button>} />
       </div>
     );
   }
 
-  const currentCartQty = getItemQuantity(product._id || product.id);
+  const quantity = getItemQuantity(product._id);
+  const outOfStock = product.stockCount <= 0;
+  const storePaused = product.shop && product.shop.isAcceptingOrders === false;
+  const images = [product.imageUrl, ...(product.gallery || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  const specs = Object.entries(product.specifications || {});
+  const nutrition = Object.entries(product.nutrition || {});
 
-  const handleAddToCart = () => {
-    addItem(product, 1);
-  };
-
-  const handleBuyNow = () => {
-    if (currentCartQty === 0) {
-      addItem(product, 1);
-    }
-    navigate('/checkout');
-  };
-
-  const handleShare = () => {
+  const share = () => {
     navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="pmart-product-detail-page">
       <div className="container">
-        {/* Breadcrumb */}
         <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
           <Link to="/">Home</Link>
           <ChevronRight size={14} className="separator" />
-          <Link to={`/category/${product.categorySlug}`}>
-            {product.categorySlug.replace('-', ' ')}
-          </Link>
+          <Link to={`/category/${product.categorySlug}`}>{product.category?.name || 'Category'}</Link>
           <ChevronRight size={14} className="separator" />
           <span className="current-crumb">{product.name}</span>
         </nav>
 
-        {/* Top Product Showcase Grid */}
         <div className="pdp-main-grid">
-          {/* Left: Gallery */}
           <div className="pdp-gallery-column">
             <div className="main-image-display">
-              <img src={selectedImage} alt={product.name} className="hero-img" />
-              {product.discount > 0 && (
-                <div className="discount-tag">{product.discount}% OFF</div>
-              )}
+              {selectedImage ? <img src={selectedImage} alt={product.name} className="hero-img" /> : <Package size={96} className="text-gray-400" aria-hidden="true" />}
+              {product.discount > 0 && <div className="discount-tag">{product.discount}% OFF</div>}
             </div>
-
-            {product.gallery && product.gallery.length > 1 && (
+            {images.length > 1 && (
               <div className="thumbnail-row">
-                <Button
-                  className={`thumb-btn ${selectedImage === (product.imageUrl || product.image) ? 'active' : ''}`}
-                  onClick={() => setSelectedImage(product.imageUrl || product.image)}
-                >
-                  <img src={product.imageUrl || product.image} alt={product.name} />
-                </Button>
-                {product.gallery.map((imgUrl, idx) => (
-                  <Button
-                    key={idx}
-                    className={`thumb-btn ${selectedImage === imgUrl ? 'active' : ''}`}
-                    onClick={() => setSelectedImage(imgUrl)}
-                  >
-                    <img src={imgUrl} alt={`${product.name} ${idx + 1}`} />
+                {images.map((url, idx) => (
+                  <Button key={url} className={`thumb-btn ${selectedImage === url ? 'active' : ''}`} onClick={() => setSelectedImage(url)}>
+                    <img src={url} alt={`${product.name} ${idx + 1}`} />
                   </Button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Right: Info & Purchase Controls */}
           <div className="pdp-info-column">
             <div className="brand-share-row">
               <span className="brand-label">{product.brand}</span>
-              <Button className="share-btn" onClick={handleShare} title="Share product link">
-                {copiedLink ? <Check size={16} className="text-success" /> : <Share2 size={16} />}
-                <span>{copiedLink ? 'Link Copied!' : 'Share'}</span>
+              <Button className="share-btn" onClick={share} title="Copy link">
+                {copied ? <Check size={16} className="text-success" /> : <Share2 size={16} />}
+                <span>{copied ? 'Link copied' : 'Share'}</span>
               </Button>
             </div>
 
             <h1 className="pdp-product-title">{product.name}</h1>
-
-            {/* Rating & Fast Delivery Pill */}
-            <div className="meta-strip">
-              {product.rating && (
-                <div className="rating-pill">
-                  <Star size={13} className="star-icon" />
-                  <span className="val">{product.rating}</span>
-                  <span className="reviews">({product.reviewsCount} verified reviews)</span>
+            {product.shop?.name && (
+              <div className="meta-strip">
+                <div className="eta-pill">
+                  <Store size={13} />
+                  <span>Sold by {product.shop.name}</span>
                 </div>
-              )}
-              <div className="eta-pill">
-                <Clock size={13} />
-                <span>Express Superfast Delivery</span>
               </div>
-            </div>
+            )}
 
-            {/* Price & Unit */}
             <div className="price-unit-card">
-              <div className="unit-label">Pack size: <strong>{product.unit}</strong></div>
+              <div className="unit-label">
+                Pack size: <strong>{product.unit}</strong>
+              </div>
               <div className="price-display-row">
                 <span className="selling-price">₹{product.price}</span>
                 {product.mrp > product.price && (
                   <>
                     <span className="mrp-price">MRP ₹{product.mrp}</span>
-                    <span className="discount-badge">Save ₹{product.mrp - product.price}</span>
+                    <span className="discount-badge">Save ₹{Math.round((product.mrp - product.price) * 100) / 100}</span>
                   </>
                 )}
               </div>
-              <span className="tax-inclusive-note">(Inclusive of all applicable taxes)</span>
+              <span className="tax-inclusive-note">(Inclusive of all taxes)</span>
             </div>
 
-            {/* Quantity & CTA Buttons */}
             <div className="purchase-action-container">
-              {product.stockCount <= 0 ? (
-                <div className="out-of-stock-alert" style={{ width: '100%', padding: '16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontWeight: 600, textAlign: 'center', marginBottom: '16px' }}>
-                  Out of Stock
-                </div>
-              ) : currentCartQty === 0 ? (
-                <Button variant="primary" size="lg" className="add-to-cart-cta" onClick={handleAddToCart}>
+              {outOfStock ? (
+                <div className="alert alert-error" style={{ width: '100%', justifyContent: 'center' }}>Out of stock</div>
+              ) : quantity === 0 ? (
+                <Button variant="primary" size="lg" className="add-to-cart-cta" onClick={() => addItem(product, 1)} disabled={storePaused}>
                   <ShoppingBag size={18} />
-                  <span>ADD TO CART</span>
+                  <span>Add to cart</span>
                 </Button>
               ) : (
                 <div className="qty-stepper-box">
-                  <span className="qty-label">Quantity in Cart:</span>
+                  <span className="qty-label">In your cart:</span>
                   <div className="stepper-controls">
-                    <Button
-                      className="step-btn"
-                      onClick={() => updateQuantity(product._id || product.id, currentCartQty - 1)}
-                    >
+                    <Button className="step-btn" onClick={() => updateQuantity(product._id, quantity - 1)} aria-label="Decrease quantity">
                       <Minus size={15} />
                     </Button>
-                    <span className="step-val">{currentCartQty}</span>
-                    <Button
-                      className="step-btn"
-                      onClick={() => updateQuantity(product._id || product.id, currentCartQty + 1)}
-                      disabled={currentCartQty >= product.stockCount}
-                    >
+                    <span className="step-val">{quantity}</span>
+                    <Button className="step-btn" onClick={() => updateQuantity(product._id, quantity + 1)} disabled={quantity >= product.stockCount} aria-label="Increase quantity">
                       <Plus size={15} />
                     </Button>
                   </div>
                 </div>
               )}
 
-              <Button 
-                variant="dark" 
-                size="lg" 
-                className="buy-now-cta" 
-                onClick={handleBuyNow}
-                disabled={product.stockCount <= 0}
+              <Button
+                variant="dark"
+                size="lg"
+                className="buy-now-cta"
+                onClick={() => {
+                  if (quantity === 0) addItem(product, 1);
+                  navigate('/checkout');
+                }}
+                disabled={outOfStock || storePaused}
               >
-                <span>BUY NOW</span>
+                <span>Buy now</span>
                 <ArrowRight size={18} />
               </Button>
             </div>
+            {storePaused && <div className="alert alert-warning mt-3">This store is not accepting orders right now.</div>}
+            {!outOfStock && product.stockCount <= 5 && <p className="muted-note mt-2">Only {product.stockCount} left in stock.</p>}
+          </div>
+        </div>
 
-            {/* Value Guarantees */}
-            <div className="product-assurances">
-              <div className="assurance-item">
-                <ShieldCheck size={18} className="assure-icon" />
-                <div>
-                  <div className="item-title">100% Original Produce</div>
-                  <div className="item-sub">Directly sourced from trusted partner brands</div>
+        {(product.description || specs.length > 0 || nutrition.length > 0) && (
+          <div className="pdp-details-section">
+            <div className="details-card">
+              {product.description && (
+                <>
+                  <h3 className="section-title">Description</h3>
+                  <p className="description-text">{product.description}</p>
+                </>
+              )}
+              {specs.length > 0 && (
+                <div className="specs-block">
+                  <h4 className="specs-title">Specifications</h4>
+                  <div className="specs-table">
+                    {specs.map(([k, v]) => (
+                      <div key={k} className="spec-row">
+                        <span className="spec-key">{k}</span>
+                        <span className="spec-val">{v}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="assurance-item">
-                <RotateCcw size={18} className="assure-icon" />
-                <div>
-                  <div className="item-title">Easy Replacement</div>
-                  <div className="item-sub">Instant doorstep refund if damaged or missing</div>
+              )}
+              {nutrition.length > 0 && (
+                <div className="nutrition-block">
+                  <h4 className="specs-title">Nutrition</h4>
+                  <div className="specs-table">
+                    {nutrition.map(([k, v]) => (
+                      <div key={k} className="spec-row">
+                        <span className="spec-key">{k}</span>
+                        <span className="spec-val">{v}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Detailed Information Tabs / Tables */}
-        <div className="pdp-details-section">
-          <div className="details-card">
-            <h3 className="section-title">Product Description</h3>
-            <p className="description-text">{product.description}</p>
-
-            {/* Specifications */}
-            {product.specifications && (
-              <div className="specs-block">
-                <h4 className="specs-title">Key Specifications</h4>
-                <div className="specs-table">
-                  {Object.entries(product.specifications).map(([key, val]) => (
-                    <div key={key} className="spec-row">
-                      <span className="spec-key">{key}</span>
-                      <span className="spec-val">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Nutrition */}
-            {product.nutrition && Object.keys(product.nutrition).length > 0 && (
-              <div className="nutrition-block">
-                <h4 className="specs-title">Nutritional Information</h4>
-                <div className="specs-table">
-                  {Object.entries(product.nutrition).map(([nutrient, val]) => (
-                    <div key={nutrient} className="spec-row">
-                      <span className="spec-key">{nutrient}</span>
-                      <span className="spec-val">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Related Products Carousel */}
-        {relatedProducts.length > 0 && (
+        {related.length > 0 && (
           <div className="pdp-related-section">
-            <ProductCarousel
-              title="Customers Also Bought"
-              subtitle={`More essentials from ${product.categorySlug.replace('-', ' ')}`}
-              products={relatedProducts}
-            />
+            <ProductCarousel title="More from this category" products={related} />
           </div>
         )}
       </div>

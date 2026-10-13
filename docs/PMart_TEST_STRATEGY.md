@@ -1,47 +1,42 @@
 # PMart Test Strategy
 
-This document outlines the testing strategy for the PMart quick-commerce platform, detailing the environments, tools, testing types, and responsibilities.
+## Backend (automated)
+- Run: `cd backend && npm test` (Jest, `--runInBand`). 80 tests in 9 suites, all passing on 2026-10-13.
+- Database: each suite starts an in-memory MongoDB **replica set** (`mongodb-memory-server`), so transactions work.
+  The binary is cached in `backend/node_modules/.cache`; the first run downloads it.
+- Environment: `tests/setup-env.js` sets test-only secrets and removes Firebase/MapTiler keys. Tests never touch
+  `backend/.env` values that matter (`env.test.js` runs with `PMART_SKIP_DOTENV=1`).
+- Data: every test builds what it needs with `tests/helpers.js` (`createUser`, `createShop`, `createCategory`,
+  `createProduct`, `auth`) and `clearDb` runs after each test. There are no fixtures or seed files.
 
-## 1. Objective
-Ensure functional completeness, real-time synchronization, and security isolation across all three main platform portals:
-- Customer App (Shopping, Checkout, Live Tracking)
-- Rider App (GPS Telemetry, Deliveries, OTP Verification)
-- Admin Portal (Order Dispatch, Fleet Tracking)
+| Suite | What it covers |
+|---|---|
+| `auth.test.js` (16) | CORS origins and 403 handling, register/login, phone normalisation, refresh rotation and reuse, logout, deactivation, forced password change, staff activation links, profile |
+| `catalog.test.js` (12) | Public settings fields, storefront visibility rules, literal search (regex/NoSQL safety), paging and sorting, derived discount, management permissions, store-owner scoping, SKU uniqueness, archive/category-in-use |
+| `checkout.test.js` (11) | Server-side pricing and fees, free-delivery threshold, admin-configured fees, stock limits, concurrent last-unit checkout, idempotency (per customer), address ownership and delivery radius, paused store, mixed-store carts, cart sync |
+| `order-lifecycle.test.js` (8) | Full happy path with delivery code, guards (codes, attempts, payment before delivery, transitions), stock restore once, re-dispatch, access control between customers/stores/riders |
+| `address.test.js` (7) | Default address rules, server-built address line, mass-assignment protection, validation, serviceability, geocoding without a key |
+| `admin.test.js` (10) | Stores with owner accounts, riders, staff and permissions, settings validation and public fields, reports, store-owner isolation |
+| `socket.test.js` (3) | Socket authentication and room authorisation |
+| `env.test.js` (4 + table) | Required variables, production secret rules, CORS origin helper |
+| `routing.test.js` (3) | OSRM client, caching and errors (network mocked) |
 
-## 2. Test Environments
-1. **Local Dev**: Running on `localhost` utilizing local MongoDB or a shared Dev cluster. Uses test/dummy Firebase accounts.
-2. **E2E Validation**: Requires at least three simultaneous browser contexts (Customer, Admin, Rider) to verify real-time Socket.IO propagation.
-3. **Mocking Boundaries**: 
-   - Geolocation MUST NOT be entirely mocked for E2E. The `browser_subagent` or Playwright should inject real coordinate changes via `watchPosition` overrides.
-   - OSRM Routing should use the live `router.project-osrm.org` API.
+## Web app
+- `npm run build` must succeed; `npm run lint` (oxlint). For undefined-identifier checks run
+  `npx oxlint -D no-undef -D no-unused-vars src` and ignore browser globals.
+- There is **no automated browser suite** at the moment (see Remaining Work R4). The previous Playwright suite relied
+  on seeded demo accounts and was removed.
 
-## 3. Types of Testing
-### Unit Testing (Backend)
-- Tool: Jest
-- Focus: Models, Validation schemas, Utility functions (e.g., OTP generation), Routing Service (caching, deduplication).
-- Known Status: Limited unit test coverage; mostly integration level scripts (`test_*.js`). Added comprehensive tests for `RoutingService` in `src/modules/routing/__tests__/`.
+## Manual browser run (how the 2026-10-13 verification was done)
+1. Start the API (`backend`, e.g. `PORT=5007 node src/server.js`) and the web app with
+   `PMART_API_TARGET=http://localhost:5007 npx vite --port 5180`.
+2. Create a temporary admin with `npm run create-admin` and generated credentials kept outside the repo.
+3. Use separate loopback origins for separate sessions (`localhost`, `127.0.0.1`, `127.0.0.2` — each has its own
+   storage and cookies; development CORS accepts all of them).
+4. Walk the flow: admin creates store (with owner), categories, products, rider, staff → customer registers, adds
+   an address, checks out → store accepts, packs, readies, assigns → rider changes password, goes online, picks up,
+   starts, arrives, collects cash, enters the code → check customer tracking, admin reports/payments/CSV. Then the
+   unhappy paths: customer cancel, store reject, rider "could not deliver" → send out again → cancel. Check stock after each.
+5. Delete everything afterwards: drop the collections and run `npm run db:init` again.
 
-### Integration Testing (Backend)
-- Focus: API boundaries, JWT validation, database queries, and Role-Based Access Control (RBAC).
-- Existing tools: Jest and Supertest suites located in `backend/src/__tests__/`.
-- Current Coverage: Includes `checkout.test.ts` (Order logic), `admin.audit.test.ts` (Audit logs), and `catalog.admin.test.ts` (Admin catalog governance and soft deletes). Manual scripts (`test_*.js`) are being deprecated in favor of these robust suites.
-
-### End-to-End (E2E) Testing
-- Tool: Playwright
-- Focus: Critical user journeys (Add to Cart -> Checkout -> Admin Accept -> Rider Pickup -> Live Tracking -> Delivery).
-- Status: A basic Playwright setup exists (`@playwright/test` in `package.json`), but formal scenarios are missing or incomplete.
-
-## 4. Key Risk Areas
-1. **Real-time Telemetry (Socket.IO)**: Connections dropping or rider switching networks can cause tracking stalls.
-2. **Address Normalization**: Converting `pincode` to `zipCode` and merging legacy address schemas.
-3. **Concurrency**: Multiple admins trying to accept the same order simultaneously.
-4. **OTP Security**: Exposing the OTP hash in the wrong API payload.
-
-## 5. Security Testing Requirements
-- **JWT Tampering**: Verify that tokens cannot be fabricated.
-- **IDOR (Insecure Direct Object Reference)**: Ensure Customer A cannot call `GET /order/:customerB_id`.
-- **Role Isolation**: Ensure a Rider token cannot hit `/admin/*` endpoints.
-
-## 6. Execution Rules
-- Do not mark an E2E test as "PASS" unless it was executed in a real browser context.
-- Tests relying on direct database mutation (bypassing the API) are invalid for E2E sign-off.
+The results are recorded in the [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md).

@@ -1,301 +1,236 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
+import { openSocket } from '@/services/socket';
+import { apiErrorMessage } from '@/services/apiClient';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { TrackingPanel } from '@/components/tracking/TrackingPanel';
-import { Button } from '@/components/ui';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
-import {
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  normalizeOrderStatus,
-  getCustomerOrderStatus
-} from '@/types/orderTypes';
-import {
-  Clock,
-  MapPin,
-  Bike,
-  Phone,
-  ShieldCheck,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronDown,
-  KeyRound,
-  AlertCircle,
-  Banknote,
-  Package
-} from 'lucide-react';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { ORDER_STATUS_LABELS, CUSTOMER_CANCELLABLE, getCustomerOrderStatus } from '@/types/orderTypes';
+import { ChevronLeft, ChevronDown, Banknote, Package, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react';
+import { Button, EmptyState, LoadingState } from '@/components/ui';
 import './OrderTrackingPage.scss';
+
+const LIVE_STATUSES = ['ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'];
+const MAP_STATUSES = ['PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'];
+
+const HEADLINES = {
+  PENDING: ['Order placed', 'Waiting for the store to confirm your order.'],
+  ACCEPTED: ['Order accepted', 'The store has confirmed your order.'],
+  PREPARING: ['Preparing your order', 'Your items are being packed.'],
+  READY: ['Ready for pickup', 'Your order is packed and waiting for a rider.'],
+  ASSIGNED: ['Rider assigned', 'A delivery partner is heading to the store.'],
+  PICKED_UP: ['Order picked up', 'The rider has collected your order.'],
+  OUT_FOR_DELIVERY: ['On the way', 'Your delivery partner is heading to you.'],
+  ARRIVED: ['Your rider has arrived', 'Share the delivery code when you receive your items.'],
+  DELIVERED: ['Delivered', 'Thank you for shopping with PMart.'],
+  DELIVERY_FAILED: ['Delivery attempt failed', 'The store will contact you to arrange another attempt.'],
+  CANCELLED: ['Order cancelled', 'This order was cancelled.'],
+  REJECTED: ['Order declined by the store', 'The store could not fulfil this order. Nothing was charged.']
+};
 
 export const OrderTrackingPage = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
+  const [otp, setOtp] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isItemsExpanded, setIsItemsExpanded] = useState(false);
+  const [itemsOpen, setItemsOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState('');
 
-  // Hook for live real-time GPS coordinates, ETA, distance, and status
-  const {
-    trackingData,
-    riderLocation,
-    customerLocation,
-    hubLocation,
-    etaMinutes,
-    distanceKm,
-    status: liveStatus,
-    trackingState,
-    route,
-    routeError,
-    recenterTrigger,
-    recenter
-  } = useLiveTracking(id);
+  const tracking = useLiveTracking(order && MAP_STATUSES.includes(order.status) ? id : null);
 
-  // Fetch and poll order data + OTP so status/code changes by rider update in real time
-  const [deliveryOtp, setDeliveryOtp] = useState(null);
-
-  const orderStatusRef = useRef(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchOrderAndOtp = async () => {
-      try {
-        const data = await orderService.getOrderById(id);
-        if (!isMounted) return;
-
-        setOrder(data);
-        setLoading(false);
-        orderStatusRef.current = data?.status || data?.orderStatus;
-
-        // Fetch OTP alongside order when status warrants it
-        const currentStatus = normalizeOrderStatus(data?.status || data?.orderStatus);
-        if (['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) && data?.deliveryVerificationStatus !== 'OTP_VERIFIED') {
-          const otp = await orderService.getDeliveryOtp(id);
-          if (isMounted && otp) {
-            setDeliveryOtp(otp);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        if (isMounted) setLoading(false);
+  const load = useCallback(async () => {
+    try {
+      const data = await orderService.getOrderById(id);
+      setOrder(data);
+      if (['OUT_FOR_DELIVERY', 'ARRIVED'].includes(data.status) && data.deliveryVerificationStatus !== 'OTP_VERIFIED') {
+        const res = await orderService.getDeliveryOtp(id);
+        setOtp(res?.deliveryOtp || null);
+      } else {
+        setOtp(null);
       }
-    };
-
-    fetchOrderAndOtp();
-
-    // Poll every 5 seconds — fetches both order + OTP in one cycle
-    const pollInterval = setInterval(() => {
-      const currentNorm = getCustomerOrderStatus(orderStatusRef.current);
-      if (currentNorm === ORDER_STATUS.DELIVERED || currentNorm === ORDER_STATUS.CANCELLED) {
-        clearInterval(pollInterval);
-        return;
-      }
-      fetchOrderAndOtp();
-    }, 5000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(pollInterval);
-    };
+    } catch (err) {
+      if (err.response?.status === 404 || err.response?.status === 403) setOrder(null);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="container py-12 text-center">
-        <p>Loading your order details...</p>
-      </div>
-    );
-  }
+  // Initial load, live status pushes over the socket, and a slow poll as fallback.
+  useEffect(() => {
+    load();
+    const socket = openSocket();
+    socket.on('connect', () => socket.emit('join_order', id));
+    socket.on('order_status_update', (p) => String(p.orderId) === String(id) && load());
+    const interval = setInterval(load, 30000);
+    return () => {
+      clearInterval(interval);
+      socket.close();
+    };
+  }, [id, load]);
+
+  const cancelOrder = async () => {
+    setCancelling(true);
+    setError('');
+    try {
+      setOrder(await orderService.cancel(id, 'Cancelled by customer'));
+      setConfirmCancel(false);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not cancel the order.'));
+      setConfirmCancel(false);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (loading) return <LoadingState text="Loading your order..." />;
 
   if (!order) {
     return (
-      <div className="container py-12 text-center">
-        <h3>Order not found</h3>
-        <Button component={Link} to="/orders" variant="primary" className="mt-4">View All Orders</Button>
+      <div className="container py-12">
+        <EmptyState icon={Package} title="Order not found" action={<Button component={Link} to="/orders" variant="primary">View all orders</Button>} />
       </div>
     );
   }
 
-  const currentStatus = getCustomerOrderStatus(order.orderStatus || order.status);
-  const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
-  const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
-  const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
-  const isCancelled = currentStatus === ORDER_STATUS.CANCELLED;
-  const isPendingCash = order.paymentStatus !== PAYMENT_STATUS.COLLECTED;
-  const payableAmount = order.totalAmount || order.billing?.grandTotal || 0;
-
-  const showDeliveryOtp = ['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) 
-    && order.deliveryVerificationStatus !== 'OTP_VERIFIED' 
-    && currentStatus !== 'DELIVERED';
-
-  const showTrackingMap = ['OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus);
+  const status = getCustomerOrderStatus(order.status);
+  const [headline, subline] = HEADLINES[order.status] || HEADLINES[status] || [ORDER_STATUS_LABELS[status] || status, ''];
+  const showMap = MAP_STATUSES.includes(order.status);
+  const isPaid = order.paymentStatus === 'COLLECTED';
+  const isOut = order.status === 'OUT_FOR_DELIVERY';
 
   return (
     <div className="pmart-order-tracking-page">
       <div className="container">
-        {/* Back Link & Header */}
         <div className="tracking-top-nav">
           <Link to="/orders" className="back-link">
             <ChevronLeft size={18} />
-            <span>Back to All Orders</span>
+            <span>All orders</span>
           </Link>
         </div>
 
         <div className="live-delivery-tracking-section">
-          {/* ORDER HEADER / HERO */}
           <div className="order-eta-hero">
             <div className="hero-status-left">
-              <span className="order-id-tag">ORDER #{order.orderNumber || order.id}</span>
-              <h1 className="eta-title">
-                {isDelivered ? 'Order Delivered!'
-                  : isCancelled ? 'Order Cancelled'
-                  : isArrived ? 'Your delivery has arrived'
-                  : isOutForDelivery ? `Arriving in ${etaMinutes || '--'} minutes`
-                  : currentStatus === ORDER_STATUS.PENDING ? 'Order Placed'
-                  : currentStatus === ORDER_STATUS.ACCEPTED ? 'Order Accepted'
-                  : currentStatus === ORDER_STATUS.PREPARING ? 'Preparing Order'
-                  : currentStatus === ORDER_STATUS.READY ? 'Ready for Pickup'
-                  : currentStatus === ORDER_STATUS.ASSIGNED ? 'Rider Assigned'
-                  : currentStatus === ORDER_STATUS.PICKED_UP ? 'Order Picked Up'
-                  : 'Order Confirmed'}
-              </h1>
-              <p className="eta-subtext">
-                {isDelivered ? 'Thank you for shopping with PMart. Your cash payment and delivery OTP have been verified!'
-                  : isCancelled ? 'This order has been cancelled. If you have been charged, the amount will be refunded shortly.'
-                  : isArrived ? `Our delivery partner ${order.rider?.name || 'Delivery Partner'} is at your door.`
-                  : isOutForDelivery ? 'Your delivery partner is on the way with your grocery order!'
-                  : currentStatus === ORDER_STATUS.PENDING ? 'Waiting for darkstore confirmation.'
-                  : currentStatus === ORDER_STATUS.ACCEPTED ? 'Your order has been accepted by the darkstore.'
-                  : currentStatus === ORDER_STATUS.PREPARING ? 'Our darkstore team is preparing your fresh grocery items.'
-                  : currentStatus === ORDER_STATUS.READY ? 'Your items are packed and waiting for the rider.'
-                  : currentStatus === ORDER_STATUS.ASSIGNED ? 'A delivery partner has been assigned to your order.'
-                  : currentStatus === ORDER_STATUS.PICKED_UP ? 'The rider has picked up your order and will head your way soon.'
-                  : 'We are processing your order.'}
-              </p>
-              
-              <div className="hero-cod-callout">
-                <Banknote size={15} />
-                <span>
-                  Payment Method: <strong>{order.paymentMethod || 'Cash on Delivery (COD)'}</strong> 
-                  <span style={{ margin: '0 8px' }}>•</span>
-                  {isPendingCash ? `Keep ₹${payableAmount} ready` : 'Payment Collected ✓'}
-                </span>
-              </div>
+              <span className="order-id-tag">ORDER #{order.orderNumber}</span>
+              <h1 className="eta-title">{isOut && tracking.etaMinutes ? `Arriving in about ${tracking.etaMinutes} min` : headline}</h1>
+              <p className="eta-subtext">{subline}</p>
+              {order.status === 'CANCELLED' || order.status === 'REJECTED' ? (
+                order.cancellationReason && <p className="muted-note">Reason: {order.cancellationReason}</p>
+              ) : (
+                <div className="hero-cod-callout">
+                  <Banknote size={15} />
+                  <span>Cash on delivery • {isPaid ? 'Payment collected' : `Keep ₹${order.totalAmount} ready`}</span>
+                </div>
+              )}
+              {CUSTOMER_CANCELLABLE.includes(order.status) && (
+                <Button variant="secondary" size="sm" className="mt-3" onClick={() => setConfirmCancel(true)}>
+                  <XCircle size={14} style={{ marginRight: 6 }} />
+                  Cancel order
+                </Button>
+              )}
+              {error && (
+                <div className="alert alert-error mt-3">
+                  <AlertTriangle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
             </div>
-
           </div>
 
-          {/* Map and Info Layout */}
           <div className="tracking-grid" style={{ marginTop: '20px' }}>
-            {showTrackingMap && (
+            {showMap && (
               <div className="tracking-left-col">
                 <LiveTrackingMap
-                  riderLocation={riderLocation || order.rider?.location}
-                  customerLocation={customerLocation || order.deliveryAddress}
-                  hubLocation={hubLocation || order.shop}
-                  route={route}
-                  routeError={routeError}
-                  etaMinutes={etaMinutes}
-                  distanceKm={distanceKm}
-                  trackingState={trackingState}
+                  riderLocation={tracking.riderLocation}
+                  customerLocation={tracking.customerLocation || order.deliveryAddress}
+                  hubLocation={tracking.hubLocation || order.shop}
+                  route={tracking.route}
+                  routeError={tracking.routeError}
                   riderName={order.rider?.name || 'Rider'}
                   height="480px"
-                  orderId={order.id}
-                  recenterTrigger={recenterTrigger}
+                  orderId={order._id}
+                  recenterTrigger={tracking.recenterTrigger}
                 />
               </div>
             )}
 
-            <div className={`tracking-right-col ${!showTrackingMap ? 'full-width' : ''}`}>
-              {['ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'].includes(currentStatus) && (
+            <div className={`tracking-right-col ${!showMap ? 'full-width' : ''}`}>
+              {LIVE_STATUSES.includes(order.status) && (
                 <TrackingPanel
                   order={order}
-                  trackingState={trackingState}
-                  etaMinutes={isArrived ? 'Arrived' : etaMinutes}
-                  distanceKm={distanceKm}
+                  trackingState={order.status === 'ASSIGNED' ? 'TRACKING_LOADING' : tracking.trackingState}
+                  etaMinutes={order.status === 'ARRIVED' ? 'Arrived' : tracking.etaMinutes}
+                  distanceKm={tracking.distanceKm}
                   rider={order.rider}
-                  otp={deliveryOtp}
+                  otp={otp}
                 />
               )}
 
-              {currentStatus === 'DELIVERED' && (
-                <div className="pmart-delivery-otp-card" style={{ marginBottom: '1.5rem', border: '1px solid #16a34a' }}>
-                  <div className="otp-top-row">
-                    <div className="otp-shield-icon" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
-                      <ShieldCheck size={18} />
-                    </div>
-                    <div className="otp-text-meta">
-                      <h4 className="otp-title" style={{ color: '#16a34a' }}>Delivery Verification</h4>
-                      <p className="otp-desc" style={{ color: '#15803d', fontWeight: '500' }}>OTP Verified ✓</p>
-                    </div>
-                  </div>
+              {order.status === 'DELIVERED' && (
+                <div className="alert alert-success mb-4">
+                  <ShieldCheck size={18} />
+                  <span>Delivered{order.deliveredAt ? ` at ${new Date(order.deliveredAt).toLocaleString('en-IN')}` : ''}. Delivery code verified.</span>
                 </div>
               )}
-              
+
+              {order.status === 'DELIVERY_FAILED' && (
+                <div className="alert alert-warning mb-4">
+                  <AlertTriangle size={18} />
+                  <span>{order.statusHistory?.slice().reverse().find((h) => h.status === 'DELIVERY_FAILED')?.note || 'The rider could not complete the delivery.'}</span>
+                </div>
+              )}
+
               <div className="tracking-timeline-card mt-6">
-                <h4 className="timeline-title">Order Status</h4>
-                <OrderStatusTimeline
-                  status={currentStatus}
-                  timeline={order.timeline}
-                />
+                <h4 className="timeline-title">Order status</h4>
+                <OrderStatusTimeline status={status} timeline={order.statusHistory} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. ORDER ITEMS & BILL BREAKDOWN */}
         <div className="order-details-bottom-section">
           <div className="order-items-summary-card">
             <div className="card-top-title-row">
-              <h3 className="card-title">Ordered Items ({order.items.length})</h3>
-              <PaymentStatusBadge
-                paymentStatus={order.paymentStatus}
-                paymentMethod={order.paymentMethod}
-                amount={payableAmount}
-              />
+              <h3 className="card-title">Items ({order.items.length})</h3>
+              <PaymentStatusBadge paymentStatus={order.paymentStatus} paymentMethod={order.paymentMethod} amount={order.totalAmount} />
             </div>
 
-            {/* Dropdown trigger: View Items */}
-            <Button
-              type="button"
-              className="view-items-dropdown-trigger"
-              onClick={() => setIsItemsExpanded(!isItemsExpanded)}
-              aria-expanded={isItemsExpanded}
-            >
+            <Button type="button" className="view-items-dropdown-trigger" onClick={() => setItemsOpen(!itemsOpen)} aria-expanded={itemsOpen}>
               <div className="trigger-left">
                 <Package size={16} className="pkg-icon" />
-                <span className="trigger-label">
-                  {isItemsExpanded ? 'Hide Items' : 'View Items'} ({order.items.length} {order.items.length === 1 ? 'item' : 'items'})
-                </span>
+                <span className="trigger-label">{itemsOpen ? 'Hide items' : 'View items'}</span>
               </div>
               <div className="trigger-right">
-                <span className="subtext">{isItemsExpanded ? 'Tap to collapse' : 'Tap to expand'}</span>
-                <ChevronDown size={18} className={`dropdown-chevron ${isItemsExpanded ? 'rotated' : ''}`} />
+                <ChevronDown size={18} className={`dropdown-chevron ${itemsOpen ? 'rotated' : ''}`} />
               </div>
             </Button>
 
-            {/* Small Product Cards Grid (Visible on Dropdown Click) */}
-            {isItemsExpanded && (
+            {itemsOpen && (
               <div className="items-small-cards-grid">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="small-product-order-card">
+                {order.items.map((item) => (
+                  <div key={String(item.product)} className="small-product-order-card">
                     <div className="thumb-container">
-                      <img src={item.imageUrl || item.image} alt={item.name} className="thumb-img" />
+                      {item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="thumb-img" /> : <Package size={20} className="text-gray-400" />}
                     </div>
                     <div className="card-info">
                       <div className="item-name">{item.name}</div>
                       <div className="item-unit-row">
                         <span className="unit-label">{item.unit}</span>
                         <span className="dot">•</span>
-                        <span className="qty-chip">Qty: {item.quantity}</span>
+                        <span className="qty-chip">Qty {item.quantity}</span>
                       </div>
                       <div className="item-rate-calc">
                         {item.quantity} × ₹{item.price}
                       </div>
                     </div>
                     <div className="card-amount">
-                      <span className="currency-val">₹{item.quantity * item.price}</span>
+                      <span className="currency-val">₹{Math.round(item.quantity * item.price * 100) / 100}</span>
                     </div>
                   </div>
                 ))}
@@ -304,30 +239,42 @@ export const OrderTrackingPage = () => {
 
             <div className="bill-breakdown-sub">
               <div className="line">
-                <span>Item Total</span>
-                <span>₹{order.subTotal || order.billing?.itemTotal || 0}</span>
+                <span>Item total</span>
+                <span>₹{order.subTotal}</span>
               </div>
               <div className="line">
-                <span>Delivery Fee</span>
-                <span>{(order.deliveryFee === 0 || order.billing?.deliveryFee === 0) ? 'FREE' : `₹${order.deliveryFee || order.billing?.deliveryFee || 0}`}</span>
+                <span>Delivery fee</span>
+                <span>{order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee}`}</span>
               </div>
-              <div className="line total">
-                <span>Total Amount {isDelivered ? 'Paid' : 'Payable on Delivery'}</span>
-                <span>₹{order.totalAmount || order.billing?.grandTotal || 0}</span>
-              </div>
-              <div className="payment-status-badge-container">
-                <div className="cod-details-row">
-                  <span className="cod-title">Payment: {order.paymentMethod || 'Cash on Delivery (COD)'}</span>
-                  <span className="cod-amount">Amount: ₹{payableAmount}</span>
-                  <span className={`cod-status ${isPendingCash ? 'status-pending' : 'status-collected'}`}>
-                    Status: {isPendingCash ? 'Payment Pending' : 'Payment Collected ✓'}
-                  </span>
+              {order.platformFee > 0 && (
+                <div className="line">
+                  <span>Handling fee</span>
+                  <span>₹{order.platformFee}</span>
                 </div>
+              )}
+              <div className="line total">
+                <span>{order.status === 'DELIVERED' ? 'Total paid' : 'Total payable on delivery'}</span>
+                <span>₹{order.totalAmount}</span>
               </div>
             </div>
+            <p className="muted-note mt-2">
+              Deliver to: {order.deliveryAddress?.recipientName}, {[order.deliveryAddress?.houseNumber, order.deliveryAddress?.street, order.deliveryAddress?.city, order.deliveryAddress?.pincode].filter(Boolean).join(', ')}
+            </p>
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmCancel}
+        onClose={() => !cancelling && setConfirmCancel(false)}
+        onConfirm={cancelOrder}
+        title="Cancel this order?"
+        message="The store will stop preparing it. This cannot be undone."
+        confirmText="Cancel order"
+        cancelText="Keep order"
+        variant="danger"
+        loading={cancelling}
+      />
     </div>
   );
 };

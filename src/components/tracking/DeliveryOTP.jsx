@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyRound, Copy, Check, ShieldCheck } from 'lucide-react';
+import { Copy, Check, ShieldCheck } from 'lucide-react';
 import './DeliveryOTP.scss';
 import { Button } from '@/components/ui';
 

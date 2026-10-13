@@ -1,29 +1,14 @@
-# PMart Remaining Work Matrix
+# PMart Remaining Work
 
-## Component Migration Matrix (UI Consistency)
+The maintained list is [docs/PMart_REMAINING_WORK.md](docs/PMart_REMAINING_WORK.md) and what is verified is in
+[docs/PMart_FEATURE_STATUS_MATRIX.md](docs/PMart_FEATURE_STATUS_MATRIX.md).
 
-| Component Status | Raw Elements Detected | Target UI Component | Action Required | Priority |
-|------------------|-----------------------|---------------------|-----------------|----------|
-| 🟢 Migrated      | `<input>` (safe ones) | `<Input>`           | Preserved specialized native inputs | Low     |
-| 🟢 Migrated      | `<button>`            | `<Button>`          | None            | Low      |
-| 🟢 Migrated      | `<select>`            | `<Select>`          | None            | Low      |
-| 🟢 Migrated      | `FormField` (htmlFor) | `htmlFor` prop      | None            | Low      |
+The matrices that used to be here (UI migration, security, Playwright browsers) described the code before the
+2026-10-13 rebuild. The Playwright suite they reference was removed because it depended on seeded demo accounts.
 
-## Security Verification Matrix
-
-| Subsystem | Status | Last Audited | Notes | Priority |
-|-----------|--------|--------------|-------|----------|
-| Rate Limiting | 🟢 Verified | October 2026 | `express-rate-limit` active on auth, skipped in dev/test | Low |
-| CORS Policy | 🟢 Verified | October 2026 | Explicit environments, credentials true | Low |
-| Checkout Idempotency | 🟢 Verified | October 2026 | Session-based validation with explicit matching | Low |
-| Admin Privileges | 🟢 Verified | October 2026 | `createEmployee` locked to `EMPLOYEE` role | Low |
-| Auth Tokens | 🟢 Verified | October 2026 | `httpOnly` secure cookies | Low |
-
-## End-to-End Test Matrix
-
-| Browser | Test Suite | Pass/Fail | Notes | Priority |
-|---------|------------|-----------|-------|----------|
-| Chromium | pmart-lifecycle | 🟢 Pass | Stable, HTTP PUT method corrected | Low |
-| WebKit | pmart-lifecycle | 🟢 Pass | Race conditions and HTTP method fixed | Low |
-| WebKit | admin-settings | 🟢 Pass | Fixed input `fill()` assertions | Low |
-| Firefox | all | 🟢 Pass | Stable across all workflows | Low |
+Top items right now:
+1. Rotate the MapTiler key (it was committed to git and is still the one in `.env`).
+2. Visually review every screen and the maps (the 2026-10-13 browser run could not take screenshots).
+3. Test rider GPS on a real phone.
+4. Write a new self-contained browser e2e suite.
+5. Scope the storefront to the store that serves the customer's address before adding a second store.

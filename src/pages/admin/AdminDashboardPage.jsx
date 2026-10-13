@@ -1,202 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '@/services/adminService';
-import {
-  ShoppingBag,
-  TrendingUp,
-  Store,
-  Bike,
-  Users,
-  DollarSign,
-  Clock,
-  ShieldCheck,
-  ChevronRight,
-  AlertTriangle,
-  ArrowUpRight
-} from 'lucide-react';
-import { PageHeader, LoadingState, StatusBadge, Button } from '@/components/ui';
-import './AdminDashboardPage.scss';
+import { openSocket } from '@/services/socket';
+import { useAuth } from '@/context/AuthContext';
+import { AlertTriangle, Store, ShoppingBag, Package, Users } from 'lucide-react';
+import { PageHeader, LoadingState, Card, Button } from '@/components/ui';
+import { plural } from '@/utils/plural';
+
+const Kpi = ({ label, value, hint }) => (
+  <div className="kpi-tile">
+    <div className="kpi-tile-label">{label}</div>
+    <div className="kpi-tile-value">{value}</div>
+    {hint && <div className="kpi-tile-hint">{hint}</div>}
+  </div>
+);
+
+const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 export const AdminDashboardPage = () => {
+  const { user, can } = useAuth();
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(can('dashboard.read'));
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    if (!can('dashboard.read')) return;
+    adminService
+      .getDashboard()
+      .then((d) => {
+        setData(d);
+        setError('');
+      })
+      .catch(() => setError('Could not load dashboard figures.'))
+      .finally(() => setLoading(false));
+  }, [can]);
 
   useEffect(() => {
-    const loadOverview = async () => {
-      setLoading(true);
-      const res = await adminService.getPlatformOverview();
-      const shops = await adminService.getShops();
-      setData({ ...res, shops });
-      setLoading(false);
-    };
+    load();
+    if (!can('orders.read')) return undefined;
+    const socket = openSocket();
+    socket.on('connect', () => socket.emit('join_admin'));
+    socket.on('order_status_update', load);
+    return () => socket.close();
+  }, [load, can]);
 
-    loadOverview();
+  // First-run checklist: what the platform still needs before customers can order.
+  const setupSteps = data
+    ? [
+        { done: data.shops.active > 0, label: 'Create a store', to: '/admin/stores', permission: 'shops.manage' },
+        { done: data.riders.available + data.riders.busy + data.riders.offline > 0, label: 'Add delivery riders', to: '/admin/users?tab=riders', permission: 'riders.manage' }
+      ].filter((s) => !s.done && can(s.permission))
+    : [];
 
-    import('socket.io-client').then(({ io }) => {
-      const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-      const token = localStorage.getItem('pmart_auth_token');
-      const socket = io(SOCKET_URL, {
-        auth: { token }
-      });
-      socket.emit('join_admin');
-      
-      socket.on('order_status_update', () => {
-        loadOverview();
-      });
-      // Cleanup would normally go here but for dynamic import it's trickier, skipping for brevity
-    });
-    // Cleanup handled implicitly, or add a ref if needed.
-  }, []);
+  if (!can('dashboard.read')) {
+    return (
+      <div>
+        <PageHeader title={`Welcome, ${user?.name || ''}`} subtitle="Use the menu to open the sections you have access to." />
+        <div className="grid md:grid-cols-3 gap-4">
+          {can('orders.read') && <Card><Link to="/admin/orders" className="flex items-center gap-2"><ShoppingBag size={18} /> Orders</Link></Card>}
+          {can('catalog.manage') && <Card><Link to="/admin/products" className="flex items-center gap-2"><Package size={18} /> Products</Link></Card>}
+          {can('customers.read') && <Card><Link to="/admin/users" className="flex items-center gap-2"><Users size={18} /> Customers</Link></Card>}
+        </div>
+      </div>
+    );
+  }
 
-  if (loading && !data) return <LoadingState text="Loading dashboard metrics..." fullHeight />;
-
-  const kpis = data?.kpis;
+  if (loading) return <LoadingState text="Loading dashboard..." fullHeight />;
 
   return (
-    <div className="admin-dashboard-page">
-      <PageHeader 
-        title="Platform Central Overview" 
-        subtitle="Real-time telemetry across Active Darkstores & Regional Micro-Fulfillment Hubs"
-        action={
-          <Link to="/admin/reports">
-            <Button variant="secondary" size="sm">
-              Download SLA Audit Report
-            </Button>
-          </Link>
-        }
-      />
+    <div>
+      <PageHeader title="Platform overview" subtitle="Live figures across all stores" action={can('reports.read') && <Button component={Link} to="/admin/reports" variant="secondary" size="sm">Reports</Button>} />
 
-      {/* KPI Cards Row */}
-      <div className="admin-kpi-grid">
-        <div className="admin-kpi-card">
-          <div className="card-top">
-            <span className="label">Total Orders</span>
-            <div className="icon-wrap purple"><ShoppingBag size={18} /></div>
-          </div>
-          <div className="value">{kpis?.totalOrders?.toLocaleString() ?? 'N/A'}</div>
-          <div className="sub-note positive">
-            <TrendingUp size={13} />
-          </div>
+      {error && (
+        <div className="alert alert-error mb-4">
+          <AlertTriangle size={16} />
+          <span>{error}</span>
         </div>
+      )}
 
-        <div className="admin-kpi-card">
-          <div className="card-top">
-            <span className="label">Active In-Flight Orders</span>
-            <div className="icon-wrap red"><Clock size={18} /></div>
-          </div>
-          <div className="value">{kpis?.activeOrders ?? 'N/A'}</div>
-          <div className="sub-note">
-            <span>Across all regional darkstores</span>
-          </div>
-        </div>
+      {setupSteps.length > 0 && (
+        <Card className="mb-4">
+          <h3 className="font-bold mb-2 flex items-center gap-2">
+            <Store size={18} /> Finish setting up
+          </h3>
+          <ul className="space-y-1 text-sm">
+            {setupSteps.map((s) => (
+              <li key={s.label}>
+                <Link to={s.to}>{s.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
-        <div className="admin-kpi-card">
-          <div className="card-top">
-            <span className="label">Platform Gross Revenue</span>
-            <div className="icon-wrap green"><DollarSign size={18} /></div>
+      {data && (
+        <>
+          <div className="kpi-grid mb-4">
+            <Kpi label="Orders today" value={data.todayOrders} hint={data.todayCancelled ? `${data.todayCancelled} cancelled or rejected` : undefined} />
+            <Kpi label="Order value today" value={inr(data.todayBookedValue)} hint="Excludes cancelled and rejected" />
+            <Kpi label="Open orders" value={data.activeOrders} hint={`${data.ordersInDelivery} out for delivery`} />
+            <Kpi label="Delivered revenue (all time)" value={inr(data.deliveredRevenue)} hint={`${plural(data.totalOrders, 'order')} in total`} />
           </div>
-          <div className="value">₹{kpis?.totalRevenue?.toLocaleString('en-IN') ?? 'N/A'}</div>
-          <div className="sub-note positive">
-            <span>Today: ₹{kpis?.todayRevenue?.toLocaleString('en-IN') ?? 'N/A'}</span>
+          <div className="kpi-grid">
+            <Kpi label="Riders online" value={data.riders.available} hint={`${data.riders.busy} delivering • ${data.riders.offline} offline`} />
+            <Kpi label="Active stores" value={data.shops.active} hint={data.shops.inactive ? `${data.shops.inactive} inactive` : undefined} />
+            <Kpi label="Customers" value={data.registeredCustomers} />
+            <Kpi
+              label="Avg. delivery time (30 days)"
+              value={data.last30Days.avgDeliveryMinutes != null ? `${data.last30Days.avgDeliveryMinutes} min` : 'No data yet'}
+              hint={`${plural(data.last30Days.deliveredOrders, 'delivered order')}`}
+            />
           </div>
-        </div>
-
-        <div className="admin-kpi-card">
-          <div className="card-top">
-            <span className="label">Active Darkstores</span>
-            <div className="icon-wrap blue"><Store size={18} /></div>
-          </div>
-          <div className="value">{data?.shops?.length ?? 'N/A'} Hubs</div>
-          <div className="sub-note positive">
-          </div>
-        </div>
-
-        <div className="admin-kpi-card">
-          <div className="card-top">
-            <span className="label">Registered Customers</span>
-            <div className="icon-wrap amber"><Users size={18} /></div>
-          </div>
-          <div className="value">{kpis?.totalCustomers?.toLocaleString() ?? 'N/A'}</div>
-          <div className="sub-note positive">
-          </div>
-        </div>
-      </div>
-
-      {/* SLA Performance Bar */}
-      <div className="sla-banner-card">
-        <div className="sla-metric-item">
-          <span className="label">AVERAGE DELIVERY TIME</span>
-          <span className="val">{data?.deliveryPerformance?.avgDeliveryMinutes ?? 'N/A'}</span>
-          <span className="hint">SLA standard is &lt;15 mins</span>
-        </div>
-        <div className="sla-metric-item">
-          <span className="label">ON-TIME SUCCESS RATE</span>
-          <span className="val text-success">{data?.deliveryPerformance?.onTimeRate ?? 'N/A'}</span>
-          <span className="hint">Threshold: 97.0%</span>
-        </div>
-        <div className="sla-metric-item">
-          <span className="label">CUSTOMER SATISFACTION</span>
-          <span className="val text-warning">{data?.deliveryPerformance?.customerSatisfaction ?? 'N/A'}</span>
-        </div>
-      </div>
-
-      {/* Darkstore Hub Performance Table */}
-      <div className="admin-section-block">
-        <div className="block-head">
-          <h3 className="block-title">Regional Darkstores Performance</h3>
-        </div>
-
-        <div className="pmart-table-wrapper">
-          <table className="pmart-table">
-            <thead>
-              <tr>
-                <th>Darkstore Hub</th>
-                <th>City & Region</th>
-                <th>Today's Volume</th>
-                <th>Revenue</th>
-                <th>Active Fleet</th>
-                <th>Avg SLA</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.shops?.map((s) => {
-                const metrics = s.metrics || {
-                  todayOrders: 0,
-                  todayRevenue: 0,
-                  avgFulfillmentTime: 'N/A'
-                };
-                const city = s.city || s.address?.city || 'Unknown';
-                const state = s.state || s.address?.state || 'Unknown';
-                const ownerName = s.ownerName || s.owner?.name || 'P-Mart Admin';
-                const status = s.status || (s.isActive ? 'Active' : 'Inactive');
-                
-                return (
-                <tr key={s.id || s._id || Math.random()}>
-                  <td>
-                    <div className="font-semibold text-dark">{s.name}</div>
-                    <div className="text-muted text-xs">Manager: {ownerName}</div>
-                  </td>
-                  <td>{city}, {state}</td>
-                  <td>
-                    <span className="font-medium">{metrics.todayOrders} orders</span>
-                  </td>
-                  <td>
-                    <span className="font-bold text-dark">₹{metrics.todayRevenue?.toLocaleString('en-IN')}</span>
-                  </td>
-                  <td>{s.activeRidersCount || 0} Riders</td>
-                  <td>
-                    <span className="font-semibold text-success">{metrics.avgFulfillmentTime}</span>
-                  </td>
-                  <td>
-                    <StatusBadge status={status} />
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

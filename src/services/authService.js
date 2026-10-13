@@ -1,115 +1,78 @@
-import apiClient from './apiClient';
+import apiClient, { setAccessToken } from './apiClient';
+
+const USER_KEY = 'pmart_user';
+
+const storeSession = (data) => {
+  setAccessToken(data.accessToken);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  return data;
+};
 
 export const authService = {
-  /**
-   * Register a new customer.
-   */
-  async register(phone, password, name) {
-    const response = await apiClient.post('/auth/register', { phone, password, name });
-    
-    const authPayload = {
-      token: response.data.accessToken,
-      user: response.data.user,
-      profileComplete: response.data.profileComplete,
-    };
-
-    localStorage.setItem('pmart_auth_token', authPayload.token);
-    localStorage.setItem('pmart_user', JSON.stringify(authPayload.user));
-
-    return {
-      success: true,
-      data: authPayload,
-    };
+  async register(name, phone, password) {
+    const res = await apiClient.post('/auth/register', { name, phone, password });
+    return storeSession(res.data);
   },
 
-  /**
-   * Login with phone and password.
-   */
   async login(phone, password) {
-    const response = await apiClient.post('/auth/login', { phone, password });
-    
-    const authPayload = {
-      token: response.data.accessToken,
-      user: response.data.user,
-      profileComplete: response.data.profileComplete,
-    };
-
-    localStorage.setItem('pmart_auth_token', authPayload.token);
-    localStorage.setItem('pmart_user', JSON.stringify(authPayload.user));
-
-    return {
-      success: true,
-      data: authPayload,
-    };
+    const res = await apiClient.post('/auth/login', { phone, password });
+    return storeSession(res.data);
   },
 
-  /**
-   * Login with Google (using Firebase ID Token).
-   */
   async googleLogin(idToken) {
-    const response = await apiClient.post('/auth/google', { idToken });
-    
-    const authPayload = {
-      token: response.data.accessToken,
-      user: response.data.user,
-      profileComplete: response.data.profileComplete,
-    };
-
-    localStorage.setItem('pmart_auth_token', authPayload.token);
-    localStorage.setItem('pmart_user', JSON.stringify(authPayload.user));
-
-    return {
-      success: true,
-      data: authPayload,
-    };
+    const res = await apiClient.post('/auth/google', { idToken });
+    return storeSession(res.data);
   },
 
-  /**
-   * Complete user profile with phone and password after Google login.
-   */
   async completeProfile(data) {
-    const response = await apiClient.post('/auth/complete-profile', data);
-    
-    const user = response.data.user;
-    localStorage.setItem('pmart_user', JSON.stringify(user));
-
-    return {
-      success: true,
-      user,
-    };
+    const res = await apiClient.post('/auth/complete-profile', data);
+    localStorage.setItem(USER_KEY, JSON.stringify(res.data.user));
+    return res.data.user;
   },
 
-  /**
-   * Get current user profile.
-   */
-  async getMe() {
-    const response = await apiClient.get('/auth/me');
-    return response.data;
+  async activateAccount(token, password, confirmPassword) {
+    const res = await apiClient.post('/auth/activate', { token, password, confirmPassword });
+    return res.data;
   },
 
-  /**
-   * Logout user.
-   */
+  async me() {
+    const res = await apiClient.get('/auth/me');
+    return res.data.user;
+  },
+
+  async changePassword(currentPassword, newPassword, confirmPassword) {
+    const res = await apiClient.put('/auth/password', { currentPassword, newPassword, confirmPassword });
+    return storeSession(res.data);
+  },
+
+  async updateProfile(data) {
+    const res = await apiClient.put('/users/profile', data);
+    localStorage.setItem(USER_KEY, JSON.stringify(res.data.data));
+    return res.data.data;
+  },
+
   async logout() {
     try {
       await apiClient.post('/auth/logout');
-    } catch (e) {
-      console.error('Logout error', e);
+    } catch {
+      // The local session is cleared regardless.
     } finally {
-      localStorage.removeItem('pmart_auth_token');
-      localStorage.removeItem('pmart_user');
+      setAccessToken(null);
+      localStorage.removeItem(USER_KEY);
     }
   },
 
-  /**
-   * Change password.
-   */
-  async changePassword(currentPassword, newPassword, confirmPassword) {
-    const response = await apiClient.put('/auth/password', {
-      currentPassword,
-      newPassword,
-      confirmPassword
-    });
-    return response.data;
+  clearLocalSession() {
+    setAccessToken(null);
+    localStorage.removeItem(USER_KEY);
+  },
+
+  /** Last profile saved at sign-in, used only while the server cannot be reached. */
+  getStoredUser() {
+    try {
+      return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+    } catch {
+      return null;
+    }
   }
 };

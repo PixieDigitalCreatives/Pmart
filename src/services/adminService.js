@@ -1,123 +1,117 @@
 import api from './apiClient';
 
+const data = (res) => res.data.data;
+
 export const adminService = {
-  async getPlatformOverview() {
-    try {
-      const response = await api.get('/admin/dashboard');
-      const data = response.data;
-      
-      return {
-        kpis: {
-          totalOrders: data.totalOrders || 0,
-          activeOrders: data.activeOrders || 0,
-          deliveredOrders: data.deliveredOrders || 0,
-          totalRevenue: data.revenue || 0,
-          todayRevenue: data.todayRevenue || 0,
-          activeShops: data.activeShops || 0,
-          activeRiders: data.activeRiders || 0,
-          totalCustomers: data.registeredCustomers || 0
-        },
-        deliveryPerformance: {
-          avgDeliveryMinutes: data.avgDeliveryMinutes ? `${data.avgDeliveryMinutes} mins` : 'N/A',
-          onTimeRate: data.onTimeRate ? `${data.onTimeRate}%` : 'N/A',
-          customerSatisfaction: data.customerSatisfaction ? `${data.customerSatisfaction} / 5` : 'N/A'
-        }
-      };
-    } catch (error) {
-      console.error('Error fetching admin dashboard stats:', error);
-      // fallback in case of error so page doesn't crash
-      return {
-        kpis: {},
-        deliveryPerformance: {}
-      };
-    }
-  },
-
-  async getShops() {
-    try {
-      const res = await api.get('/shops'); // assuming there's a shops endpoint
-      return res.data?.data || res.data || [];
-    } catch (error) {
-      return [];
-    }
-  },
-
-  async getCustomers() {
-    try {
-      const res = await api.get('/admin/customers');
-      return res.data;
-    } catch (error) {
-      return [];
-    }
-  },
-
-  async getRiders() {
-    try {
-      const res = await api.get('/admin/riders');
-      return res.data;
-    } catch (error) {
-      return [];
-    }
-  },
-
-  async getEligibleRiders() {
-    try {
-      const res = await api.get('/admin/riders/eligible');
-      return res.data;
-    } catch (error) {
-      return [];
-    }
-  },
-
-  async updateRiderStatus(id, isActive) {
-    const res = await api.patch(`/admin/riders/${id}/status`, { isActive });
-    return res.data;
-  },
-
-  async deleteRider(id) {
-    const res = await api.delete(`/admin/riders/${id}`);
-    return res.data;
+  async getDashboard() {
+    return data(await api.get('/admin/dashboard'));
   },
 
   async getReports(period) {
-    try {
-      const res = await api.get(`/admin/reports?period=${period}`);
-      return res.data;
-    } catch (error) {
-      return null;
-    }
+    return data(await api.get('/admin/reports', { params: { period } }));
   },
 
-  async getEmployees() {
-    try {
-      const res = await api.get('/admin/employees');
-      return res.data;
-    } catch (error) {
-      return [];
-    }
-  },
-
-  async createEmployee(employeeData) {
-    const res = await api.post('/admin/employees', employeeData);
-    return res.data;
-  },
-
-  async updateEmployee(id, employeeData) {
-    const res = await api.put(`/admin/employees/${id}`, employeeData);
-    return res.data;
-  },
-
-  async deleteEmployee(id) {
-    const res = await api.delete(`/admin/employees/${id}`);
-    return res.data;
+  async getPayments(params = {}) {
+    const res = await api.get('/admin/payments', { params });
+    return { rows: res.data.data, summary: res.data.summary, pagination: res.data.pagination };
   },
 
   async getAuditLogs(page = 1, limit = 50) {
-    try {
-      const res = await api.get(`/admin/audit-logs?page=${page}&limit=${limit}`);
-      return res.data;
-    } catch (error) {
-      return { logs: [], pagination: { total: 0, page: 1, pages: 1 } };
-    }
+    const res = await api.get('/admin/audit-logs', { params: { page, limit } });
+    return { logs: res.data.data, pagination: res.data.pagination };
+  },
+
+  // ----- Orders -----
+  async getOrders(params = {}) {
+    const res = await api.get('/admin/orders', { params });
+    return { orders: res.data.data, pagination: res.data.pagination };
+  },
+
+  async getActiveDeliveries() {
+    return data(await api.get('/admin/deliveries'));
+  },
+
+  /** Downloads the orders CSV using the authenticated client and saves it via a temporary link. */
+  async downloadOrdersCsv(params = {}) {
+    const res = await api.get('/admin/orders/export.csv', { params, responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pmart-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  // ----- Stores -----
+  async getShops() {
+    return data(await api.get('/admin/shops'));
+  },
+
+  async createShop(payload) {
+    return data(await api.post('/admin/shops', payload));
+  },
+
+  async updateShop(id, payload) {
+    return data(await api.put(`/admin/shops/${id}`, payload));
+  },
+
+  // ----- Customers -----
+  async getCustomers(params = {}) {
+    const res = await api.get('/admin/customers', { params });
+    return { customers: res.data.data, pagination: res.data.pagination };
+  },
+
+  async setCustomerActive(id, isActive) {
+    return data(await api.patch(`/admin/customers/${id}/status`, { isActive }));
+  },
+
+  // ----- Riders -----
+  async getRiders() {
+    return data(await api.get('/admin/riders'));
+  },
+
+  async createRider(payload) {
+    return (await api.post('/admin/riders', payload)).data;
+  },
+
+  async updateRider(id, payload) {
+    return (await api.put(`/admin/riders/${id}`, payload)).data;
+  },
+
+  async setRiderActive(id, isActive) {
+    return (await api.patch(`/admin/riders/${id}/status`, { isActive })).data;
+  },
+
+  async resetRiderPassword(id, password) {
+    return (await api.post(`/admin/riders/${id}/reset-password`, { password })).data;
+  },
+
+  // ----- Staff -----
+  async getEmployees() {
+    const res = await api.get('/admin/employees');
+    return { employees: res.data.data, availablePermissions: res.data.availablePermissions };
+  },
+
+  async createEmployee(payload) {
+    return data(await api.post('/admin/employees', payload));
+  },
+
+  async updateEmployee(id, payload) {
+    return (await api.put(`/admin/employees/${id}`, payload)).data;
+  },
+
+  async regenerateActivationLink(id) {
+    return data(await api.post(`/admin/employees/${id}/activation-link`));
+  },
+
+  // ----- Settings -----
+  async getSettings() {
+    return data(await api.get('/admin/settings'));
+  },
+
+  async updateSettings(payload) {
+    return data(await api.put('/admin/settings', payload));
   }
 };

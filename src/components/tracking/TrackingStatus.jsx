@@ -15,6 +15,12 @@ import { Button } from '@/components/ui';
 export const TrackingStatus = ({ trackingState = 'TRACKING_ACTIVE', onRetry = null }) => {
   const getStatusConfig = () => {
     switch (trackingState) {
+      case 'TRACKING_WAITING':
+        return {
+          icon: <Loader2 size={16} className="animate-spin" />,
+          title: "Waiting for the rider's live location",
+          type: 'info'
+        };
       case 'TRACKING_LOADING':
         return {
           icon: <Loader2 size={16} className="animate-spin" />,
@@ -68,7 +74,7 @@ export const TrackingStatus = ({ trackingState = 'TRACKING_ACTIVE', onRetry = nu
       default:
         return {
           icon: <Navigation size={16} className="active-arrow" />,
-          title: 'Your order is on the way • Express delivery active',
+          title: 'Your order is on the way',
           type: 'active'
         };
     }

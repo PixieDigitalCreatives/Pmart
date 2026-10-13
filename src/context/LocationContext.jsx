@@ -34,7 +34,6 @@ export const LocationProvider = ({ children }) => {
     try {
       const res = await apiClient.get('/addresses');
       const backendAddresses = res.data?.data || [];
-      console.log('[LocationContext] backendAddresses:', JSON.stringify(backendAddresses));
       const mapped = backendAddresses.map(normalizeAddress);
       setSavedLocations(mapped);
 
@@ -102,14 +101,11 @@ export const LocationProvider = ({ children }) => {
 
   // ── Add a new address (wait for backend) ──
   const addLocation = async (newLoc) => {
-    console.log('[DEBUG] addLocation called with', newLoc);
     if (!isAuthenticated) {
-      console.log('[DEBUG] addLocation aborted: not authenticated');
       return;
     }
     
     try {
-      console.log('[DEBUG] addLocation: calling API');
       setAddressLoading(true);
       const res = await apiClient.post('/addresses', {
         label: newLoc.label || newLoc.tag || 'OTHER',
@@ -132,9 +128,7 @@ export const LocationProvider = ({ children }) => {
         isDefault: newLoc.isDefault || false
       });
       
-      console.log('[DEBUG] addLocation: API response', res.data);
       if (res.data?.success && res.data?.data) {
-        console.log('[DEBUG] addLocation: normalizing and updating state');
         const backendAddr = normalizeAddress(res.data.data);
         
         // Update list
@@ -148,19 +142,16 @@ export const LocationProvider = ({ children }) => {
         });
         
         // Auto-select the newly added real address
-        console.log('[DEBUG] addLocation: setting local storage and closing modal');
         setSelectedAddressId(backendAddr._id);
         localStorage.setItem(STORAGE_KEY, backendAddr._id);
         setLocationModalOpen(false);
         setDetectedLocation(null);
       } else {
-        console.log('[DEBUG] addLocation: response was missing success or data', res.data);
       }
     } catch (err) {
       console.error('[LocationContext] Failed to persist address:', err);
       throw err;
     } finally {
-      console.log('[DEBUG] addLocation: finally block');
       setAddressLoading(false);
     }
   };
@@ -244,7 +235,7 @@ export const LocationProvider = ({ children }) => {
         isDefault: loc._id === id
       })));
       
-      await apiClient.put(`/addresses/${id}/default`);
+      await apiClient.patch(`/addresses/${id}/default`);
       // Also automatically select it since the user usually expects that behavior on the Home screen
       selectLocation(id);
     } catch (err) {

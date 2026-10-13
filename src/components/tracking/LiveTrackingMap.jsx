@@ -1,10 +1,23 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import './LiveTrackingMap.scss';
 
 const isDev = import.meta.env.DEV;
 const log = (...args) => { if (isDev) console.log('[MAP LiveTracking]', ...args); };
+
+/**
+ * Accepts any location shape the API returns and yields { lat, lng } or null:
+ * { lat, lng } | shop { location: { lat, lng } } | address { location: { coordinates: [lng, lat] } }.
+ */
+export function toLatLng(value) {
+  if (!value) return null;
+  if (typeof value.lat === 'number' && typeof value.lng === 'number') return { lat: value.lat, lng: value.lng };
+  const loc = value.location;
+  if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') return { lat: loc.lat, lng: loc.lng };
+  if (loc && Array.isArray(loc.coordinates) && loc.coordinates.length === 2) return { lat: loc.coordinates[1], lng: loc.coordinates[0] };
+  return null;
+}
 
 // Check WebGL support
 function hasWebGL() {
@@ -132,10 +145,10 @@ export const LiveTrackingMap = ({
     let hasPoints = false;
 
     // ── HUB ──
-    // hubLocation is a shop object or shop.address object: { coordinates: {lat, lng}, ... }
-    const hLat = hubLocation?.address?.coordinates?.lat || hubLocation?.coordinates?.lat;
-    const hLng = hubLocation?.address?.coordinates?.lng || hubLocation?.coordinates?.lng;
-    if (hLat && hLng) {
+    const hub = toLatLng(hubLocation);
+    const hLat = hub?.lat;
+    const hLng = hub?.lng;
+    if (hub) {
       hasPoints = true;
       bounds.extend([hLng, hLat]);
       if (!markersRef.current.hub) {
@@ -143,7 +156,7 @@ export const LiveTrackingMap = ({
         el.style.cssText = 'width:20px;height:20px;background:#1a73e8;border-radius:4px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3)';
         markersRef.current.hub = new maptilersdk.Marker({ element: el })
           .setLngLat([hLng, hLat])
-          .setPopup(new maptilersdk.Popup({ offset: 25 }).setText('Hub: P-Mart'))
+          .setPopup(new maptilersdk.Popup({ offset: 25 }).setText(hubLocation?.name || 'Store'))
           .addTo(map.current);
         log('hub marker created', hLng, hLat);
       } else {
@@ -153,10 +166,10 @@ export const LiveTrackingMap = ({
     }
 
     // ── CUSTOMER ──
-    // customerLocation is order.deliveryAddress: { coordinates: {lat, lng}, ... }
-    const cLat = customerLocation?.coordinates?.lat;
-    const cLng = customerLocation?.coordinates?.lng;
-    if (cLat && cLng) {
+    const customer = toLatLng(customerLocation);
+    const cLat = customer?.lat;
+    const cLng = customer?.lng;
+    if (customer) {
       hasPoints = true;
       bounds.extend([cLng, cLat]);
       if (!markersRef.current.customer) {
@@ -174,10 +187,10 @@ export const LiveTrackingMap = ({
     }
 
     // ── RIDER ──
-    // riderLocation comes from socket: { lat, lng }
-    const rLat = riderLocation?.lat;
-    const rLng = riderLocation?.lng;
-    if (rLat && rLng) {
+    const rider = toLatLng(riderLocation);
+    const rLat = rider?.lat;
+    const rLng = rider?.lng;
+    if (rider) {
       hasPoints = true;
       bounds.extend([rLng, rLat]);
       if (!markersRef.current.rider) {

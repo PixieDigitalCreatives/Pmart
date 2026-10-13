@@ -1,80 +1,44 @@
 import apiClient from './apiClient';
 
-const isDev = import.meta.env.DEV;
-const log = (...args) => { if (isDev) console.log('[RIDER GPS]', ...args); };
+const MIN_SEND_INTERVAL_MS = 4000; // the API accepts at most ~40 updates per minute
 
 let watchId = null;
+let lastSentAt = 0;
 
+const GEO_ERRORS = {
+  1: 'Location permission is blocked. Allow location access to share your position.',
+  2: 'Your position is unavailable. Check that GPS is on.',
+  3: 'Getting your position timed out. Retrying…'
+};
+
+/** Shares the rider's GPS position for the given order while a delivery is in progress. */
 export const riderLocationService = {
-  /**
-   * Starts watching the rider's GPS location and broadcasting to the backend
-   * @param {string} orderId - Active order ID
-   * @param {function} onLocationUpdate - Callback with {lat, lng} when location updates
-   */
-  startBroadcasting: (orderId = null, onLocationUpdate = null) => {
-    if (!('geolocation' in navigator)) {
-      console.error('[RIDER GPS] Geolocation not supported');
-      return;
-    }
-
-    if (watchId !== null) {
-      log('Already broadcasting, skipping new watch');
-      return;
-    }
-
-    log('Starting location broadcast for order:', orderId);
+  startBroadcasting(orderId, onLocation, onError) {
+    if (!('geolocation' in navigator) || watchId !== null) return;
 
     watchId = navigator.geolocation.watchPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude, accuracy, speed, heading } = position.coords;
-        const timestamp = position.timestamp;
+        onLocation?.({ lat: latitude, lng: longitude });
 
-        log('SEND lat:', latitude, 'lng:', longitude, 'orderId:', orderId);
-
-        // Update local state immediately
-        if (onLocationUpdate) {
-          onLocationUpdate({ lat: latitude, lng: longitude });
-        }
-
-        // Send to backend
-        try {
-          await apiClient.post('/rider/location', {
-            latitude,
-            longitude,
-            accuracy,
-            speed,
-            heading,
-            timestamp,
-            orderId
+        const now = Date.now();
+        if (now - lastSentAt < MIN_SEND_INTERVAL_MS) return;
+        lastSentAt = now;
+        apiClient
+          .post('/rider/location', { latitude, longitude, accuracy, speed, heading, timestamp: position.timestamp, orderId })
+          .catch(() => {
+            // A dropped update is replaced by the next one.
           });
-          log('Location sent to backend OK');
-        } catch (error) {
-          log('Failed to send to backend:', error?.response?.data || error.message);
-        }
       },
-      (error) => {
-        log('watchPosition error:', error.message);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 15000,
-      }
+      (error) => onError?.(GEO_ERRORS[error.code] || 'Could not read your location.'),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
-
-    log('watchId assigned:', watchId);
   },
 
-  /**
-   * Stops broadcasting the rider's location
-   */
-  stopBroadcasting: () => {
-    if (watchId !== null && 'geolocation' in navigator) {
-      navigator.geolocation.clearWatch(watchId);
-      log('Stopped broadcasting, cleared watchId:', watchId);
-      watchId = null;
-    }
+  stopBroadcasting() {
+    if (watchId !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
   },
 
-  isActive: () => watchId !== null,
+  isActive: () => watchId !== null
 };

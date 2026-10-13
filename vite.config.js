@@ -5,6 +5,10 @@ import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// The dev server proxies the REST API and Socket.IO to the backend so the browser only talks to one origin.
+// Override the target with PMART_API_TARGET (e.g. http://localhost:5003) when the backend uses another port.
+const apiTarget = process.env.PMART_API_TARGET || 'http://localhost:5000'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -15,8 +19,13 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: apiTarget,
         changeOrigin: true
+      },
+      '/socket.io': {
+        target: apiTarget,
+        changeOrigin: true,
+        ws: true
       }
     }
   },
@@ -31,7 +40,10 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "sass:color"; @use "@/styles/variables" as *; @use "@/styles/mixins" as *; @use "@/styles/breakpoints" as *;`
+        // Prepends the shared tokens to every SCSS file. A UTF-8 BOM at the start of a file would end up after
+        // this prefix and silently break the file's first selector, so strip it.
+        additionalData: (source) =>
+          `@use "sass:color"; @use "@/styles/variables" as *; @use "@/styles/mixins" as *; @use "@/styles/breakpoints" as *;\n${source.replace(/^﻿/, '')}`
       }
     }
   }

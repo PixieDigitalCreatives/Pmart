@@ -1,31 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
-import {
-  ShoppingBag,
-  Plus,
-  Minus,
-  Trash2,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  MapPin,
-  Clock,
-  Heart
-} from 'lucide-react';
-import './CartPage.scss';
+import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, MapPin, Package } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { getFullAddressString } from '@/utils/addressUtils';
+import './CartPage.scss';
 
 export const CartPage = () => {
-  const { items, totalQuantity, billSummary, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, totalQuantity, billSummary, updateQuantity, clearCart, syncNotice, clearSyncNotice } = useCart();
   const { selectedLocation, setLocationModalOpen } = useLocation();
   const navigate = useNavigate();
-
-  const [deliveryTip, setDeliveryTip] = useState(0);
-
-  const tips = [10, 20, 30, 50];
-  const finalGrandTotal = billSummary.grandTotal + deliveryTip;
 
   if (items.length === 0) {
     return (
@@ -36,9 +21,9 @@ export const CartPage = () => {
               <ShoppingBag size={54} />
             </div>
             <h2>Your cart is empty</h2>
-            <p>You haven't added anything to your cart yet. Explore our fresh fruits, vegetables, and daily staples.</p>
-            <Button component={Link} to="/category/fruits-vegetables" variant="primary" size="lg" className="mt-4">
-              Browse Fresh Groceries
+            <p>Add products from the store to see them here.</p>
+            <Button component={Link} to="/" variant="primary" size="lg" className="mt-4">
+              Start shopping
             </Button>
           </div>
         </div>
@@ -50,14 +35,23 @@ export const CartPage = () => {
     <div className="pmart-cart-page">
       <div className="container">
         <div className="cart-page-header">
-          <h1 className="page-heading">Your Shopping Cart</h1>
-          <span className="items-counter">{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}</span>
+          <h1 className="page-heading">Your cart</h1>
+          <span className="items-counter">
+            {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}
+          </span>
         </div>
 
+        {syncNotice && (
+          <div className="alert alert-warning mb-4" role="status">
+            <span>{syncNotice}</span>
+            <button type="button" className="ml-auto" style={{ background: 'none', border: 0, cursor: 'pointer' }} onClick={clearSyncNotice}>
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="cart-two-column-layout">
-          {/* Left: Products & Delivery Destination */}
           <div className="cart-left-col">
-            {/* Delivery Location Strip */}
             <div className="delivery-destination-card">
               <div className="dest-left">
                 <div className="dest-icon">
@@ -65,153 +59,104 @@ export const CartPage = () => {
                 </div>
                 <div className="dest-details">
                   <div className="dest-title">
-                    <span>Delivering to <strong>{selectedLocation?.tag}</strong></span>
-                    <span className="eta-badge">EXPRESS</span>
+                    <span>
+                      Delivering to <strong>{selectedLocation ? selectedLocation.tag : 'no address selected'}</strong>
+                    </span>
                   </div>
-                  <div className="dest-address">{selectedLocation?.address}</div>
+                  {selectedLocation && <div className="dest-address">{getFullAddressString(selectedLocation)}</div>}
                 </div>
               </div>
               <Button className="change-btn" onClick={() => setLocationModalOpen(true)}>
-                Change
+                {selectedLocation ? 'Change' : 'Select'}
               </Button>
             </div>
 
-            {/* Cart Items List */}
             <div className="cart-products-list-card">
               <div className="list-card-header">
-                <span className="header-label">ITEMS IN YOUR BASKET</span>
+                <span className="header-label">ITEMS IN YOUR CART</span>
                 <Button className="clear-cart-text-btn" onClick={clearCart}>
                   Clear all
                 </Button>
               </div>
-
               <div className="items-table">
                 {items.map((item) => (
-                  <div key={item._id || item.id} className="cart-item-table-row">
-                    <img src={item.imageUrl || item.image} alt={item.name} className="product-thumb" />
-
+                  <div key={item.id} className="cart-item-table-row">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="product-thumb" />
+                    ) : (
+                      <div className="product-thumb flex items-center justify-center text-gray-400">
+                        <Package size={22} />
+                      </div>
+                    )}
                     <div className="product-meta">
-                      <h4 className="name">{item.name}</h4>
+                      <Link to={`/product/${item.slug}`} className="name">
+                        {item.name}
+                      </Link>
                       <span className="unit">{item.unit}</span>
                       <div className="price-tag">
                         <span className="current">₹{item.price}</span>
-                        {item.mrp > item.price && (
-                          <span className="mrp">₹{item.mrp}</span>
-                        )}
+                        {item.mrp > item.price && <span className="mrp">₹{item.mrp}</span>}
                       </div>
                     </div>
-
                     <div className="stepper-wrap">
                       <div className="cart-page-stepper">
-                        <Button
-                          className="step-btn"
-                          onClick={() => updateQuantity(item._id || item.id, item.quantity - 1)}
-                          aria-label="Decrease"
-                        >
+                        <Button className="step-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Decrease">
                           {item.quantity === 1 ? <Trash2 size={13} /> : <Minus size={13} />}
                         </Button>
                         <span className="step-val">{item.quantity}</span>
                         <Button
                           className="step-btn"
-                          onClick={() => updateQuantity(item._id || item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.stockCount != null && item.quantity >= item.stockCount}
                           aria-label="Increase"
                         >
                           <Plus size={13} />
                         </Button>
                       </div>
-                      <div className="row-item-total">
-                        ₹{item.price * item.quantity}
-                      </div>
+                      <div className="row-item-total">₹{Math.round(item.price * item.quantity * 100) / 100}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Delivery Partner Tip */}
-            <div className="partner-tip-card">
-              <div className="tip-header">
-                <Heart size={18} className="heart-icon" />
-                <div>
-                  <div className="tip-title">Say thanks with a tip to your delivery hero</div>
-                  <div className="tip-sub">100% of the tip goes directly to your delivery partner</div>
-                </div>
-              </div>
-              <div className="tip-pills-row">
-                {tips.map((t) => (
-                  <Button
-                    key={t}
-                    className={`tip-pill ${deliveryTip === t ? 'active' : ''}`}
-                    onClick={() => setDeliveryTip(deliveryTip === t ? 0 : t)}
-                  >
-                    +₹{t}
-                  </Button>
-                ))}
-              </div>
-            </div>
           </div>
 
-          {/* Right: Bill Details & Checkout CTA */}
           <div className="cart-right-col">
             <div className="bill-summary-card">
-              <h3 className="summary-title">Bill Summary</h3>
-
+              <h3 className="summary-title">Bill summary</h3>
               <div className="bill-line">
-                <span>Item Total</span>
+                <span>Item total</span>
                 <span>₹{billSummary.itemTotal}</span>
               </div>
-
               <div className="bill-line">
-                <span>Delivery Partner Fee</span>
-                <span>
-                  {billSummary.deliveryFee === 0 ? (
-                    <span className="text-free">FREE</span>
-                  ) : (
-                    `₹${billSummary.deliveryFee}`
-                  )}
-                </span>
+                <span>Delivery fee</span>
+                <span>{billSummary.deliveryFee === 0 ? <span className="text-free">FREE</span> : `₹${billSummary.deliveryFee}`}</span>
               </div>
-
-              <div className="bill-line">
-                <span>Handling & Platform Fee</span>
-                <span>₹{billSummary.platformFee}</span>
-              </div>
-
-              {deliveryTip > 0 && (
+              {billSummary.platformFee > 0 && (
                 <div className="bill-line">
-                  <span>Delivery Partner Tip</span>
-                  <span>₹{deliveryTip}</span>
+                  <span>Handling fee</span>
+                  <span>₹{billSummary.platformFee}</span>
                 </div>
               )}
-
               {billSummary.savings > 0 && (
                 <div className="bill-line savings-line">
-                  <span>Total Discount Savings</span>
-                  <span className="savings-val">-₹{billSummary.savings}</span>
+                  <span>You save on MRP</span>
+                  <span className="savings-val">₹{billSummary.savings}</span>
                 </div>
               )}
-
+              {billSummary.amountToFreeDelivery > 0 && (
+                <p className="muted-note mt-2">Add ₹{billSummary.amountToFreeDelivery} more for free delivery.</p>
+              )}
               <div className="bill-separator" />
-
               <div className="bill-line grand-total-line">
-                <span>To Pay</span>
-                <span className="grand-amt">₹{finalGrandTotal}</span>
+                <span>To pay</span>
+                <span className="grand-amt">₹{billSummary.grandTotal}</span>
               </div>
-
-              <Button
-                variant="primary"
-                size="lg"
-                className="checkout-action-btn"
-                onClick={() => navigate('/checkout')}
-              >
-                <span>Proceed to Checkout</span>
+              <Button variant="primary" size="lg" className="checkout-action-btn" onClick={() => navigate('/checkout')}>
+                <span>Proceed to checkout</span>
                 <ArrowRight size={18} />
               </Button>
-
-              <div className="cancellation-policy-note">
-                <ShieldCheck size={14} className="shield" />
-                <span>Orders are safely packed & delivered fast</span>
-              </div>
+              <p className="muted-note mt-2 text-center">Final prices are confirmed by the store at checkout.</p>
             </div>
           </div>
         </div>

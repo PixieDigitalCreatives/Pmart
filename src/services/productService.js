@@ -1,60 +1,57 @@
 import apiClient from './apiClient';
 
 export const productService = {
-  // Get all products with filtering, sorting and pagination
+  /** Storefront listing: { products, totalCount, page, totalPages } */
   async getProducts(params = {}) {
-    const response = await apiClient.get('/products', { params });
-    return response.data.data;
+    const res = await apiClient.get('/products', { params });
+    return res.data.data;
   },
 
-  async getAdminProducts(params = {}) {
-    const response = await apiClient.get('/admin/products', { params });
-    return response.data.data;
-  },
-
-  // Get single product by slug
   async getProductBySlug(slug) {
-    const response = await apiClient.get(`/products/slug/${slug}`);
-    return response.data.data;
+    const res = await apiClient.get(`/products/slug/${encodeURIComponent(slug)}`);
+    return res.data.data;
   },
 
-  // Get single product by ID
-  async getProductById(id) {
-    const response = await apiClient.get(`/products/${id}`);
-    return response.data.data;
-  },
-
-  // Get products by specific collection tags (e.g. 'daily-essentials', 'fresh-picks', 'under-99')
   async getProductsByTag(tag, limit = 8) {
-    const response = await apiClient.get(`/products/tag/${tag}`, { params: { limit } });
-    return response.data.data;
+    const res = await apiClient.get(`/products/tag/${encodeURIComponent(tag)}`, { params: { limit } });
+    return res.data.data;
   },
 
-  // Search autocomplete & query
   async searchProducts(query) {
-    if (!query || query.trim().length === 0) return [];
-    const response = await apiClient.get('/products/search', { params: { q: query } });
-    return response.data.data;
+    if (!query || !query.trim()) return [];
+    const res = await apiClient.get('/products/search', { params: { q: query.trim() } });
+    return res.data.data;
   },
 
-  // Shop / Admin CRUD operations
+  // ----- Catalog management (admin, catalog staff, shop owners) -----
+
+  async getManagedProducts(params = {}) {
+    const res = await apiClient.get('/manage/products', { params });
+    return res.data.data;
+  },
+
+  async getManagedProduct(id) {
+    const res = await apiClient.get(`/manage/products/${id}`);
+    return res.data.data;
+  },
+
   async createProduct(data) {
-    const response = await apiClient.post('/products', data);
-    return response.data;
+    const res = await apiClient.post('/manage/products', data);
+    return res.data.data;
   },
 
   async updateProduct(id, data) {
-    const response = await apiClient.put(`/products/${id}`, data);
-    return response.data;
+    const res = await apiClient.put(`/manage/products/${id}`, data);
+    return res.data.data;
   },
 
-  async updateProductStatus(id, isActive) {
-    const response = await apiClient.patch(`/products/${id}/status`, { isActive });
-    return response.data;
+  async setProductActive(id, isActive) {
+    const res = await apiClient.patch(`/manage/products/${id}/status`, { isActive });
+    return res.data.data;
   },
 
-  async deleteProduct(id) {
-    const response = await apiClient.delete(`/products/${id}`);
-    return response.data;
+  async archiveProduct(id) {
+    const res = await apiClient.delete(`/manage/products/${id}`);
+    return res.data;
   }
 };

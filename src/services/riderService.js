@@ -1,53 +1,34 @@
-import { orderService } from './orderService';
-import { deliveryOtpService } from './deliveryOtpService';
-import { deliveryService } from './deliveryService';
-import { normalizeOrderStatus, ORDER_STATUS } from '../types/orderTypes';
 import apiClient from './apiClient';
+import { mapOrder } from './orderService';
 
 export const riderService = {
-  async getRiderProfile() {
-    const response = await apiClient.get('/rider/profile');
-    return response.data.data || response.data; // Handle both wrapped and unwrapped just in case
-  },
-
-  async getActiveDelivery() {
-    const all = await orderService.getOrders();
-    // Prioritize active in-flight orders
-    return all.find(o => {
-      const norm = normalizeOrderStatus(o.orderStatus || o.status);
-      return norm === ORDER_STATUS.ASSIGNED ||
-             norm === ORDER_STATUS.READY_FOR_PICKUP ||
-             norm === ORDER_STATUS.PICKED_UP ||
-             norm === ORDER_STATUS.OUT_FOR_DELIVERY ||
-             norm === ORDER_STATUS.ARRIVED;
-    }) || null;
-  },
-
-  async getRiderHistory() {
-    const all = await orderService.getOrders();
-    return all.filter(o => normalizeOrderStatus(o.orderStatus || o.status) === ORDER_STATUS.DELIVERED);
-  },
-
-  async updateRiderStatus(status) {
-    const res = await apiClient.put('/users/profile', { availabilityStatus: status });
+  async getProfile() {
+    const res = await apiClient.get('/rider/profile');
     return res.data.data;
   },
 
-  async updateDeliveryStage(orderId, stage) {
-    return orderService.updateOrderStatus(orderId, stage);
+  async updateVehicle(payload) {
+    const res = await apiClient.put('/rider/profile', payload);
+    return res.data.data;
   },
 
-  async verifyDeliveryOtp(orderId, enteredOtp) {
-    // 1. Verify OTP with deliveryOtpService
-    await deliveryOtpService.verifyDeliveryOtp(orderId, enteredOtp);
+  async setAvailability(status) {
+    const res = await apiClient.patch('/rider/availability', { status });
+    return res.data.data;
+  },
 
-    // 2. Complete delivery through deliveryService with all strict checks
-    const res = await deliveryService.completeDelivery(orderId);
+  async getActiveOrder() {
+    const res = await apiClient.get('/rider/active-order');
+    return res.data.data ? mapOrder(res.data.data) : null;
+  },
 
-    return {
-      success: true,
-      message: 'Delivery confirmed successfully! Earnings credited.',
-      order: res.order
-    };
+  async getHistory(page = 1) {
+    const res = await apiClient.get('/orders', { params: { status: 'DELIVERED,DELIVERY_FAILED,CANCELLED', page, limit: 20 } });
+    return { orders: (res.data.data || []).map(mapOrder), pagination: res.data.pagination };
+  },
+
+  async pickup(orderId) {
+    const res = await apiClient.post(`/rider/orders/${orderId}/pickup`);
+    return mapOrder(res.data.data);
   }
 };

@@ -15,7 +15,7 @@ function hasWebGL() {
   }
 }
 
-export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
+export const LiveDeliveryMap = ({ deliveries, selectedDelivery, onSelect }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef({});
@@ -59,8 +59,9 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
       map.current = new maptilersdk.Map({
         container,
         style: maptilersdk.MapStyle.STREETS_V2,
-        center: [84.0156, 24.9589], // P-Mart Sasaram default
-        zoom: 11,
+        // Country-level view until delivery markers are added and the map fits to them.
+        center: [78.9629, 22.5937],
+        zoom: 4,
       });
 
       log('map created');
@@ -191,17 +192,20 @@ export const LiveDeliveryMap = ({ deliveries, selectedDelivery }) => {
           markersRef.current[id].animationFrame = requestAnimationFrame(animateMarker);
         }
       } else {
-        const popup = new maptilersdk.Popup({ offset: 25 }).setHTML(`
-          <div style="color:#111;padding:6px;font-family:sans-serif;font-size:13px">
-            <strong>${delivery.riderName || 'Rider'}</strong><br/>
-            Order: #${String(id).slice(-6)}<br/>
-            Status: ${delivery.status || 'Active'}
-          </div>
-        `);
+        // Built with DOM APIs (not setHTML) so names can never inject markup.
+        const popupBody = document.createElement('div');
+        popupBody.style.cssText = 'color:#111;padding:6px;font-family:sans-serif;font-size:13px';
+        [delivery.rider?.name || 'Rider', `Order #${delivery.orderNumber || ''}`, `Status: ${(delivery.status || '').replace(/_/g, ' ')}`].forEach((text, i) => {
+          const line = document.createElement(i === 0 ? 'strong' : 'div');
+          line.textContent = text;
+          popupBody.appendChild(line);
+        });
+        const popup = new maptilersdk.Popup({ offset: 25 }).setDOMContent(popupBody);
 
         const el = document.createElement('div');
         el.style.cssText = 'width:28px;height:28px;background:#E53E3E;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:pointer';
-        el.title = delivery.riderName || 'Rider';
+        el.title = delivery.rider?.name || 'Rider';
+        el.addEventListener('click', () => onSelect?.(delivery));
 
         const riderMarker = new maptilersdk.Marker({ element: el })
           .setLngLat([rLng, rLat])

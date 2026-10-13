@@ -150,7 +150,7 @@
         flex-direction: column;
         gap: 6px;
 
-        label {
+        label, .field-label {
           font-size: 13px;
           color: $text-secondary;
           font-weight: 500;
@@ -180,7 +180,7 @@
 
       .label-selector {
         margin-top: 8px;
-        label {
+        label, .field-label {
           font-size: 13px;
           color: $text-secondary;
           font-weight: 500;

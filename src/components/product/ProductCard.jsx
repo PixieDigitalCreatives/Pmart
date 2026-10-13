@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { Plus, Minus, Clock, Star } from 'lucide-react';
+import { Plus, Minus, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './ProductCard.scss';
-import { Button } from '@/components/ui';
+
 
 export const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -35,18 +35,13 @@ export const ProductCard = ({ product }) => {
     <div className="pmart-product-card" onClick={handleCardClick}>
       {/* Top Media & Badges */}
       <div className="card-media-wrapper">
-        <img
-          src={product.imageUrl || product.image}
-          alt={product.name}
-          loading="lazy"
-          className="product-img"
-        />
-
-        {/* ETA Badge */}
-        <div className="card-eta-badge">
-          <Clock size={11} />
-          <span>{product.deliveryTime && !product.deliveryTime.includes('10') ? product.deliveryTime : 'EXPRESS'}</span>
-        </div>
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt={product.name} loading="lazy" className="product-img" />
+        ) : (
+          <div className="product-img product-img-placeholder" aria-hidden="true">
+            <Package size={36} />
+          </div>
+        )}
 
         {/* Discount Badge */}
         {product.discount > 0 && (
@@ -63,22 +58,11 @@ export const ProductCard = ({ product }) => {
           {product.name}
         </h4>
 
-        {/* Rating if present */}
-        {product.rating && (
-          <div className="product-rating">
-            <Star size={12} className="star-icon" />
-            <span className="rating-val">{product.rating}</span>
-            <span className="rating-count">({product.reviewsCount})</span>
-          </div>
-        )}
-
         {/* Bottom: Price & Add Button */}
         <div className="card-bottom">
           <div className="price-block">
             <span className="selling-price">₹{product.price}</span>
-            {(product.mrp || product.discountPrice) && (product.mrp > product.price || product.discountPrice) && (
-              <span className="mrp-price">₹{product.mrp || (product.price + (product.price - product.discountPrice))}</span>
-            )}
+            {product.mrp > product.price && <span className="mrp-price">₹{product.mrp}</span>}
           </div>
 
           <div className="action-block">

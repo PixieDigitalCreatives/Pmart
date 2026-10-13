@@ -1,416 +1,246 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { getFullAddressString } from '@/utils/addressUtils';
 import { orderService } from '@/services/orderService';
-import { adminService } from '@/services/adminService';
+import { openSocket } from '@/services/socket';
+import { apiErrorMessage } from '@/services/apiClient';
+import { useAuth } from '@/context/AuthContext';
 import { ShopTrackRiderModal } from '@/components/shop/ShopTrackRiderModal';
-import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
-import {
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  DELIVERY_VERIFICATION_STATUS,
-  normalizeOrderStatus
-} from '@/types/orderTypes';
-import {
-  ChevronLeft,
-  CheckCircle2,
-  Clock,
-  Bike,
-  User,
-  MapPin,
-  Check,
-  XCircle,
-  AlertTriangle,
-  Package,
-  Navigation,
-  Lock,
-  ShieldCheck,
-  Banknote,
-  KeyRound
-} from 'lucide-react';
-import { Button, StatusBadge, Card, Select } from '@/components/ui';
+import { AssignRiderPanel } from '@/components/order/AssignRiderPanel';
+import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, paymentDisplay } from '@/types/orderTypes';
+import { ChevronLeft, Check, Navigation, User, MapPin, Package, AlertTriangle, Phone } from 'lucide-react';
+import { Button, StatusBadge, Card, LoadingState, EmptyState, Modal, FormField, Input } from '@/components/ui';
 import './ShopOrderDetailPage.scss';
 
-export const ShopOrderDetailPage = () => {
+/**
+ * Order management for store owners (own store) and operations staff (any order).
+ * Every action is validated again by the API; buttons only reflect what the current status allows.
+ */
+export const OrderManagePage = ({ backTo = '/shop/orders' }) => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { role, can } = useAuth();
+  const isStaff = role === 'ADMIN' || role === 'EMPLOYEE';
+  const canManage = !isStaff || can('orders.manage');
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedRiderId, setSelectedRiderId] = useState('');
-  const [actionNotice, setActionNotice] = useState('');
-  const [isTrackRiderOpen, setIsTrackRiderOpen] = useState(false);
-  const [availableRiders, setAvailableRiders] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [reasonDialog, setReasonDialog] = useState(null); // { status, title }
+  const [reason, setReason] = useState('');
+  const [trackOpen, setTrackOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchOrder = async () => {
-      const data = await orderService.getOrderById(id);
-      if (isMounted) {
-        setOrder(data);
-        if (data?.rider) setSelectedRiderId(data.rider.id);
-        const riders = await adminService.getEligibleRiders();
-        setAvailableRiders(riders);
-        setLoading(false);
-      }
-    };
-
-    fetchOrder();
-    const interval = setInterval(fetchOrder, 3000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+  const load = useCallback(async () => {
+    try {
+      setOrder(await orderService.getOrderById(id));
+    } catch (err) {
+      if ([403, 404, 400].includes(err.response?.status)) setOrder(null);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
-  const handleStatusChange = async (newStatus) => {
-    const updated = await orderService.updateOrderStatus(order.id, newStatus);
-    setOrder({ ...updated });
-    setActionNotice(`Order status successfully updated to "${newStatus.replace(/_/g, ' ')}"`);
-    setTimeout(() => setActionNotice(''), 3000);
-  };
+  useEffect(() => {
+    // Navigating between orders reuses this component, so clear the previous order's messages.
+    setNotice(null);
+    setReasonDialog(null);
+    setTrackOpen(false);
+    load();
+    const socket = openSocket();
+    socket.on('connect', () => socket.emit('join_order', id));
+    socket.on('order_status_update', (p) => String(p.orderId) === String(id) && load());
+    return () => socket.close();
+  }, [id, load]);
 
-  const handleAssignRider = async (e) => {
-    e.preventDefault();
-    const riderObj = availableRiders.find(r => r.id === selectedRiderId);
-    if (riderObj) {
-      const updated = await orderService.updateOrderData(order.id, {
-        rider: riderObj,
-        status: ORDER_STATUS.CONFIRMED,
-        orderStatus: ORDER_STATUS.CONFIRMED
-      });
+  const changeStatus = async (status, why) => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const updated = await orderService.updateStatus(id, status, why);
       setOrder(updated);
-      setActionNotice(`Rider ${riderObj.name || riderObj.fullName} assigned to Order #${order.id}`);
-      setTimeout(() => setActionNotice(''), 3000);
+      setNotice({ type: 'success', text: `Order marked ${ORDER_STATUS_LABELS[status].toLowerCase()}.` });
+    } catch (err) {
+      setNotice({ type: 'error', text: apiErrorMessage(err) });
+    } finally {
+      setBusy(false);
     }
   };
 
-  if (!order && !loading) {
-    return (
-      <div className="p-6">
-        <h3>Order not found</h3>
-        <Link to="/shop/orders" style={{ textDecoration: 'none' }}>
-          <Button variant="primary" className="mt-4">Back to Orders</Button>
-        </Link>
-      </div>
-    );
+  const confirmWithReason = async () => {
+    const { status } = reasonDialog;
+    setReasonDialog(null);
+    await changeStatus(status, reason.trim());
+    setReason('');
+  };
+
+  if (loading) return <LoadingState text="Loading order..." />;
+  if (!order) {
+    return <EmptyState icon={Package} title="Order not found" action={<Button component={Link} to={backTo} variant="primary">Back to orders</Button>} />;
   }
 
-  const currentStatus = normalizeOrderStatus(order?.orderStatus || order?.status);
-  const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
-  const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
-  const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
-  const isReady = currentStatus === ORDER_STATUS.READY_FOR_PICKUP;
-  const isPreparing = currentStatus === ORDER_STATUS.PREPARING;
-  const isConfirmed = currentStatus === ORDER_STATUS.CONFIRMED;
-  const isPlaced = currentStatus === ORDER_STATUS.PLACED;
-  const isCashCollected = order?.paymentStatus === PAYMENT_STATUS.COLLECTED;
-  const isOtpVerified = order?.deliveryVerificationStatus === DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED;
+  const s = order.status;
+  const addr = order.deliveryAddress || {};
+  const askReason = (status, title) => {
+    setReason('');
+    setReasonDialog({ status, title });
+  };
+
+  const actions = [];
+  if (canManage) {
+    if (s === 'PENDING') {
+      actions.push({ label: 'Accept order', onClick: () => changeStatus('ACCEPTED'), variant: 'primary' });
+      actions.push({ label: 'Reject order', onClick: () => askReason('REJECTED', 'Why are you rejecting this order?'), variant: 'secondary' });
+    }
+    if (s === 'ACCEPTED') actions.push({ label: 'Start packing', onClick: () => changeStatus('PREPARING'), variant: 'primary' });
+    if (s === 'PREPARING') actions.push({ label: 'Mark ready for pickup', onClick: () => changeStatus('READY'), variant: 'primary' });
+    if (s === 'DELIVERY_FAILED') actions.push({ label: 'Send out again', onClick: () => changeStatus('READY'), variant: 'primary' });
+    if (['ACCEPTED', 'PREPARING', 'READY'].includes(s) || (isStaff && ['ASSIGNED', 'DELIVERY_FAILED'].includes(s))) {
+      actions.push({ label: 'Cancel order', onClick: () => askReason('CANCELLED', 'Why is this order being cancelled?'), variant: 'secondary' });
+    }
+  }
 
   return (
     <div className="shop-order-detail-page">
       <div className="detail-top-nav">
-        <Link to="/shop/orders" className="back-link">
+        <Link to={backTo} className="back-link">
           <ChevronLeft size={16} />
-          <span>Back to Orders List</span>
+          <span>Back to orders</span>
         </Link>
       </div>
 
       <div className="order-detail-title-card">
         <div className="title-left">
-          <div className="order-tag">DARKSTORE FULFILLMENT</div>
-          <h1 className="order-heading">Order #{order?.id}</h1>
-          <span className="created-time">
-            Placed on {new Date(order?.createdAt || Date.now()).toLocaleString()}
-          </span>
+          <h1 className="order-heading">Order #{order.orderNumber}</h1>
+          <p className="created-time">Placed {new Date(order.createdAt).toLocaleString('en-IN')}{order.shop?.name ? ` • ${order.shop.name}` : ''}</p>
         </div>
-
-        {/* Current Status Pill & Track Rider Action */}
-        <div className="status-indicator-box">
-          <div className="flex items-center gap-2">
-            <span className="status-label">Current Stage:</span>
-            <StatusBadge 
-              status={currentStatus.replace(/_/g, ' ')} 
-              type={isDelivered ? 'success' : isArrived ? 'info' : isOutForDelivery ? 'primary' : 'warning'} 
-            />
-          </div>
-          {(isOutForDelivery || isArrived) && (
-            <Button
-              variant="primary"
-              size="sm"
-              className="track-rider-top-btn"
-              onClick={() => setIsTrackRiderOpen(true)}
-            >
-              <Navigation size={14} style={{ marginRight: '8px' }} />
-              <span>Track Rider</span>
+        <div className="status-indicator-box flex items-center gap-2">
+          <StatusBadge status={ORDER_STATUS_LABELS[s]} type={ORDER_STATUS_TONE[s]} />
+          {['PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'].includes(s) && (
+            <Button variant="primary" size="sm" onClick={() => setTrackOpen(true)}>
+              <Navigation size={14} style={{ marginRight: 6 }} />
+              Track rider
             </Button>
           )}
         </div>
       </div>
 
-      {actionNotice && (
-        <div className="action-notification-banner">
-          <Check size={16} />
-          <span>{actionNotice}</span>
+      {notice && (
+        <div className={`alert ${notice.type === 'success' ? 'alert-success' : 'alert-error'} mb-4`}>
+          {notice.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+          <span>{notice.text}</span>
+        </div>
+      )}
+      {order.cancellationReason && ['CANCELLED', 'REJECTED'].includes(s) && (
+        <div className="alert alert-error mb-4">
+          <AlertTriangle size={16} />
+          <span>Reason: {order.cancellationReason}</span>
         </div>
       )}
 
-      {/* Dedicated Section 10: COD Payment & Delivery Verification Card */}
-      <div className="detail-card cod-verification-card" style={{ marginBottom: '24px' }}>
-        <div className="card-header-with-badge" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="card-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <Banknote size={20} className="text-primary" />
-            <span>COD Payment & Delivery Verification</span>
-          </h3>
-          <PaymentStatusBadge
-            paymentStatus={order?.paymentStatus}
-            paymentMethod={order?.paymentMethod || 'COD'}
-            amount={order?.billing?.grandTotal}
-            compact={true}
-          />
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '12px',
-            marginBottom: '16px'
-          }}
-        >
-          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Order Status</div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
-              {currentStatus.replace(/_/g, ' ')}
-            </div>
-          </div>
-
-          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Payment Method</div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
-              {order?.paymentMethod || 'COD'}
-            </div>
-          </div>
-
-          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Payment Status</div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: isCashCollected ? '#16a34a' : '#d97706', marginTop: '4px' }}>
-              {isCashCollected ? 'COLLECTED ✓' : 'PENDING'}
-            </div>
-          </div>
-
-          <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Delivery Verification</div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: isOtpVerified ? '#16a34a' : '#64748b', marginTop: '4px' }}>
-              {isOtpVerified ? 'OTP VERIFIED ✓' : 'OTP PENDING'}
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time State Callouts for Shop Owner */}
-        {isArrived && !isCashCollected && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#fef3c7', color: '#92400e', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
-            <AlertTriangle size={16} />
-            <span>Rider has arrived at customer location. Awaiting cash collection of ₹{order?.billing?.grandTotal}.</span>
-          </div>
-        )}
-
-        {isArrived && isCashCollected && !isOtpVerified && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#eff6ff', color: '#1e40af', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
-            <KeyRound size={16} />
-            <span>Cash collected ✓ Rider is verifying customer Delivery OTP. Final delivery completion will trigger upon verification.</span>
-          </div>
-        )}
-
-        {isDelivered && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#f0fdf4', color: '#166534', borderRadius: '8px', fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>
-            <CheckCircle2 size={16} />
-            <span>Delivery Completed & Verified ✓ ₹{order?.billing?.grandTotal} collected, customer OTP verified successfully.</span>
-          </div>
-        )}
-
-        {/* Section 10 Rule: Shop owner cannot manually mark as delivered if delivery OTP is not verified */}
-        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#64748b' }}>
-            <Lock size={14} />
-            <span>Manual delivery override is locked. Delivery completion strictly requires customer OTP verification by the rider.</span>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={true}
-            style={{ opacity: 0.65, cursor: 'not-allowed', fontSize: '12px' }}
-            title="Shop owners cannot mark an order as delivered without verified customer OTP"
-          >
-            {isDelivered ? '✓ Order Delivered' : '🔒 Mark Delivered (Requires OTP)'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Main 2-column Grid */}
       <div className="detail-grid">
-        {/* Left Column: Items & Customer Details */}
         <div className="detail-left-col">
-          {/* Order Items Table */}
-          <div className="detail-card">
-            <h3 className="card-heading">Packed Items ({order?.items.length})</h3>
-            <div className="items-table-list">
-              {order?.items.map((item, idx) => (
-                <div key={idx} className="item-row">
-                  <img src={item.imageUrl || item.image} alt={item.name} className="item-thumb" />
-                  <div className="item-info">
-                    <div className="name">{item.name}</div>
-                    <div className="unit">{item.unit}</div>
+          <Card className="detail-card mb-4">
+            <h3 className="card-heading">Items ({order.itemCount})</h3>
+            <div className="items-list">
+              {order.items.map((item) => (
+                <div key={String(item.product)} className="manifest-row flex items-center gap-3 py-2 border-b">
+                  {item.imageUrl ? <img src={item.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} /> : <Package size={20} className="text-gray-400" />}
+                  <div className="flex-1">
+                    <div className="font-semibold">{item.name}</div>
+                    <div className="muted-note">{item.unit}</div>
                   </div>
-                  <div className="qty-tag">Qty: <strong>{item.quantity}</strong></div>
-                  <div className="price">₹{item.price * item.quantity}</div>
+                  <div>×{item.quantity}</div>
+                  <div className="font-semibold" style={{ minWidth: 70, textAlign: 'right' }}>₹{Math.round(item.price * item.quantity * 100) / 100}</div>
                 </div>
               ))}
             </div>
-
-            <div className="bill-summary-sub">
-              <div className="sub-row">
-                <span>Items Subtotal</span>
-                <span>₹{order?.subTotal || order?.billing?.itemTotal || 0}</span>
-              </div>
-              <div className="sub-row">
-                <span>Delivery Fee</span>
-                <span>₹{order?.deliveryFee || order?.billing?.deliveryFee || 0}</span>
-              </div>
-              <div className="sub-row total">
-                <span>Grand Total</span>
-                <span>₹{order?.totalAmount || order?.billing?.grandTotal || 0}</span>
-              </div>
+            <div className="mt-3 text-sm space-y-1">
+              <div className="flex justify-between"><span>Items</span><span>₹{order.subTotal}</span></div>
+              <div className="flex justify-between"><span>Delivery fee</span><span>₹{order.deliveryFee}</span></div>
+              <div className="flex justify-between"><span>Handling fee</span><span>₹{order.platformFee}</span></div>
+              <div className="flex justify-between font-bold"><span>Total (COD)</span><span>₹{order.totalAmount}</span></div>
+              <div className="flex justify-between"><span>Payment</span><span>{paymentDisplay(order).label}</span></div>
+              <div className="flex justify-between"><span>Delivery code</span><span>{order.deliveryVerificationStatus === 'OTP_VERIFIED' ? 'Verified' : 'Not verified'}</span></div>
             </div>
-          </div>
+          </Card>
 
-          {/* Customer & Address */}
-          <div className="detail-card">
-            <h3 className="card-heading">Customer & Delivery Address</h3>
-            <div className="customer-info-block">
-              <div className="customer-row">
-                <User size={16} className="icon" />
-                <span className="label">Customer Name:</span>
-                <span className="val">{order?.customer.name}</span>
+          <Card className="detail-card mb-4">
+            <h3 className="card-heading">Customer and delivery address</h3>
+            <div className="text-sm space-y-2">
+              <div className="flex items-center gap-2"><User size={15} /> {addr.recipientName} {order.customer?.name && order.customer.name !== addr.recipientName ? `(account: ${order.customer.name})` : ''}</div>
+              <div className="flex items-center gap-2">
+                <Phone size={15} /> <a href={`tel:${addr.recipientPhone}`}>{addr.recipientPhone}</a>
               </div>
-              <div className="customer-row">
-                <span className="icon">📞</span>
-                <span className="label">Phone:</span>
-                <span className="val">{order?.customer.phone}</span>
+              <div className="flex items-start gap-2">
+                <MapPin size={15} style={{ marginTop: 2 }} />
+                <span>
+                  {getFullAddressString(addr)}
+                  {addr.landmark && <span className="muted-note block">Landmark: {addr.landmark}</span>}
+                </span>
               </div>
-              <div className="customer-row">
-                <MapPin size={16} className="icon" />
-                <span className="label">Address:</span>
-                <span className="val">{order?.deliveryAddress.line1}, {order?.deliveryAddress.city} - {order?.deliveryAddress.pincode}</span>
-              </div>
-              {order?.deliveryInstructions && (
-                <div className="instructions-callout">
-                  <strong>Delivery Note:</strong> {order.deliveryInstructions}
+              {order.deliveryInstructions && (
+                <div className="alert alert-info">
+                  <span>Note: {order.deliveryInstructions}</span>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
+
+          <Card className="detail-card">
+            <OrderStatusTimeline status={s === 'REJECTED' ? 'CANCELLED' : s} timeline={order.statusHistory} compact />
+          </Card>
         </div>
 
-        {/* Right Column: Actions & Rider Assignment */}
         <div className="detail-right-col">
-          {/* Order Processing Actions */}
-          <div className="detail-card actions-card">
-            <h3 className="card-heading">Fulfillment Actions</h3>
-            <p className="actions-subtext">Progress the darkstore packaging workflow</p>
-
-            <div className="action-buttons-stack">
-              <Button
-                variant="secondary"
-                className="btn-full stage-btn"
-                onClick={() => handleStatusChange(ORDER_STATUS.CONFIRMED)}
-                disabled={!isPlaced}
-              >
-                1. Accept Order
-              </Button>
-              <Button
-                variant="secondary"
-                className="btn-full stage-btn"
-                onClick={() => handleStatusChange(ORDER_STATUS.PREPARING)}
-                disabled={!isConfirmed}
-              >
-                2. Mark as Preparing / In Packing
-              </Button>
-              <Button
-                variant="primary"
-                className="btn-full stage-btn"
-                onClick={() => handleStatusChange(ORDER_STATUS.READY_FOR_PICKUP)}
-                disabled={!isPreparing}
-              >
-                3. Mark Ready for Rider Pickup
-              </Button>
-            </div>
-          </div>
-
-          {/* Rider Assignment Box */}
-          <div className="detail-card rider-assignment-card">
-            <h3 className="card-heading">Delivery Partner Assignment</h3>
-            <form onSubmit={handleAssignRider}>
-              <div className="form-group">
-                <label htmlFor="auto-id-needed">Select Available Rider</label>
-                <Select
-                  className="form-select"
-                  value={selectedRiderId}
-                  onChange={e => setSelectedRiderId(e.target.value)}
-                >
-                  <option value="">-- Choose Rider --</option>
-                  {availableRiders.length === 0 && <option value="" disabled>No riders found.</option>}
-                  {availableRiders.map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.name || r.fullName} ({r.vehicleNumber}) — {r.availabilityStatus === 'AVAILABLE' ? '🟢 Available' : '🟡 On Delivery'}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <Button
-                type="submit"
-                variant="dark"
-                className="btn-full"
-                disabled={!selectedRiderId}
-                style={{ width: '100%', marginTop: '16px' }}
-              >
-                Assign Fleet Partner
-              </Button>
-            </form>
-
-            {order?.rider && (
-              <div className="assigned-rider-snippet mt-4">
-                <div className="snippet-title">Currently Assigned:</div>
-                <div className="rider-mini-profile">
-                  <Bike size={18} className="bike-icon" />
-                  <div>
-                    <div className="name">{order.rider.name}</div>
-                    <div className="vehicle">{order.rider.vehicleType} • {order.rider.vehicleNumber}</div>
-                  </div>
-                </div>
-
-                {(isOutForDelivery || isArrived) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="btn-full mt-3"
-                    onClick={() => setIsTrackRiderOpen(true)}
-                    style={{ borderColor: '#ef4444', color: '#ef4444', width: '100%' }}
-                  >
-                    <Navigation size={14} style={{ marginRight: '8px' }} />
-                    <span>Track Rider Live</span>
+          {actions.length > 0 && (
+            <Card className="detail-card mb-4">
+              <h3 className="card-heading">Actions</h3>
+              <div className="space-y-2">
+                {actions.map((a) => (
+                  <Button key={a.label} variant={a.variant} style={{ width: '100%' }} disabled={busy} onClick={a.onClick}>
+                    {a.label}
                   </Button>
-                )}
+                ))}
               </div>
-            )}
-          </div>
+            </Card>
+          )}
+
+          {canManage && ['READY', 'ASSIGNED'].includes(s) && (
+            <Card className="detail-card mb-4">
+              <h3 className="card-heading">Delivery rider</h3>
+              <AssignRiderPanel order={order} onAssigned={(o) => { setOrder(o); setNotice({ type: 'success', text: `Assigned to ${o.rider?.name}.` }); }} />
+            </Card>
+          )}
+
+          {order.rider && (
+            <Card className="detail-card">
+              <h3 className="card-heading">Assigned rider</h3>
+              <div className="text-sm">
+                <div className="font-semibold">{order.rider.name}</div>
+                <div className="muted-note">{[order.rider.vehicleType, order.rider.vehicleNumber].filter(Boolean).join(' • ')}</div>
+                {order.rider.phone && <a href={`tel:${order.rider.phone}`}>{order.rider.phone}</a>}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
-      <ShopTrackRiderModal
-        isOpen={isTrackRiderOpen}
-        onClose={() => setIsTrackRiderOpen(false)}
-        order={order}
-      />
+      <Modal isOpen={Boolean(reasonDialog)} onClose={() => setReasonDialog(null)} title={reasonDialog?.title || ''}>
+        <FormField label="Reason (shared with the customer)" htmlFor="status-reason">
+          <Input id="status-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} autoFocus />
+        </FormField>
+        <div className="actions-row mt-3" style={{ justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => setReasonDialog(null)}>
+            Back
+          </Button>
+          <Button variant="primary" disabled={!reason.trim()} onClick={confirmWithReason}>
+            Confirm
+          </Button>
+        </div>
+      </Modal>
+
+      <ShopTrackRiderModal isOpen={trackOpen} onClose={() => setTrackOpen(false)} order={order} />
     </div>
   );
 };

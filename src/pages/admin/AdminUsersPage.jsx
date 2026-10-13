@@ -1,126 +1,216 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Users, Bike, Shield, Plus, Search, KeyRound, Link as LinkIcon } from 'lucide-react';
 import { adminService } from '@/services/adminService';
-import { Users, UserCheck, Shield, Bike, Store, Search, Plus } from 'lucide-react';
-import { AddRiderModal } from '../../components/admin/AddRiderModal';
-import { EditRiderModal } from '../../components/admin/EditRiderModal';
-import { AddEmployeeModal } from '../../components/admin/AddEmployeeModal';
-import { EditEmployeeModal } from '../../components/admin/EditEmployeeModal';
-import { PageHeader, StatusBadge, Button, EmptyState } from '@/components/ui';
+import { apiErrorMessage } from '@/services/apiClient';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
+import { RiderFormModal } from '@/components/admin/RiderFormModal';
+import { StaffFormModal, ActivationLink } from '@/components/admin/StaffFormModal';
+import { PageHeader, StatusBadge, Button, EmptyState, Input, Modal, FormField, LoadingState } from '@/components/ui';
 
-export const AdminUsersPage = () => {
-  const [activeTab, setActiveTab] = useState('customers');
-  const [customers, setCustomers] = useState([]);
-  const [shops, setShops] = useState([]);
-  const [riders, setRiders] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  
-  const [isAddRiderOpen, setIsAddRiderOpen] = useState(false);
-  const [isEditRiderOpen, setIsEditRiderOpen] = useState(false);
-  const [selectedRider, setSelectedRider] = useState(null);
+const RIDER_TONE = { AVAILABLE: 'success', BUSY: 'warning', OFFLINE: 'neutral' };
+const RIDER_LABEL = { AVAILABLE: 'Online', BUSY: 'Delivering', OFFLINE: 'Offline' };
 
-  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [isEditEmployeeOpen, setIsEditEmployeeOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+const CustomersTab = ({ canToggle }) => {
+  const toast = useToast();
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState({ customers: [], pagination: { pages: 1, total: 0 } });
+  const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
-    const c = await adminService.getCustomers();
-    const s = await adminService.getShops();
-    const r = await adminService.getRiders();
-    const e = await adminService.getEmployees();
-    setCustomers(c);
-    setShops(s);
-    setRiders(r);
-    setEmployees(e);
+  const load = useCallback(() => {
+    adminService
+      .getCustomers({ search: query || undefined, page, limit: 25 })
+      .then(setData)
+      .catch((err) => toast.error(apiErrorMessage(err)))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, page]);
+
+  useEffect(load, [load]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1);
+      setQuery(search.trim());
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const toggle = async (c) => {
+    try {
+      await adminService.setCustomerActive(c.id, !c.isActive);
+      toast.success(`${c.name || 'Customer'} ${c.isActive ? 'deactivated' : 'reactivated'}.`);
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   return (
-    <div className="admin-users-page">
-      <PageHeader
-        title="Platform User Directory"
-        subtitle="Central identity directory across all 4 system roles"
-        action={
-          activeTab === 'riders' && (
-            <Button variant="primary" onClick={() => setIsAddRiderOpen(true)}>
-              <Plus size={16} style={{ marginRight: '8px' }} /> Add Rider
-            </Button>
-          )
-        }
-      />
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b pb-3 mb-5">
-        {[
-          { id: 'customers', label: 'Customers' },
-          { id: 'shops', label: 'Darkstore Managers' },
-          { id: 'riders', label: 'Fleet Riders' },
-          { id: 'admins', label: 'System Administrators' }
-        ].map(t => (
-          <Button
-            key={t.id}
-            variant={activeTab === t.id ? 'dark' : 'secondary'}
-            size="sm"
-            onClick={() => setActiveTab(t.id)}
-          >
-            {t.label}
-          </Button>
-        ))}
+    <>
+      <div className="mb-3" style={{ maxWidth: 360 }}>
+        <Input icon={Search} placeholder="Search name, phone or email" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
-
-      {/* Customers Tab */}
-      {activeTab === 'customers' && (
+      {loading ? (
+        <LoadingState />
+      ) : data.customers.length === 0 ? (
+        <EmptyState icon={Users} title="No customers" description={query ? 'No customer matches this search.' : 'Customers appear here when they sign up.'} />
+      ) : (
         <div className="pmart-table-wrapper">
           <table className="pmart-table">
             <thead>
               <tr>
-                <th>Customer Name</th>
+                <th>Name</th>
                 <th>Phone</th>
                 <th>Email</th>
-                <th>Total Orders</th>
-                <th>Lifetime Spend</th>
+                <th>Orders</th>
+                <th>Delivered spend</th>
+                <th>Joined</th>
                 <th>Status</th>
+                {canToggle && <th />}
               </tr>
             </thead>
             <tbody>
-              {customers.map(c => (
+              {data.customers.map((c) => (
                 <tr key={c.id}>
-                  <td className="font-semibold text-dark">{c.name}</td>
-                  <td>{c.phone}</td>
-                  <td>{c.email}</td>
-                  <td>{c.orders} orders</td>
-                  <td className="font-bold">₹{c.spent?.toLocaleString()}</td>
-                  <td><StatusBadge status={c.status} type={c.status === 'Active' ? 'success' : 'neutral'} /></td>
+                  <td className="font-semibold">{c.name || '—'}</td>
+                  <td>{c.phone || '—'}</td>
+                  <td>{c.email || '—'}</td>
+                  <td>{c.orders}</td>
+                  <td>₹{c.spent.toLocaleString('en-IN')}</td>
+                  <td>{new Date(c.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td>
+                    <StatusBadge status={c.isActive ? 'Active' : 'Deactivated'} type={c.isActive ? 'success' : 'error'} />
+                  </td>
+                  {canToggle && (
+                    <td>
+                      <Button size="sm" variant="secondary" onClick={() => toggle(c)}>
+                        {c.isActive ? 'Deactivate' : 'Reactivate'}
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      {data.pagination.pages > 1 && (
+        <div className="actions-row mt-3" style={{ justifyContent: 'flex-end' }}>
+          <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            Previous
+          </Button>
+          <span className="muted-note">
+            {page} / {data.pagination.pages}
+          </span>
+          <Button size="sm" variant="secondary" disabled={page >= data.pagination.pages} onClick={() => setPage(page + 1)}>
+            Next
+          </Button>
+        </div>
+      )}
+    </>
+  );
+};
 
-      {/* Shops Tab */}
-      {activeTab === 'shops' && (
+const RidersTab = ({ canManage }) => {
+  const toast = useToast();
+  const [riders, setRiders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, object = edit
+  const [resetFor, setResetFor] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+
+  const load = useCallback(() => {
+    adminService
+      .getRiders()
+      .then(setRiders)
+      .catch((err) => toast.error(apiErrorMessage(err)))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(load, [load]);
+
+  const toggle = async (r) => {
+    try {
+      const res = await adminService.setRiderActive(r.id, !r.isActive);
+      toast.success(res.message);
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  };
+
+  const resetPassword = async () => {
+    try {
+      const res = await adminService.resetRiderPassword(resetFor.id, newPassword);
+      toast.success(res.message);
+      setResetFor(null);
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  };
+
+  return (
+    <>
+      {canManage && (
+        <div className="mb-3">
+          <Button variant="primary" onClick={() => setEditing(null)}>
+            <Plus size={16} style={{ marginRight: 6 }} />
+            Add rider
+          </Button>
+        </div>
+      )}
+      {loading ? (
+        <LoadingState />
+      ) : riders.length === 0 ? (
+        <EmptyState icon={Bike} title="No riders yet" description="Add riders so orders can be delivered." />
+      ) : (
         <div className="pmart-table-wrapper">
           <table className="pmart-table">
             <thead>
               <tr>
-                <th>Manager</th>
-                <th>Hub Name</th>
-                <th>Contact</th>
-                <th>Operating Hours</th>
-                <th>Status</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Vehicle</th>
+                <th>Deliveries</th>
+                <th>Availability</th>
+                <th>Account</th>
+                {canManage && <th />}
               </tr>
             </thead>
             <tbody>
-              {shops.map(s => (
-                <tr key={s.id}>
-                  <td className="font-semibold text-dark">{s.ownerName}</td>
-                  <td>{s.name}</td>
-                  <td>{s.phone}</td>
-                  <td>{s.operatingHours}</td>
-                  <td><StatusBadge status={s.status} type={s.status === 'Active' ? 'success' : 'neutral'} /></td>
+              {riders.map((r) => (
+                <tr key={r.id}>
+                  <td className="font-semibold">
+                    {r.name}
+                    {r.mustChangePassword && <div className="muted-note">Has not signed in yet</div>}
+                  </td>
+                  <td>{r.phone}</td>
+                  <td>
+                    {r.vehicleType} {r.vehicleNumber}
+                  </td>
+                  <td>{r.completedDeliveries}</td>
+                  <td>
+                    <StatusBadge status={RIDER_LABEL[r.availabilityStatus]} type={RIDER_TONE[r.availabilityStatus]} />
+                  </td>
+                  <td>
+                    <StatusBadge status={r.isActive ? 'Active' : 'Deactivated'} type={r.isActive ? 'success' : 'error'} />
+                  </td>
+                  {canManage && (
+                    <td className="whitespace-nowrap">
+                      <Button size="sm" variant="secondary" onClick={() => setEditing(r)}>
+                        Edit
+                      </Button>{' '}
+                      <Button size="sm" variant="secondary" onClick={() => { setNewPassword(''); setResetFor(r); }} aria-label={`Reset password for ${r.name}`}>
+                        <KeyRound size={14} />
+                      </Button>{' '}
+                      <Button size="sm" variant="secondary" onClick={() => toggle(r)} disabled={r.isActive && r.availabilityStatus === 'BUSY'}>
+                        {r.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -128,130 +218,72 @@ export const AdminUsersPage = () => {
         </div>
       )}
 
-      {/* Riders Tab */}
-      {activeTab === 'riders' && (
-        <div className="pmart-table-wrapper">
-          {riders.length === 0 ? (
-            <div className="p-8">
-              <EmptyState
-                icon={Bike}
-                title="No riders found"
-                description="There are currently no riders in the system."
-                action={
-                  <Button variant="primary" onClick={() => setIsAddRiderOpen(true)}>
-                    <Plus size={16} style={{ marginRight: '8px' }} /> Add Rider
-                  </Button>
-                }
-              />
-            </div>
-          ) : (
-            <table className="pmart-table">
-              <thead>
-                <tr>
-                  <th>Rider Name</th>
-                  <th>Phone</th>
-                  <th>Vehicle</th>
-                  <th>Assigned Hub</th>
-                  <th>Deliveries</th>
-                  <th>Rating</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {riders.map(r => (
-                  <tr key={r.id}>
-                    <td className="font-semibold text-dark">{r.name}</td>
-                    <td>{r.phone}</td>
-                    <td>{r.vehicleType} ({r.vehicleNumber})</td>
-                    <td>{r.assignedShopName || 'Unassigned'}</td>
-                    <td>{r.totalDeliveries || 0} completed</td>
-                    <td className="font-bold text-dark">★ {r.rating || '5.0'}</td>
-                    <td><StatusBadge status={r.isActive ? 'Active' : 'Inactive'} type={r.isActive ? 'success' : 'danger'} /></td>
-                    <td>
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        style={{ marginRight: '8px' }}
-                        onClick={() => {
-                          setSelectedRider(r);
-                          setIsEditRiderOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant={r.isActive ? 'danger' : 'success'}
-                        style={{ marginRight: '8px' }}
-                        onClick={async () => {
-                          if (r.status === 'BUSY' && r.isActive) {
-                            alert('Cannot deactivate a rider with an active delivery.');
-                            return;
-                          }
-                          try {
-                            await adminService.updateRiderStatus(r.id, !r.isActive);
-                            loadData();
-                          } catch(err) {
-                            alert(err.response?.data?.message || 'Failed to update rider status');
-                          }
-                        }}
-                      >
-                        {r.isActive ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="danger"
-                        onClick={async () => {
-                          if (r.status === 'BUSY') {
-                            alert('Cannot delete a rider with an active delivery.');
-                            return;
-                          }
-                          if (!window.confirm(`Are you sure you want to delete rider ${r.name}? This cannot be undone.`)) {
-                            return;
-                          }
-                          try {
-                            await adminService.deleteRider(r.id);
-                            loadData();
-                          } catch(err) {
-                            alert(err.response?.data?.message || 'Failed to delete rider');
-                          }
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <RiderFormModal
+        isOpen={editing !== undefined}
+        rider={editing || null}
+        onClose={() => setEditing(undefined)}
+        onSaved={(msg) => {
+          toast.success(msg);
+          setEditing(undefined);
+          load();
+        }}
+      />
+
+      <Modal isOpen={Boolean(resetFor)} onClose={() => setResetFor(null)} title={`Reset password for ${resetFor?.name || ''}`}>
+        <FormField label="Temporary password" htmlFor="reset-pass" hint="The rider must change it at next sign-in">
+          <Input id="reset-pass" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+        </FormField>
+        <div className="actions-row" style={{ justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => setResetFor(null)}>
+            Cancel
+          </Button>
+          <Button variant="primary" disabled={newPassword.length < 8} onClick={resetPassword}>
+            Set password
+          </Button>
         </div>
-      )}
+      </Modal>
+    </>
+  );
+};
 
-      {/* Add Rider Modal */}
-      <AddRiderModal 
-        isOpen={isAddRiderOpen} 
-        onClose={() => setIsAddRiderOpen(false)} 
-        onSuccess={loadData} 
-      />
+const StaffTab = () => {
+  const toast = useToast();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(undefined);
+  const [linkFor, setLinkFor] = useState(null);
 
-      {/* Edit Rider Modal */}
-      <EditRiderModal 
-        isOpen={isEditRiderOpen} 
-        onClose={() => { setIsEditRiderOpen(false); setSelectedRider(null); }}
-        onSuccess={loadData} 
-        rider={selectedRider}
-      />
+  const load = useCallback(() => {
+    adminService
+      .getEmployees()
+      .then((res) => setStaff(res.employees))
+      .catch((err) => toast.error(apiErrorMessage(err)))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(load, [load]);
 
-      {/* Admins & Employees Tab */}
-      {activeTab === 'admins' && (
+  const newLink = async (s) => {
+    try {
+      const res = await adminService.regenerateActivationLink(s.id);
+      setLinkFor({ name: s.name, path: res.activationPath });
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  };
+
+  return (
+    <>
+      <div className="mb-3">
+        <Button variant="primary" onClick={() => setEditing(null)}>
+          <Plus size={16} style={{ marginRight: 6 }} />
+          Add employee
+        </Button>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : (
         <div className="pmart-table-wrapper">
-          <div className="flex justify-end mb-4 pr-4">
-            <Button variant="primary" onClick={() => setIsAddEmployeeOpen(true)}>
-              <Plus size={16} style={{ marginRight: '8px' }} /> Add Employee
-            </Button>
-          </div>
           <table className="pmart-table">
             <thead>
               <tr>
@@ -260,91 +292,90 @@ export const AdminUsersPage = () => {
                 <th>Contact</th>
                 <th>Permissions</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              {employees.map(e => (
-                <tr key={e.id}>
-                  <td className="font-semibold text-dark">{e.name}</td>
+              {staff.map((s) => (
+                <tr key={s.id}>
+                  <td className="font-semibold">{s.name}</td>
                   <td>
-                    <StatusBadge status={e.role} type={e.role === 'ADMIN' ? 'primary' : 'neutral'} />
+                    <StatusBadge status={s.role === 'ADMIN' ? 'Admin' : 'Employee'} type={s.role === 'ADMIN' ? 'primary' : 'neutral'} />
                   </td>
                   <td>
-                    <div>{e.phone}</div>
-                    <div className="text-sm text-gray-500">{e.email}</div>
+                    <div>{s.phone}</div>
+                    <div className="muted-note">{s.email}</div>
                   </td>
+                  <td className="text-sm">{s.role === 'ADMIN' ? 'All' : s.permissions.length ? s.permissions.join(', ') : 'None'}</td>
                   <td>
-                    {e.role === 'ADMIN' ? (
-                      <span className="text-sm text-gray-500">All Access</span>
+                    {s.activationPending ? (
+                      <StatusBadge status="Not activated" type="warning" />
                     ) : (
-                      <span className="text-sm text-gray-500">
-                        {e.permissions?.length || 0} permissions
-                      </span>
+                      <StatusBadge status={s.isActive ? 'Active' : 'Deactivated'} type={s.isActive ? 'success' : 'error'} />
                     )}
                   </td>
-                  <td><StatusBadge status={e.isActive ? 'Active' : 'Inactive'} type={e.isActive ? 'success' : 'danger'} /></td>
-                  <td>
-                    <Button 
-                      size="sm"
-                      variant="secondary"
-                      style={{ marginRight: '8px' }}
-                      onClick={() => {
-                        setSelectedEmployee(e);
-                        setIsEditEmployeeOpen(true);
-                      }}
-                    >
+                  <td className="whitespace-nowrap">
+                    <Button size="sm" variant="secondary" onClick={() => setEditing(s)}>
                       Edit
-                    </Button>
-                    {e.role !== 'ADMIN' && (
-                      <Button 
-                        size="sm"
-                        variant="danger"
-                        onClick={async () => {
-                          if (!window.confirm(`Are you sure you want to delete employee ${e.name}?`)) return;
-                          try {
-                            await adminService.deleteEmployee(e.id);
-                            loadData();
-                          } catch(err) {
-                            alert(err.response?.data?.message || 'Failed to delete employee');
-                          }
-                        }}
-                      >
-                        Delete
+                    </Button>{' '}
+                    {s.activationPending && (
+                      <Button size="sm" variant="secondary" onClick={() => newLink(s)} title="New activation link" aria-label={`New activation link for ${s.name}`}>
+                        <LinkIcon size={14} />
                       </Button>
                     )}
                   </td>
                 </tr>
               ))}
-              {employees.length === 0 && (
-                <tr>
-                  <td colSpan="6" style={{ padding: 0 }}>
-                    <EmptyState
-                      icon={Shield}
-                      title="No employees found"
-                      description="There are currently no employees in the system."
-                    />
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       )}
-
-      {/* Employee Modals */}
-      <AddEmployeeModal 
-        isOpen={isAddEmployeeOpen} 
-        onClose={() => setIsAddEmployeeOpen(false)} 
-        onSuccess={loadData} 
+      <StaffFormModal
+        isOpen={editing !== undefined}
+        staff={editing || null}
+        onClose={() => {
+          setEditing(undefined);
+          load();
+        }}
+        onSaved={(msg, opts) => {
+          toast.success(msg);
+          if (!opts?.keepOpen) setEditing(undefined);
+          load();
+        }}
       />
+      <Modal isOpen={Boolean(linkFor)} onClose={() => setLinkFor(null)} title={`Activation link for ${linkFor?.name || ''}`}>
+        {linkFor && <ActivationLink path={linkFor.path} />}
+      </Modal>
+    </>
+  );
+};
 
-      <EditEmployeeModal 
-        isOpen={isEditEmployeeOpen} 
-        onClose={() => { setIsEditEmployeeOpen(false); setSelectedEmployee(null); }}
-        onSuccess={loadData} 
-        employee={selectedEmployee}
-      />
+export const AdminUsersPage = () => {
+  const { can, role } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const tabs = [
+    can('customers.read') && { id: 'customers', label: 'Customers', icon: Users },
+    can('riders.read') && { id: 'riders', label: 'Riders', icon: Bike },
+    can('employees.manage') && { id: 'staff', label: 'Staff', icon: Shield }
+  ].filter(Boolean);
+  const active = tabs.find((t) => t.id === params.get('tab')) ? params.get('tab') : tabs[0]?.id;
+
+  if (tabs.length === 0) return <EmptyState icon={Shield} title="No access" description="You do not have permission to view people." />;
+
+  return (
+    <div>
+      <PageHeader title="People" subtitle="Customers, delivery riders and staff accounts" />
+      <div className="tab-bar">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <Button key={id} size="sm" variant={active === id ? 'dark' : 'secondary'} onClick={() => setParams({ tab: id })}>
+            <Icon size={14} style={{ marginRight: 6 }} />
+            {label}
+          </Button>
+        ))}
+      </div>
+      {active === 'customers' && <CustomersTab canToggle={role === 'ADMIN'} />}
+      {active === 'riders' && <RidersTab canManage={can('riders.manage')} />}
+      {active === 'staff' && <StaffTab />}
     </div>
   );
 };

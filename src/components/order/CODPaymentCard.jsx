@@ -1,5 +1,5 @@
 import React from 'react';
-import { Banknote, ShieldCheck, Check } from 'lucide-react';
+import { Banknote, ShieldCheck } from 'lucide-react';
 import './CODPaymentCard.scss';
 
 export const CODPaymentCard = ({

@@ -112,8 +112,8 @@ export const locationService = {
           houseNumber,
           street,
           area,
-          city: city || 'Sasaram', // Fallback for demo
-          state: state || 'Bihar',
+          city,
+          state,
           pincode,
           formattedAddress: feature.place_name || ''
         };

@@ -1,122 +1,106 @@
-import React, { useState } from 'react';
-// FAQs will be fetched from API in the future
-import { LiveChatModal } from '@/components/common/LiveChatModal';
-import {
-  HelpCircle,
-  ChevronDown,
-  MessageSquare,
-  PhoneCall,
-  Mail,
-  ShieldCheck,
-  Search
-} from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { HelpCircle, PhoneCall, Mail, Package, KeyRound, Banknote, MapPin } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { Button } from '@/components/ui';
 import './HelpPage.scss';
-import { Input, Button } from '@/components/ui';
+
+// Answers describe how the app actually works; keep them in sync with the order flow.
+const FAQS = [
+  {
+    icon: Package,
+    q: 'How do I track my order?',
+    a: 'Open My Orders and select the order. Its status updates as the store prepares it, and once a rider is on the way you can follow them on the map.'
+  },
+  {
+    icon: KeyRound,
+    q: 'What is the delivery code?',
+    a: 'When your order is out for delivery, a delivery code appears on the order page. Share it with the rider only when you receive your items.'
+  },
+  {
+    icon: Banknote,
+    q: 'How do I pay?',
+    a: 'PMart currently accepts cash on delivery. The amount to pay is shown on the order page and at checkout.'
+  },
+  {
+    icon: MapPin,
+    q: 'Why can’t I order to my address?',
+    a: 'Each store delivers within a set distance. If your address is outside it, or the store has paused orders, checkout will tell you.'
+  },
+  {
+    icon: HelpCircle,
+    q: 'Can I cancel an order?',
+    a: 'Yes, until the store starts preparing it. Open the order and choose Cancel order.'
+  }
+];
 
 export const HelpPage = () => {
-  const [expandedIndex, setExpandedIndex] = useState('0-0');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  const toggleAccordion = (id) => {
-    setExpandedIndex(expandedIndex === id ? null : id);
-  };
+  const { settings } = useCart();
+  const hasContact = Boolean(settings.supportPhone || settings.supportEmail);
 
   return (
     <div className="pmart-help-page">
       <div className="container">
-        {/* Help Hero */}
         <div className="help-hero-card">
           <div className="hero-content">
-            <h1 className="hero-title">How can we help you today?</h1>
-            <p className="hero-subtitle">Find fast answers to questions regarding your groceries, OTPs, and delivery</p>
-            <div className="help-search-box">
-              <Search size={18} className="search-icon" />
-              <Input
-                type="text"
-                
-                placeholder="Search FAQs, refunds, delivery issues..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <h1 className="hero-title">How can we help?</h1>
+            <p className="hero-subtitle">Answers about ordering, delivery codes and payment.</p>
           </div>
         </div>
 
-        {/* Contact Channels Grid */}
-        <div className="contact-channels-grid">
-          <div className="contact-card">
-            <div className="card-icon">
-              <MessageSquare size={22} />
-            </div>
-            <h4 className="card-title">24x7 Live Chat</h4>
-            <p className="card-desc">Average response in under 60 seconds for active orders</p>
-            <Button variant="outline-red" size="sm" className="mt-auto" onClick={() => setIsChatOpen(true)}>
-              Start Chat
-            </Button>
-          </div>
-
-          <div className="contact-card">
-            <div className="card-icon">
-              <PhoneCall size={22} />
-            </div>
-            <h4 className="card-title">Priority Phone Support</h4>
-            <p className="card-desc">Call toll-free 1800-889-PMART for urgent grocery assistance</p>
-            <Button component="a" href="tel:18008897627" variant="outline-red" size="sm" className="mt-auto">
-              Call Hotline
-            </Button>
-          </div>
-
-          <div className="contact-card">
-            <div className="card-icon">
-              <Mail size={22} />
-            </div>
-            <h4 className="card-title">Email Customer Care</h4>
-            <p className="card-desc">Write to care@pmart.in for billing queries and invoices</p>
-            <Button component="a" href="mailto:care@pmart.in" variant="outline-red" size="sm" className="mt-auto">
-              Send Email
-            </Button>
-          </div>
-        </div>
-
-        {/* FAQs Accordion */}
-        <div className="faqs-accordion-section">
-          <h2 className="section-title">Frequently Asked Questions</h2>
-
-          <div className="faq-categories-list">
-            {[]?.map((cat, catIdx) => (
-              <div key={catIdx} className="faq-category-block">
-                <h3 className="category-block-title">{cat.category}</h3>
-                <div className="questions-accordion">
-                  {cat.questions.map((faq, qIdx) => {
-                    const id = `${catIdx}-${qIdx}`;
-                    const isOpen = expandedIndex === id;
-                    return (
-                      <div key={qIdx} className={`faq-accordion-item ${isOpen ? 'open' : ''}`}>
-                        <Button
-                          className="faq-question-btn"
-                          onClick={() => toggleAccordion(id)}
-                          aria-expanded={isOpen}
-                        >
-                          <span className="question-text">{faq.q}</span>
-                          <ChevronDown size={18} className={`chevron-arrow ${isOpen ? 'rotated' : ''}`} />
-                        </Button>
-                        {isOpen && (
-                          <div className="faq-answer-panel">
-                            <p>{faq.a}</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+        {hasContact && (
+          <div className="contact-channels-grid">
+            {settings.supportPhone && (
+              <div className="contact-card">
+                <div className="card-icon">
+                  <PhoneCall size={22} />
                 </div>
+                <h4 className="card-title">Call support</h4>
+                <p className="card-desc">{settings.supportPhone}</p>
+                <Button component="a" href={`tel:${settings.supportPhone}`} variant="outline-red" size="sm" className="mt-auto">
+                  Call
+                </Button>
               </div>
-            ))}
+            )}
+            {settings.supportEmail && (
+              <div className="contact-card">
+                <div className="card-icon">
+                  <Mail size={22} />
+                </div>
+                <h4 className="card-title">Email support</h4>
+                <p className="card-desc">{settings.supportEmail}</p>
+                <Button component="a" href={`mailto:${settings.supportEmail}`} variant="outline-red" size="sm" className="mt-auto">
+                  Send email
+                </Button>
+              </div>
+            )}
           </div>
+        )}
+
+        <div className="faqs-accordion-section">
+          <h2 className="section-title">Frequently asked questions</h2>
+          <div className="faq-categories-list">
+            <div className="faq-category-block">
+              <div className="questions-accordion">
+                {FAQS.map(({ icon: Icon, q, a }) => (
+                  <details key={q} className="faq-accordion-item">
+                    <summary className="faq-question-btn">
+                      <Icon size={16} style={{ marginRight: 8, flexShrink: 0 }} />
+                      <span className="question-text">{q}</span>
+                    </summary>
+                    <div className="faq-answer-panel">
+                      <p>{a}</p>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="muted-note mt-4">
+            Need to look at an order? <Link to="/orders">Go to My Orders</Link>.
+          </p>
         </div>
       </div>
-
-      <LiveChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 };

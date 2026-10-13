@@ -1,82 +1,94 @@
-import React, { useState } from 'react';
-import { Settings, Save, Clock, MapPin, Store, Check } from 'lucide-react';
-import { PageHeader, Card, FormField, Input, Button } from '@/components/ui';
+import React, { useEffect, useState } from 'react';
+import { Save, Check, AlertTriangle } from 'lucide-react';
+import { shopService } from '@/services/shopService';
+import { apiErrorMessage } from '@/services/apiClient';
+import { useMyShop } from '@/components/shop/ShopLayout';
+import { PageHeader, Card, FormField, Input, Button, LoadingState } from '@/components/ui';
 
+/** Store owners edit how their store operates; address, location and radius are managed by the platform admin. */
 export const ShopSettingsPage = () => {
-  const [storeName, setStoreName] = useState('PMart Darkstore Hub — Sector 62');
-  const [phone, setPhone] = useState('+91 98102 99881');
-  const [hours, setHours] = useState('6:00 AM – 11:30 PM');
-  const [radius, setRadius] = useState('3.5');
-  const [saved, setSaved] = useState(false);
+  const { shop, setShop } = useMyShop();
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (shop && !form) {
+      setForm({
+        name: shop.name || '',
+        phone: shop.phone || '',
+        description: shop.description || '',
+        openTime: shop.openTime || '',
+        closeTime: shop.closeTime || '',
+        isAcceptingOrders: Boolean(shop.isAcceptingOrders)
+      });
+    }
+  }, [shop, form]);
+
+  if (!form) return <LoadingState text="Loading store settings..." />;
+
+  const set = (key) => (e) => setForm({ ...form, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+
+  const save = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    setMessage(null);
+    try {
+      const updated = await shopService.updateMyShop({ ...form, phone: form.phone.trim(), description: form.description.trim() });
+      setShop(updated);
+      setMessage({ type: 'success', text: 'Store settings saved.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: apiErrorMessage(err, 'Could not save settings.') });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  return (
-    <div className="shop-settings-page">
-      <PageHeader 
-        title="Darkstore Settings"
-        subtitle="Configure store operating hours, delivery radius, and facility info"
-      />
+  const address = shop.address ? [shop.address.street, shop.address.area, shop.address.city, shop.address.state, shop.address.pincode].filter(Boolean).join(', ') : '';
 
+  return (
+    <div>
+      <PageHeader title="Store settings" subtitle="Opening hours, contact number and order intake" />
       <Card className="max-w-2xl">
-        {saved && (
-          <div className="badge badge-success mb-4 p-2 text-sm flex items-center gap-2">
-            <Check size={16} /> Store settings updated successfully!
+        {message && (
+          <div className={`alert ${message.type === 'success' ? 'alert-success' : 'alert-error'} mb-4`}>
+            {message.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+            <span>{message.text}</span>
           </div>
         )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormField label="Store / Darkstore Name" htmlFor="storeName">
-            <Input
-              id="storeName"
-              type="text"
-              value={storeName}
-              onChange={e => setStoreName(e.target.value)}
-              required
-            />
+        <form onSubmit={save}>
+          <FormField label="Store name" htmlFor="store-name">
+            <Input id="store-name" value={form.name} onChange={set('name')} maxLength={120} required />
           </FormField>
-
-          <FormField label="Hub Manager Hotline" htmlFor="storePhone">
-            <Input
-              id="storePhone"
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              required
-            />
+          <FormField label="Store phone" htmlFor="store-phone" hint="Shown to the platform team; optional">
+            <Input id="store-phone" type="tel" value={form.phone} onChange={set('phone')} />
           </FormField>
-
-          <FormField label="Daily Operating Hours" htmlFor="storeHours">
-            <Input
-              id="storeHours"
-              type="text"
-              value={hours}
-              onChange={e => setHours(e.target.value)}
-              required
-            />
+          <FormField label="Description" htmlFor="store-desc">
+            <Input id="store-desc" value={form.description} onChange={set('description')} maxLength={500} />
           </FormField>
-
-          <FormField label="Service Delivery Radius (in Kilometers)" htmlFor="storeRadius">
-            <Input
-              id="storeRadius"
-              type="number"
-              step="0.1"
-              value={radius}
-              onChange={e => setRadius(e.target.value)}
-              required
-            />
-            <div className="form-hint" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Standard quick-commerce radius is 2.5km to 3.5km</div>
-          </FormField>
-
-          <Button type="submit" variant="primary" style={{ marginTop: '16px' }}>
-            <Save size={16} style={{ marginRight: '8px' }} />
-            <span>Save Hub Configuration</span>
+          <div className="form-grid">
+            <FormField label="Opens at" htmlFor="store-open">
+              <Input id="store-open" type="time" value={form.openTime} onChange={set('openTime')} required />
+            </FormField>
+            <FormField label="Closes at" htmlFor="store-close">
+              <Input id="store-close" type="time" value={form.closeTime} onChange={set('closeTime')} required />
+            </FormField>
+          </div>
+          <label htmlFor="store-accepting" className="flex items-center gap-2 mb-4" style={{ cursor: 'pointer' }}>
+            <input id="store-accepting" type="checkbox" checked={form.isAcceptingOrders} onChange={set('isAcceptingOrders')} />
+            <span>Accepting new orders</span>
+          </label>
+          <Button type="submit" variant="primary" isLoading={saving}>
+            <Save size={16} style={{ marginRight: 8 }} />
+            Save settings
           </Button>
         </form>
+      </Card>
+
+      <Card className="max-w-2xl mt-6">
+        <h3 className="section-heading mb-2">Managed by the platform admin</h3>
+        <p className="text-sm"><strong>Address:</strong> {address}</p>
+        <p className="text-sm"><strong>Delivery radius:</strong> {shop.deliveryRadiusKm} km</p>
       </Card>
     </div>
   );

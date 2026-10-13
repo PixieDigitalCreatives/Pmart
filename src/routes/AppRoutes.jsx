@@ -7,7 +7,7 @@ import { RiderLayout } from '@/components/rider/RiderLayout';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { RoleGuard } from './RoleGuard';
 
-// Customer Pages
+// Customer
 import { HomePage } from '@/pages/customer/HomePage';
 import { SearchPage } from '@/pages/customer/SearchPage';
 import { CategoryPage } from '@/pages/customer/CategoryPage';
@@ -21,483 +21,132 @@ import { AddressesPage } from '@/pages/customer/AddressesPage';
 import { OffersPage } from '@/pages/customer/OffersPage';
 import { HelpPage } from '@/pages/customer/HelpPage';
 
-// Auth Pages
+// Auth
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
-import { SetPasswordPage } from '@/pages/auth/SetPasswordPage';
-import { RiderEnrollPage } from '@/pages/auth/RiderEnrollPage';
+import { ActivateAccountPage } from '@/pages/auth/ActivateAccountPage';
+import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
 
-// Shop Pages
-import { ShopDashboardPage } from '@/pages/shop/ShopDashboardPage';
-import { ShopOrdersPage } from '@/pages/shop/ShopOrdersPage';
-import { ShopOrderDetailPage } from '@/pages/shop/ShopOrderDetailPage';
+// Shared management pages (store owners and admin staff)
+import { OrderManagePage } from '@/pages/shop/ShopOrderDetailPage';
 import { ShopProductsPage } from '@/pages/shop/ShopProductsPage';
 import { ShopProductNewPage } from '@/pages/shop/ShopProductNewPage';
 import { ShopCategoriesPage } from '@/pages/shop/ShopCategoriesPage';
+
+// Store owner
+import { ShopDashboardPage } from '@/pages/shop/ShopDashboardPage';
+import { ShopOrdersPage } from '@/pages/shop/ShopOrdersPage';
 import { ShopRidersPage } from '@/pages/shop/ShopRidersPage';
 import { ShopAnalyticsPage } from '@/pages/shop/ShopAnalyticsPage';
 import { ShopSettingsPage } from '@/pages/shop/ShopSettingsPage';
 
-// Rider Pages
+// Rider
 import { RiderDashboardPage } from '@/pages/rider/RiderDashboardPage';
 import { RiderOrdersPage } from '@/pages/rider/RiderOrdersPage';
 import { RiderOrderDetailPage } from '@/pages/rider/RiderOrderDetailPage';
 import { RiderHistoryPage } from '@/pages/rider/RiderHistoryPage';
 import { RiderProfilePage } from '@/pages/rider/RiderProfilePage';
-import { RiderOnboardingPage } from '@/pages/rider/RiderOnboardingPage';
-import { RiderMandatoryPasswordChangePage } from '@/pages/rider/RiderMandatoryPasswordChangePage';
 
-// Admin Pages
+// Admin
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminLiveDeliveriesPage } from '@/pages/admin/AdminLiveDeliveriesPage';
 import { AdminOrdersPage } from '@/pages/admin/AdminOrdersPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
-
+import { AdminStoresPage } from '@/pages/admin/AdminStoresPage';
 import { AdminReportsPage } from '@/pages/admin/AdminReportsPage';
 import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
-export const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Customer Routes with CustomerLayout */}
-      <Route
-        path="/"
-        element={
-          <CustomerLayout>
-            <HomePage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <CustomerLayout>
-            <SearchPage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/category/:slug"
-        element={
-          <CustomerLayout>
-            <CategoryPage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/product/:slug"
-        element={
-          <CustomerLayout>
-            <ProductDetailPage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/cart"
-        element={
-          <CustomerLayout>
-            <CartPage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/checkout"
-        element={
-          <RoleGuard allowedRoles={['CUSTOMER']}>
-            <CustomerLayout>
-              <CheckoutPage />
-            </CustomerLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/orders"
-        element={
-          <RoleGuard allowedRoles={['CUSTOMER']}>
-            <CustomerLayout>
-              <OrdersPage />
-            </CustomerLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/orders/:id"
-        element={
-          <RoleGuard allowedRoles={['CUSTOMER']}>
-            <CustomerLayout>
-              <OrderTrackingPage />
-            </CustomerLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <RoleGuard allowedRoles={['CUSTOMER']}>
-            <CustomerLayout>
-              <ProfilePage />
-            </CustomerLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/addresses"
-        element={
-          <RoleGuard allowedRoles={['CUSTOMER']}>
-            <CustomerLayout>
-              <AddressesPage />
-            </CustomerLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/offers"
-        element={
-          <CustomerLayout>
-            <OffersPage />
-          </CustomerLayout>
-        }
-      />
-      <Route
-        path="/help"
-        element={
-          <CustomerLayout>
-            <HelpPage />
-          </CustomerLayout>
-        }
-      />
+const STAFF = ['ADMIN', 'EMPLOYEE'];
 
-      {/* Authentication Routes */}
-      <Route
-        path="/login"
-        element={<LoginPage />}
-      />
-      <Route
-        path="/register"
-        element={<RegisterPage />}
-      />
-      <Route
-        path="/set-password"
-        element={<SetPasswordPage />}
-      />
-      <Route
-        path="/rider/enroll"
-        element={<RiderEnrollPage />}
-      />
+const customer = (page) => <CustomerLayout>{page}</CustomerLayout>;
+const customerOnly = (page) => (
+  <RoleGuard allowedRoles={['CUSTOMER']}>
+    <CustomerLayout>{page}</CustomerLayout>
+  </RoleGuard>
+);
+const shop = (page) => (
+  <RoleGuard allowedRoles={['SHOP_OWNER']}>
+    <ShopLayout>{page}</ShopLayout>
+  </RoleGuard>
+);
+const rider = (page) => (
+  <RoleGuard allowedRoles={['RIDER']}>
+    <RiderLayout>{page}</RiderLayout>
+  </RoleGuard>
+);
+const staff = (page, permission) => (
+  <RoleGuard allowedRoles={STAFF} permission={permission}>
+    <AdminLayout>{page}</AdminLayout>
+  </RoleGuard>
+);
 
-      {/* Shop Owner Portal Routes */}
-      <Route
-        path="/shop"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopDashboardPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/orders"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopOrdersPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/orders/:id"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopOrderDetailPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/products"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopProductsPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/products/new"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopProductNewPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/products/:id"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopProductNewPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/categories"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopCategoriesPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/riders"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopRidersPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/analytics"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopAnalyticsPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/shop/settings"
-        element={
-          <RoleGuard allowedRoles={['SHOP_OWNER', 'ADMIN']}>
-            
-            <ShopLayout>
-              <ShopSettingsPage />
-            </ShopLayout>
-          </RoleGuard>
-        }
-      />
+export const AppRoutes = () => (
+  <Routes>
+    {/* Storefront */}
+    <Route path="/" element={customer(<HomePage />)} />
+    <Route path="/search" element={customer(<SearchPage />)} />
+    <Route path="/category/:slug" element={customer(<CategoryPage />)} />
+    <Route path="/product/:slug" element={customer(<ProductDetailPage />)} />
+    <Route path="/cart" element={customer(<CartPage />)} />
+    <Route path="/offers" element={customer(<OffersPage />)} />
+    <Route path="/help" element={customer(<HelpPage />)} />
+    <Route path="/checkout" element={customerOnly(<CheckoutPage />)} />
+    <Route path="/orders" element={customerOnly(<OrdersPage />)} />
+    <Route path="/orders/:id" element={customerOnly(<OrderTrackingPage />)} />
+    <Route path="/profile" element={customerOnly(<ProfilePage />)} />
+    <Route path="/addresses" element={customerOnly(<AddressesPage />)} />
 
-      {/* Delivery Rider Portal Routes */}
-      <Route
-        path="/rider/mandatory-password-change"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            <RiderMandatoryPasswordChangePage />
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider/onboarding"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderOnboardingPage />
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderLayout>
-              <RiderDashboardPage />
-            </RiderLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider/orders"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderLayout>
-              <RiderOrdersPage />
-            </RiderLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider/orders/:id"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderLayout>
-              <RiderOrderDetailPage />
-            </RiderLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider/history"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderLayout>
-              <RiderHistoryPage />
-            </RiderLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/rider/profile"
-        element={
-          <RoleGuard allowedRoles={['RIDER', 'ADMIN']}>
-            
-            <RiderLayout>
-              <RiderProfilePage />
-            </RiderLayout>
-          </RoleGuard>
-        }
-      />
+    {/* Authentication */}
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<RegisterPage />} />
+    <Route path="/activate" element={<ActivateAccountPage />} />
+    <Route
+      path="/account/change-password"
+      element={
+        <RoleGuard>
+          <ChangePasswordPage />
+        </RoleGuard>
+      }
+    />
 
-      {/* Admin Portal Routes */}
-      <Route
-        path="/admin"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminDashboardPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/live-deliveries"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminLiveDeliveriesPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/orders"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminOrdersPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/orders/:id"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminOrdersPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminUsersPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/customers"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminUsersPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
+    {/* Store owner portal */}
+    <Route path="/shop" element={shop(<ShopDashboardPage />)} />
+    <Route path="/shop/orders" element={shop(<ShopOrdersPage />)} />
+    <Route path="/shop/orders/:id" element={shop(<OrderManagePage backTo="/shop/orders" />)} />
+    <Route path="/shop/products" element={shop(<ShopProductsPage basePath="/shop/products" />)} />
+    <Route path="/shop/products/new" element={shop(<ShopProductNewPage basePath="/shop/products" />)} />
+    <Route path="/shop/products/:id" element={shop(<ShopProductNewPage basePath="/shop/products" />)} />
+    <Route path="/shop/riders" element={shop(<ShopRidersPage />)} />
+    <Route path="/shop/analytics" element={shop(<ShopAnalyticsPage />)} />
+    <Route path="/shop/settings" element={shop(<ShopSettingsPage />)} />
 
-      <Route
-        path="/admin/products"
-        element={
-          <RoleGuard allowedRoles={['ADMIN', 'EMPLOYEE']}>
-            
-            <AdminLayout>
-              <ShopProductsPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/categories"
-        element={
-          <RoleGuard allowedRoles={['ADMIN', 'EMPLOYEE']}>
-            
-            <AdminLayout>
-              <ShopCategoriesPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/payments"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminPaymentsPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/reports"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminReportsPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
-      <Route
-        path="/admin/settings"
-        element={
-          <RoleGuard allowedRoles={['ADMIN']}>
-            
-            <AdminLayout>
-              <AdminSettingsPage />
-            </AdminLayout>
-          </RoleGuard>
-        }
-      />
+    {/* Rider portal */}
+    <Route path="/rider" element={rider(<RiderDashboardPage />)} />
+    <Route path="/rider/orders" element={rider(<RiderOrdersPage />)} />
+    <Route path="/rider/orders/:id" element={rider(<RiderOrderDetailPage />)} />
+    <Route path="/rider/history" element={rider(<RiderHistoryPage />)} />
+    <Route path="/rider/profile" element={rider(<RiderProfilePage />)} />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
+    {/* Admin & staff portal (each page also checks its permission) */}
+    <Route path="/admin" element={staff(<AdminDashboardPage />)} />
+    <Route path="/admin/live-deliveries" element={staff(<AdminLiveDeliveriesPage />, 'orders.read')} />
+    <Route path="/admin/orders" element={staff(<AdminOrdersPage />, 'orders.read')} />
+    <Route path="/admin/orders/:id" element={staff(<OrderManagePage backTo="/admin/orders" />, 'orders.read')} />
+    <Route path="/admin/users" element={staff(<AdminUsersPage />)} />
+    <Route path="/admin/stores" element={staff(<AdminStoresPage />, 'shops.manage')} />
+    <Route path="/admin/products" element={staff(<ShopProductsPage basePath="/admin/products" />, 'catalog.manage')} />
+    <Route path="/admin/products/new" element={staff(<ShopProductNewPage basePath="/admin/products" />, 'catalog.manage')} />
+    <Route path="/admin/products/:id" element={staff(<ShopProductNewPage basePath="/admin/products" />, 'catalog.manage')} />
+    <Route path="/admin/categories" element={staff(<ShopCategoriesPage />, 'catalog.manage')} />
+    <Route path="/admin/payments" element={staff(<AdminPaymentsPage />, 'reports.read')} />
+    <Route path="/admin/reports" element={staff(<AdminReportsPage />, 'reports.read')} />
+    <Route path="/admin/settings" element={staff(<AdminSettingsPage />, 'settings.read')} />
+
+    {/* Old links */}
+    <Route path="/rider/enroll" element={<Navigate to="/activate" replace />} />
+    <Route path="/set-password" element={<Navigate to="/account/change-password" replace />} />
+    <Route path="/admin/customers" element={<Navigate to="/admin/users" replace />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);

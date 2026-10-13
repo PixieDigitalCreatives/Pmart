@@ -1,127 +1,81 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Navigation, Bike, Clock, Phone, MapPin } from 'lucide-react';
+import { X, Navigation, MapPin } from 'lucide-react';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
-import { getRoute } from '@/services/routingService';
-import './ShopTrackRiderModal.scss';
+import { useLiveTracking } from '@/hooks/useLiveTracking';
+import { ORDER_STATUS_LABELS } from '@/types/orderTypes';
 import { Button } from '@/components/ui';
+import './ShopTrackRiderModal.scss';
 
+/** Live rider position for one order, for store and operations staff. */
 export const ShopTrackRiderModal = ({ isOpen, onClose, order }) => {
-  const [route, setRoute] = React.useState(null);
-  const [routeError, setRouteError] = React.useState(false);
-
-  React.useEffect(() => {
-    if (isOpen && order) {
-      const rLat = order.rider?.location?.lat;
-      const rLng = order.rider?.location?.lng;
-      const cLat = order.deliveryAddress?.coordinates?.lat || order.deliveryAddress?.location?.coordinates?.[1];
-      const cLng = order.deliveryAddress?.coordinates?.lng || order.deliveryAddress?.location?.coordinates?.[0];
-
-      if (rLat && rLng && cLat && cLng) {
-        getRoute([rLng, rLat], [cLng, cLat])
-          .then(data => {
-            if (data?.geometry) {
-              setRoute(data.geometry);
-              setRouteError(false);
-            } else {
-              setRoute(null);
-              setRouteError(true);
-            }
-          })
-          .catch(err => {
-            console.error('Failed to get route in modal:', err);
-            setRoute(null);
-            setRouteError(true);
-          });
-      }
-    }
-  }, [isOpen, order?.rider?.location?.lat, order?.rider?.location?.lng]);
-
+  const tracking = useLiveTracking(isOpen && order ? order._id : null);
   if (!isOpen || !order) return null;
 
+  const dest = order.deliveryAddress || {};
   return (
-    <AnimatePresence>
-      <div className="modal-overlay" onClick={onClose}>
-        <motion.div
-          className="modal-content shop-track-rider-modal"
-          onClick={(e) => e.stopPropagation()}
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ duration: 0.2 }}
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* Header */}
-          <div className="track-modal-header">
-            <div className="header-info">
-              <div className="badge-icon">
-                <Navigation size={18} />
-              </div>
-              <div>
-                <h3 className="modal-title">Operational Rider Tracking</h3>
-                <p className="modal-desc">
-                  Order #{order.id} • Assigned to {order.rider?.name || 'Delivery Partner'} ({order.rider?.vehicleNumber})
-                </p>
-              </div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content shop-track-rider-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="track-modal-header">
+          <div className="header-info">
+            <div className="badge-icon">
+              <Navigation size={18} />
             </div>
-            <Button type="button" className="close-btn" onClick={onClose} aria-label="Close tracking">
-              <X size={18} />
-            </Button>
+            <div>
+              <h3 className="modal-title">Rider tracking</h3>
+              <p className="modal-desc">
+                Order #{order.orderNumber} • {order.rider?.name || 'Rider'} {order.rider?.vehicleNumber ? `(${order.rider.vehicleNumber})` : ''}
+              </p>
+            </div>
           </div>
+          <Button type="button" className="close-btn" onClick={onClose} aria-label="Close tracking">
+            <X size={18} />
+          </Button>
+        </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="operational-metrics-strip">
-            <div className="metric-cell">
-              <span className="label">Order Status</span>
-              <span className="val text-success">{order.status}</span>
-            </div>
-            <div className="metric-cell">
-              <span className="label">Estimated Arrival</span>
-              <span className="val">{order.tracking?.etaMinutes ? `~${order.tracking.etaMinutes} min` : 'Calculating'}</span>
-            </div>
-            <div className="metric-cell">
-              <span className="label">Distance to Customer</span>
-              <span className="val">{order.tracking?.distanceKm ? `${order.tracking.distanceKm} km` : 'Calculating'}</span>
-            </div>
-            <div className="metric-cell">
-              <span className="label">Customer Phone</span>
-              <a href={`tel:${order.customer?.phone}`} className="phone-link">
-                {order.customer?.phone || 'N/A'}
-              </a>
-            </div>
+        <div className="operational-metrics-strip">
+          <div className="metric-cell">
+            <span className="label">Status</span>
+            <span className="val text-success">{ORDER_STATUS_LABELS[tracking.status || order.status]}</span>
           </div>
+          <div className="metric-cell">
+            <span className="label">Estimated arrival</span>
+            <span className="val">{tracking.etaMinutes ? `~${tracking.etaMinutes} min` : '—'}</span>
+          </div>
+          <div className="metric-cell">
+            <span className="label">Distance to customer</span>
+            <span className="val">{tracking.distanceKm != null ? `${tracking.distanceKm} km` : '—'}</span>
+          </div>
+          <div className="metric-cell">
+            <span className="label">Last GPS update</span>
+            <span className="val">{tracking.riderLocation?.updatedAt ? new Date(tracking.riderLocation.updatedAt).toLocaleTimeString('en-IN') : 'Waiting for GPS'}</span>
+          </div>
+        </div>
 
-          {/* Map View */}
-          <div className="track-map-wrapper">
-            <LiveTrackingMap
-              riderLocation={order.rider?.location}
-              customerLocation={order.deliveryAddress}
-              hubLocation={order.shop}
-              etaMinutes={order.tracking?.etaMinutes}
-              distanceKm={order.tracking?.distanceKm}
-              riderName={order.rider?.name || 'Delivery Partner'}
-              route={route}
-              routeError={routeError}
-              height="380px"
-              orderId={order.id}
-            />
-          </div>
+        <div className="track-map-wrapper">
+          <LiveTrackingMap
+            riderLocation={tracking.riderLocation}
+            customerLocation={tracking.customerLocation || order.deliveryAddress}
+            hubLocation={tracking.hubLocation || order.shop}
+            riderName={order.rider?.name || 'Rider'}
+            route={tracking.route}
+            routeError={tracking.routeError}
+            height="380px"
+            orderId={order._id}
+          />
+        </div>
 
-          {/* Footer */}
-          <div className="track-modal-footer">
-            <div className="dest-snippet">
-              <MapPin size={14} className="pin-icon" />
-              <span>
-                <strong>Destination:</strong> {order.deliveryAddress?.line1}, {order.deliveryAddress?.city}
-              </span>
-            </div>
-            <Button type="button"  onClick={onClose} variant="secondary" size="sm">
-              Close Monitor
-            </Button>
+        <div className="track-modal-footer">
+          <div className="dest-snippet">
+            <MapPin size={14} className="pin-icon" />
+            <span>
+              <strong>Destination:</strong> {[dest.houseNumber, dest.street, dest.area, dest.city, dest.pincode].filter(Boolean).join(', ')}
+            </span>
           </div>
-        </motion.div>
+          <Button type="button" onClick={onClose} variant="secondary" size="sm">
+            Close
+          </Button>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 };

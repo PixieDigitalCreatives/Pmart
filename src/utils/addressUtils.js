@@ -21,10 +21,12 @@ export const normalizeAddress = (addr) => {
     recipientPhone: addr.recipientPhone || addr.phone || '',
     houseNumber: addr.houseNumber || '',
     buildingName: addr.buildingName || '',
+    floor: addr.floor || '',
     street: addr.street || addr.address || '',
     area: addr.area || '',
     landmark: addr.landmark || '',
     city: addr.city || '',
+    district: addr.district || '',
     state: addr.state || '',
     pincode: addr.pincode || '',
     country: addr.country || 'India',
@@ -44,30 +46,20 @@ export const normalizeAddress = (addr) => {
   };
 };
 
+/**
+ * One-line address from the structured fields the customer confirmed (same format the server stores in
+ * formattedAddress). Falls back to formattedAddress only for records without structured fields.
+ */
 export const getFullAddressString = (addr) => {
   if (!addr) return '';
-  
-  const prefixParts = [
+  const parts = [
     addr.houseNumber,
     addr.buildingName,
-    addr.landmark ? `(Opp. ${addr.landmark})` : ''
-  ].filter(Boolean);
-
-  if (addr.formattedAddress) {
-    if (prefixParts.length > 0) {
-      return `${prefixParts.join(', ')}, ${addr.formattedAddress}`;
-    }
-    return addr.formattedAddress;
-  }
-  
-  const allParts = [
-    ...prefixParts,
+    addr.floor && `Floor ${addr.floor}`,
     addr.street,
     addr.area,
     addr.city,
-    addr.state,
-    addr.pincode
+    addr.state && addr.pincode ? `${addr.state} - ${addr.pincode}` : addr.state || addr.pincode
   ].filter(Boolean);
-  
-  return allParts.join(', ');
+  return parts.length > 0 ? parts.join(', ') : addr.formattedAddress || '';
 };

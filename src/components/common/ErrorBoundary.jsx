@@ -28,7 +28,7 @@ class ErrorBoundary extends React.Component {
             <h2>Oops! Something went wrong.</h2>
             <p className="error-message">
               We're sorry, but there was an unexpected error. 
-              {this.props.fallbackMessage || 'Our team has been notified.'}
+              {this.props.fallbackMessage || 'Reload the page to try again. If it keeps happening, contact support.'}
             </p>
             <Button 
               className="retry-button" 

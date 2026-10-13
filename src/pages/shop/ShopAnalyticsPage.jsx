@@ -1,64 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, DollarSign, ShoppingBag, Clock, AlertCircle } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { shopService } from '@/services/shopService';
+import { PageHeader, LoadingState, EmptyState } from '@/components/ui';
+import { plural } from '@/utils/plural';
+
+const Kpi = ({ label, value, hint }) => (
+  <div className="kpi-tile">
+    <div className="kpi-tile-label">{label}</div>
+    <div className="kpi-tile-value">{value}</div>
+    {hint && <div className="kpi-tile-hint">{hint}</div>}
+  </div>
+);
+
+const minutes = (m) => (m == null ? 'No data yet' : `${m} min`);
 
 export const ShopAnalyticsPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    shopService.getShopMetrics().then(res => {
-      setData(res);
-      setLoading(false);
-    }).catch(() => {
-      setData(null);
-      setLoading(false);
-    });
+    shopService
+      .getMyMetrics()
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div className="p-4">Loading analytics...</div>;
-  }
+  if (loading) return <LoadingState text="Loading analytics..." />;
+  if (!data) return <EmptyState icon={BarChart3} title="Analytics unavailable" description="Your store could not be loaded." />;
 
-  if (!data || !data.hasData) {
-    return (
-      <div className="shop-analytics-page flex flex-col items-center justify-center p-12 text-center text-muted">
-        <AlertCircle size={48} className="mb-4 text-border" />
-        <h2 className="text-xl font-bold text-dark mb-2">No Data Available</h2>
-        <p>There is currently not enough data to generate analytics for this darkstore.</p>
-      </div>
-    );
-  }
-
+  const m = data.last30Days;
   return (
-    <div className="shop-analytics-page">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-dark">Darkstore Operational Analytics</h1>
-        <p className="text-muted text-sm">Throughput, revenue performance, and hourly rush breakdown</p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="pmart-card">
-          <div className="text-muted text-xs font-semibold mb-1">TOTAL SALES (THIS MONTH)</div>
-          <div className="text-2xl font-extrabold text-dark mb-1">₹{data.monthlySales || 0}</div>
+    <div>
+      <PageHeader title="Analytics" subtitle="Delivered orders over the last 30 days" />
+      {m.completedOrders === 0 ? (
+        <EmptyState icon={BarChart3} title="No delivered orders yet" description="Figures appear here once orders are delivered." />
+      ) : (
+        <div className="kpi-grid">
+          <Kpi label="Sales (30 days)" value={`₹${m.sales.toLocaleString('en-IN')}`} hint={plural(m.completedOrders, 'delivered order')} />
+          <Kpi label="Average order value" value={`₹${m.avgTicketSize.toLocaleString('en-IN')}`} />
+          <Kpi label="Order to ready" value={minutes(m.avgFulfillmentMinutes)} hint="Average time from placement to packed" />
+          <Kpi label="Order to delivery" value={minutes(m.avgDeliveryMinutes)} hint="Average time from placement to doorstep" />
         </div>
-
-        <div className="pmart-card">
-          <div className="text-muted text-xs font-semibold mb-1">AVERAGE TICKET SIZE</div>
-          <div className="text-2xl font-extrabold text-dark mb-1">₹{data.avgTicketSize || 0}</div>
-          <div className="text-xs text-muted">Across {data.completedOrders || 0} completed orders</div>
-        </div>
-
-        <div className="pmart-card">
-          <div className="text-muted text-xs font-semibold mb-1">AVG PACKING TIME</div>
-          <div className="text-2xl font-extrabold text-dark mb-1">{data.avgPackingTime || 'N/A'}</div>
-        </div>
-
-        <div className="pmart-card">
-          <div className="text-muted text-xs font-semibold mb-1">ON-TIME DELIVERY SLA</div>
-          <div className="text-2xl font-extrabold text-dark mb-1">{data.onTimeRate ? `${data.onTimeRate}%` : 'N/A'}</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

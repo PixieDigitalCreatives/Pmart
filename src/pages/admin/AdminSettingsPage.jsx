@@ -1,195 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, Check, AlertCircle, RefreshCw } from 'lucide-react';
-import api from '@/services/apiClient';
-import { PageHeader, Card, Button, Input, LoadingState, ErrorMessage } from '@/components/ui';
+import { Save, Check, AlertCircle } from 'lucide-react';
+import { adminService } from '@/services/adminService';
+import { apiErrorMessage } from '@/services/apiClient';
+import { useAuth } from '@/context/AuthContext';
+import { PageHeader, Card, Button, Input, FormField, LoadingState } from '@/components/ui';
 
-const validateField = (value, name) => {
-  const n = Number(value);
-  if (value === '' || value === null || value === undefined) return `${name} is required`;
-  if (!Number.isFinite(n)) return `${name} must be a number`;
-  if (n < 0) return `${name} cannot be negative`;
-  if (n > 100000) return `${name} is too large`;
-  return null;
-};
-
-const FieldGroup = ({ label, hint, value, onChange, fieldKey, fieldErrors, setFieldErrors, isSaving }) => (
-  <div className="form-group mb-4">
-    <label htmlFor={fieldKey} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <Input
-      id={fieldKey}
-      type="number"
-      min="0"
-      step="0.01"
-      required
-      error={!!fieldErrors[fieldKey]}
-      value={value}
-      onChange={e => {
-        onChange(e.target.value);
-        if (fieldErrors[fieldKey]) {
-          setFieldErrors(prev => ({ ...prev, [fieldKey]: null }));
-        }
-      }}
-      disabled={isSaving}
-    />
-    {fieldErrors[fieldKey] ? (
-      <div className="text-xs text-red-600 mt-1">{fieldErrors[fieldKey]}</div>
-    ) : (
-      <div className="form-hint text-xs text-gray-500 mt-1">{hint}</div>
-    )}
-  </div>
-);
+const NUMBER_FIELDS = [
+  { key: 'freeDeliveryThreshold', label: 'Free delivery above (₹)', hint: 'Orders with an item total at or above this pay no delivery fee' },
+  { key: 'baseDeliveryFee', label: 'Delivery fee (₹)', hint: 'Charged when the item total is below the free-delivery amount' },
+  { key: 'platformHandlingFee', label: 'Handling fee (₹)', hint: 'Added to every order' },
+  { key: 'deliverySlaMinutes', label: 'Delivery time target (minutes)', hint: 'Used to count late deliveries in Reports' },
+  { key: 'lowStockThreshold', label: 'Low-stock alert at (units)', hint: 'Store dashboards flag products at or below this' }
+];
 
 export const AdminSettingsPage = () => {
-  const [freeDelThreshold, setFreeDelThreshold] = useState('299');
-  const [baseDelFee, setBaseDelFee] = useState('15');
-  const [platformFee, setPlatformFee] = useState('5');
-  const [fieldErrors, setFieldErrors] = useState({});
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-
-  const fetchSettings = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
-      const { data } = await api.get('/admin/settings');
-      if (data) {
-        setFreeDelThreshold(data.freeDeliveryThreshold?.toString() ?? '299');
-        setBaseDelFee(data.baseDeliveryFee?.toString() ?? '15');
-        setPlatformFee(data.platformHandlingFee?.toString() ?? '5');
-      }
-    } catch (err) {
-      const status = err?.response?.status;
-      if (status === 403) {
-        setError('You do not have permission to view system settings.');
-      } else {
-        setError('Failed to load settings. Please check your connection and try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { can } = useAuth();
+  const canEdit = can('settings.manage');
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
-    fetchSettings();
+    adminService
+      .getSettings()
+      .then((s) =>
+        setForm({
+          ...Object.fromEntries(NUMBER_FIELDS.map((f) => [f.key, String(s[f.key] ?? '')])),
+          supportPhone: s.supportPhone || '',
+          supportEmail: s.supportEmail || ''
+        })
+      )
+      .catch((err) => setMessage({ type: 'error', text: apiErrorMessage(err, 'Could not load settings.') }));
   }, []);
 
-  const handleSubmit = async (e) => {
+  if (!form) return message ? <div className="alert alert-error">{message.text}</div> : <LoadingState text="Loading settings..." />;
+
+  const save = async (e) => {
     e.preventDefault();
-    setError('');
-    setSaved(false);
-
-    const errs = {
-      freeDelThreshold: validateField(freeDelThreshold, 'Free Delivery Threshold'),
-      baseDelFee: validateField(baseDelFee, 'Standard Delivery Fee'),
-      platformFee: validateField(platformFee, 'Platform Handling Fee'),
-    };
-    if (Object.values(errs).some(Boolean)) {
-      setFieldErrors(errs);
-      return;
-    }
-    setFieldErrors({});
-
-    try {
-      setIsSaving(true);
-      await api.put('/admin/settings', {
-        freeDeliveryThreshold: Number(freeDelThreshold),
-        baseDeliveryFee: Number(baseDelFee),
-        platformHandlingFee: Number(platformFee),
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 4000);
-    } catch (err) {
-      const status = err?.response?.status;
-      if (status === 403) {
-        setError('You do not have permission to update system settings.');
-      } else if (status === 400) {
-        setError(err.response?.data?.message || 'Invalid input. Please check your values.');
-      } else {
-        setError(err.response?.data?.message || 'Failed to save settings. Please check your connection.');
+    const payload = { supportPhone: form.supportPhone.trim(), supportEmail: form.supportEmail.trim() };
+    for (const f of NUMBER_FIELDS) {
+      const n = Number(form[f.key]);
+      if (form[f.key] === '' || !Number.isFinite(n) || n < 0) {
+        setMessage({ type: 'error', text: `${f.label} must be a number of 0 or more.` });
+        return;
       }
+      payload[f.key] = f.key === 'deliverySlaMinutes' || f.key === 'lowStockThreshold' ? Math.round(n) : n;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      await adminService.updateSettings(payload);
+      setMessage({ type: 'success', text: 'Settings saved. New orders use these values immediately.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: apiErrorMessage(err, 'Could not save settings.') });
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
-  if (isLoading) {
-    return <LoadingState text="Loading settings..." fullHeight />;
-  }
-
-
   return (
-    <div className="admin-settings-page">
-      <PageHeader
-        title={<span className="flex items-center gap-2"><Settings size={24} className="text-primary" /> Platform System Settings</span>}
-        subtitle="Configure commerce delivery rules, minimum order fees, and SLA tolerances"
-      />
-
-      <Card className="max-w-xl">
-        {saved && (
-          <div className="badge badge-success mb-4 p-3 text-sm flex items-center gap-2 bg-green-50 text-green-700 rounded-md border border-green-200">
-            <Check size={18} /> Settings saved successfully! Checkout will use these values immediately.
+    <div>
+      <PageHeader title="Settings" subtitle="Fees, delivery targets and customer support contact" />
+      <Card className="max-w-2xl">
+        {message && (
+          <div className={`alert ${message.type === 'success' ? 'alert-success' : 'alert-error'} mb-4`}>
+            {message.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+            <span>{message.text}</span>
           </div>
         )}
-
-        {error && (
-          <div className="mb-4 p-3 text-sm flex items-center justify-between gap-2 bg-red-50 text-red-700 rounded-md border border-red-200">
-            <span className="flex items-center gap-2"><AlertCircle size={18} /> {error}</span>
-            <Button
-              type="button"
-              onClick={fetchSettings}
-              className="flex items-center gap-1 text-xs underline opacity-75 hover:opacity-100"
-            >
-              <RefreshCw size={12} /> Retry
-            </Button>
+        <form onSubmit={save} noValidate>
+          <h3 className="font-bold mb-2">Fees and operations</h3>
+          <div className="form-grid">
+            {NUMBER_FIELDS.map((f) => (
+              <FormField key={f.key} label={f.label} htmlFor={`set-${f.key}`} hint={f.hint}>
+                <Input id={`set-${f.key}`} type="number" min="0" step="any" value={form[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} disabled={!canEdit || saving} />
+              </FormField>
+            ))}
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          <FieldGroup
-            label="Free Delivery Order Minimum (&#8377;)"
-            hint="Orders subtotaling above this threshold receive free doorstep delivery"
-            value={freeDelThreshold}
-            onChange={setFreeDelThreshold}
-            fieldKey="freeDelThreshold"
-            fieldErrors={fieldErrors}
-            setFieldErrors={setFieldErrors}
-            isSaving={isSaving}
-          />
-          <FieldGroup
-            label="Standard Delivery Fee (&#8377;)"
-            hint="Base fee charged when the order does not meet the free delivery minimum"
-            value={baseDelFee}
-            onChange={setBaseDelFee}
-            fieldKey="baseDelFee"
-            fieldErrors={fieldErrors}
-            setFieldErrors={setFieldErrors}
-            isSaving={isSaving}
-          />
-          <FieldGroup
-            label="Platform Handling Fee (&#8377;)"
-            hint="Additional handling fee added to all non-free deliveries"
-            value={platformFee}
-            onChange={setPlatformFee}
-            fieldKey="platformFee"
-            fieldErrors={fieldErrors}
-            setFieldErrors={setFieldErrors}
-            isSaving={isSaving}
-          />
-
-          <div className="pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSaving}
-              loading={isSaving}
-              loadingText="Saving..."
-            >
-              {!isSaving && <><Save size={16} style={{ marginRight: '8px' }} /> Save System Parameters</>}
-            </Button>
+          <h3 className="font-bold mb-2 mt-4">Customer support</h3>
+          <p className="muted-note mb-2">Shown on the Help page and in the footer. Leave empty to hide.</p>
+          <div className="form-grid">
+            <FormField label="Support phone" htmlFor="set-support-phone">
+              <Input id="set-support-phone" type="tel" value={form.supportPhone} onChange={(e) => setForm({ ...form, supportPhone: e.target.value })} disabled={!canEdit || saving} />
+            </FormField>
+            <FormField label="Support email" htmlFor="set-support-email">
+              <Input id="set-support-email" type="email" value={form.supportEmail} onChange={(e) => setForm({ ...form, supportEmail: e.target.value })} disabled={!canEdit || saving} />
+            </FormField>
           </div>
+          {canEdit ? (
+            <Button type="submit" variant="primary" isLoading={saving} className="mt-2">
+              <Save size={16} style={{ marginRight: 6 }} />
+              Save settings
+            </Button>
+          ) : (
+            <p className="muted-note">You can view but not change settings.</p>
+          )}
         </form>
       </Card>
     </div>

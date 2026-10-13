@@ -288,7 +288,18 @@
             display: none;
           }
 
-          .dot.online {
+          cursor: pointer;
+          font: inherit;
+
+          &.paused {
+            background: $warning-bg;
+            border-color: $warning-border;
+
+            .dot { background-color: $warning; }
+            .status-label { color: $warning-text; }
+          }
+
+          .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;

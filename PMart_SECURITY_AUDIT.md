@@ -1,5 +1,7 @@
 # PMart Security & Business Invariant Verification Audit
 
+> **HISTORICAL DOCUMENT — superseded on 2026-10-13.** This describes the code and database before the rebuild (TypeScript backend, old collections, seed data and the Playwright suite, all since removed). File names, collections and test references below may no longer exist. Current state: [Developer Handover Report](docs/PMart_DEVELOPER_HANDOVER_REPORT.md), [Database Reference](docs/PMart_DATABASE_REFERENCE.md), [Feature Status Matrix](docs/PMart_FEATURE_STATUS_MATRIX.md) and [SECURITY.md](SECURITY.md).
+
 ## 1. Rate Limiting
 - **Implementation Status**: `express-rate-limit` is actively deployed on critical authentication routes in `auth.route.ts` and globally in `app.ts`.
 - **Global Limiter**: 100 requests per 15 minutes per IP.

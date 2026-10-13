@@ -1,160 +1,89 @@
-import apiClient from './apiClient';
+import apiClient, { getAccessToken } from './apiClient';
 
 const CART_STORAGE_KEY = 'pmart_cart_items';
+const SETTINGS_STORAGE_KEY = 'pmart_settings';
+
+const DEFAULT_SETTINGS = { freeDeliveryThreshold: 0, baseDeliveryFee: 0, platformHandlingFee: 0, supportPhone: '', supportEmail: '', otpLength: 4, googleSignIn: false };
+
+/** Shapes an API product into a cart line. */
+export const toCartItem = (product, quantity) => ({
+  id: product._id || product.id,
+  name: product.name,
+  slug: product.slug,
+  price: Number(product.price) || 0,
+  mrp: Number(product.mrp) || Number(product.price) || 0,
+  unit: product.unit,
+  imageUrl: product.imageUrl,
+  categorySlug: product.categorySlug,
+  shop: product.shop?._id || product.shop,
+  stockCount: product.stockCount,
+  quantity
+});
 
 export const cartService = {
-  // Sync local cart to backend if logged in
-  async syncCart(items) {
-    const token = localStorage.getItem('pmart_auth_token');
-    if (!token) return;
+  getLocalCart() {
     try {
-      const formattedItems = items.map(i => ({
-        product: i.id,
-        shop: i.shop,
-        quantity: i.quantity,
-        price: i.price
-      }));
-      await apiClient.post('/cart/sync', { items: formattedItems });
-    } catch (e) {
-      console.error('Failed to sync cart to backend', e);
-      if (e.response?.data) {
-        console.error('Backend sync error details:', JSON.stringify(e.response.data));
-      }
-    }
-  },
-
-  // Fetch cart from backend
-  async fetchCart() {
-    const token = localStorage.getItem('pmart_auth_token');
-    if (!token) return this.getCart();
-    try {
-      const res = await apiClient.get('/cart');
-      const cartData = res.data.data;
-      if (cartData && Array.isArray(cartData.items)) {
-        const items = cartData.items.map(i => {
-          const p = i.product;
-          return {
-            id: p._id || p.id,
-            name: p.name,
-            slug: p.slug,
-            price: p.price,
-            mrp: p.mrp || p.price,
-            unit: p.unit,
-            image: p.image,
-            categorySlug: p.categorySlug,
-            shop: p.shop || i.shop || null,
-            quantity: i.quantity
-          };
-        });
-        this.saveCartLocal(items);
-        return items;
-      }
-      return this.getCart();
-    } catch (e) {
-      console.error('Failed to fetch cart', e);
-      return this.getCart();
-    }
-  },
-
-  // Synchronous for initial state
-  getCart() {
-    try {
-      const data = localStorage.getItem(CART_STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
+      const data = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
+      return Array.isArray(data) ? data.filter((i) => i && i.id && i.quantity > 0) : [];
+    } catch {
       return [];
     }
   },
 
-  saveCartLocal(items) {
+  saveLocalCart(items) {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch (e) {
-      console.error('Failed to save cart to localStorage', e);
+    } catch {
+      // Storage may be full or disabled; the in-memory cart still works.
     }
   },
 
-  // Called whenever cart changes
-  saveCart(items) {
-    this.saveCartLocal(items);
-    this.syncCart(items);
+  /** Replaces the server cart with the local one. Only customers have a server cart. */
+  async syncCart(items) {
+    if (!getAccessToken()) return null;
+    const res = await apiClient.post('/cart/sync', { items: items.map((i) => ({ product: i.id, quantity: i.quantity })) });
+    return (res.data.data.items || []).map((i) => toCartItem(i.product, i.quantity));
+  },
+
+  async fetchCart() {
+    const res = await apiClient.get('/cart');
+    return (res.data.data.items || []).map((i) => toCartItem(i.product, i.quantity));
   },
 
   async fetchSettings() {
+    const res = await apiClient.get('/settings/public');
+    const settings = { ...DEFAULT_SETTINGS, ...res.data.data };
     try {
-      const res = await apiClient.get('/settings/public');
-      if (res.data && res.data.data) {
-        localStorage.setItem('pmart_settings', JSON.stringify(res.data.data));
-        return res.data.data;
-      }
-    } catch (e) {
-      console.error('Failed to fetch settings', e);
-    }
-    return this.getSettings();
-  },
-
-  getSettings() {
-    let settings = {
-      freeDeliveryThreshold: 299,
-      baseDeliveryFee: 15,
-      platformHandlingFee: 5
-    };
-    
-    try {
-      const data = localStorage.getItem('pmart_settings');
-      if (data) {
-        const parsed = JSON.parse(data);
-        if (parsed && typeof parsed === 'object') {
-          if (!isNaN(Number(parsed.freeDeliveryThreshold))) {
-            settings.freeDeliveryThreshold = Number(parsed.freeDeliveryThreshold);
-          }
-          if (!isNaN(Number(parsed.baseDeliveryFee))) {
-            settings.baseDeliveryFee = Number(parsed.baseDeliveryFee);
-          }
-          if (!isNaN(Number(parsed.platformHandlingFee))) {
-            settings.platformHandlingFee = Number(parsed.platformHandlingFee);
-          }
-        }
-      }
-    } catch (e) {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch {
       // ignore
     }
     return settings;
   },
 
-  calculateBill(items) {
-    const settings = this.getSettings();
-    
-    const itemTotal = items.reduce((sum, item) => {
-      const price = Number(item.price) || 0;
-      const qty = Number(item.quantity) || 0;
-      return sum + (price * qty);
-    }, 0);
-    
-    const originalTotal = items.reduce((sum, item) => {
-      const mrp = Number(item.mrp) || Number(item.price) || 0;
-      const qty = Number(item.quantity) || 0;
-      return sum + (mrp * qty);
-    }, 0);
-    
-    const savings = Math.max(0, originalTotal - itemTotal);
-
-    let deliveryFee = settings.baseDeliveryFee;
-    let platformFee = items.length > 0 ? settings.platformHandlingFee : 0;
-    
-    if (itemTotal >= settings.freeDeliveryThreshold || itemTotal === 0) {
-      deliveryFee = 0;
+  getCachedSettings() {
+    try {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || '{}') };
+    } catch {
+      return { ...DEFAULT_SETTINGS };
     }
-    
-    const grandTotal = Math.max(0, itemTotal + deliveryFee + platformFee);
+  },
 
+  /** Mirrors the server's checkout pricing so the customer sees what they will be charged. */
+  calculateBill(items, settings) {
+    const itemTotal = Math.round(items.reduce((sum, i) => sum + i.price * i.quantity, 0) * 100) / 100;
+    const mrpTotal = items.reduce((sum, i) => sum + (i.mrp || i.price) * i.quantity, 0);
+    const hasItems = items.length > 0;
+    const deliveryFee = !hasItems || itemTotal >= settings.freeDeliveryThreshold ? 0 : settings.baseDeliveryFee;
+    const platformFee = hasItems ? settings.platformHandlingFee : 0;
     return {
       itemTotal,
-      originalTotal,
-      savings,
+      savings: Math.max(0, Math.round((mrpTotal - itemTotal) * 100) / 100),
       deliveryFee,
       platformFee,
-      grandTotal
+      grandTotal: Math.round((itemTotal + deliveryFee + platformFee) * 100) / 100,
+      freeDeliveryThreshold: settings.freeDeliveryThreshold,
+      amountToFreeDelivery: hasItems && deliveryFee > 0 ? Math.max(0, settings.freeDeliveryThreshold - itemTotal) : 0
     };
   }
 };

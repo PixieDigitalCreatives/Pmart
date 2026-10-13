@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import './ProductCarousel.scss';
-import { Button } from '@/components/ui';
 
 export const ProductCarousel = ({ title, subtitle, viewAllLink, products = [] }) => {
   const scrollRef = useRef(null);

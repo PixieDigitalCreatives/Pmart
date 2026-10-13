@@ -1,421 +1,237 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { deliveryService } from '@/services/deliveryService';
-import { getRoute } from '@/services/routingService';
-import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
+import { riderService } from '@/services/riderService';
 import { riderLocationService } from '@/services/riderLocationService';
+import { getRoute } from '@/services/routingService';
+import { useRider } from '@/components/rider/RiderLayout';
+import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { CollectPaymentSection } from '@/components/delivery/CollectPaymentSection';
 import { DeliveryVerificationSection } from '@/components/delivery/DeliveryVerificationSection';
 import { DeliveryCompletionScreen } from '@/components/delivery/DeliveryCompletionScreen';
-import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
-import {
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  DELIVERY_VERIFICATION_STATUS,
-  normalizeOrderStatus
-} from '@/types/orderTypes';
-import {
-  Navigation,
-  Phone,
-  CheckCircle2,
-  AlertCircle,
-  MapPin,
-  Clock,
-  KeyRound,
-  ChevronLeft,
-  ShieldCheck,
-  ArrowRight,
-  Banknote,
-  Loader2
-} from 'lucide-react';
-import { Button, Card } from '@/components/ui';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
+import { getFullAddressString } from '@/utils/addressUtils';
+import { Navigation, Phone, CheckCircle2, MapPin, ChevronLeft, AlertTriangle, Store } from 'lucide-react';
+import { Button, Card, StatusBadge, LoadingState, EmptyState, Modal, FormField, Input } from '@/components/ui';
 import './RiderOrderDetailPage.scss';
+
+const GPS_STATUSES = ['PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVED'];
 
 export const RiderOrderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { reloadProfile } = useRider();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [actionNotice, setActionNotice] = useState('');
-  const [isGpsActive, setIsGpsActive] = useState(true);
-  const [liveGpsCoords, setLiveGpsCoords] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [gps, setGps] = useState(null);
+  const [gpsError, setGpsError] = useState('');
   const [route, setRoute] = useState(null);
-  const [routeError, setRouteError] = useState(false);
-  
-  const lastRouteFetchTime = useRef(0);
+  const [failOpen, setFailOpen] = useState(false);
+  const [failReason, setFailReason] = useState('');
+  const lastRouteAt = useRef(0);
 
-  const fetchOrder = async () => {
+  const load = useCallback(async () => {
     try {
-      const data = await orderService.getOrderById(id);
-      setOrder(data);
-    } catch (err) {
-      console.error(err);
+      setOrder(await orderService.getOrderById(id));
+    } catch {
+      setOrder(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    fetchOrder();
   }, [id]);
 
   useEffect(() => {
-    const norm = normalizeOrderStatus(order?.orderStatus || order?.status);
-    if ((norm === ORDER_STATUS.OUT_FOR_DELIVERY || norm === ORDER_STATUS.ARRIVED) && isGpsActive) {
-      riderLocationService.startBroadcasting(order.id || order._id || id, (loc) => {
-        setLiveGpsCoords(loc);
-        
-        // Fetch route if we have destination
-        const cLat = order?.deliveryAddress?.coordinates?.lat || order?.deliveryAddress?.location?.coordinates?.[1];
-        const cLng = order?.deliveryAddress?.coordinates?.lng || order?.deliveryAddress?.location?.coordinates?.[0];
-        
-        if (cLat && cLng && loc?.lat && loc?.lng) {
-          const now = Date.now();
-          if (now - lastRouteFetchTime.current > 10000) {
-            lastRouteFetchTime.current = now;
-            getRoute([loc.lng, loc.lat], [cLng, cLat])
-              .then(routeData => {
-                if (routeData) {
-                  setRoute(routeData.geometry);
-                  setRouteError(false);
-                } else {
-                  setRoute(null);
-                  setRouteError(true);
-                }
-              })
-              .catch(err => {
-                console.error("Rider route fetch failed", err);
-                setRoute(null);
-                setRouteError(true);
-              });
-          }
-        }
-      });
-    } else {
+    load();
+  }, [load]);
+
+  const status = order?.status;
+  const destination = order?.deliveryAddress?.location?.coordinates;
+
+  // Broadcast GPS while the rider is carrying the order.
+  useEffect(() => {
+    if (!GPS_STATUSES.includes(status)) {
       riderLocationService.stopBroadcasting();
+      return undefined;
     }
-
+    if (!('geolocation' in navigator)) {
+      setGpsError('This device cannot share its location.');
+      return undefined;
+    }
+    riderLocationService.startBroadcasting(id, (loc) => {
+      setGps(loc);
+      setGpsError('');
+      if (destination && Date.now() - lastRouteAt.current > 15000) {
+        lastRouteAt.current = Date.now();
+        getRoute([loc.lng, loc.lat], destination).then((r) => r && setRoute(r.geometry)).catch(() => {});
+      }
+    }, (message) => setGpsError(message));
     return () => riderLocationService.stopBroadcasting();
-  }, [order?.status, order?.orderStatus, isGpsActive, order?.id, order?.deliveryAddress]);
+  }, [status, id, destination?.[0], destination?.[1]]);
 
-  const handleStageUpdate = async (stage) => {
-    if (isProcessing) return;
-    setIsProcessing(true);
+  const run = async (fn, successText) => {
+    setBusy(true);
+    setNotice(null);
     try {
-      const updated = await orderService.updateOrderStatus(order.id || order._id || id, stage);
-      setOrder({ ...updated });
-      setActionNotice(`Order status updated to "${stage.replace(/_/g, ' ')}"`);
-      setTimeout(() => setActionNotice(''), 3000);
+      const result = await fn();
+      const next = result.order || result;
+      setOrder(next);
+      if (successText) setNotice({ type: 'success', text: successText });
+      if (next.status === 'DELIVERED' || next.status === 'DELIVERY_FAILED') reloadProfile();
     } catch (err) {
-      console.error(err);
+      setNotice({ type: 'error', text: err.message || 'Something went wrong.' });
     } finally {
-      setIsProcessing(false);
+      setBusy(false);
     }
   };
 
-  const handlePickup = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    try {
-      const updated = await deliveryService.pickupOrder(order.id || order._id || id);
-      setOrder({ ...updated.data || updated });
-      setActionNotice('Order picked up! Drive safely.');
-    } catch (err) {
-      console.error("Pickup order failed:", err.response?.data || err);
-      alert(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Failed to pickup order. Please try again."
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  if (loading) return <LoadingState text="Loading delivery..." />;
+  if (!order) return <EmptyState icon={AlertTriangle} title="Delivery not found" description="It may have been re-assigned." action={<Button onClick={() => navigate('/rider')} variant="primary">Back to home</Button>} />;
 
-  // Rider taps "Arrived at Customer"
-  const handleArrivedAtCustomer = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    try {
-      const updated = await deliveryService.arriveAtCustomer(order.id || order._id || id);
-      setOrder({ ...updated.data || updated });
-      setActionNotice('Status updated to ARRIVED. Please collect payment from customer.');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Called when payment is marked as collected in CollectPaymentSection
-  const handlePaymentCollected = async () => {
-    await fetchOrder();
-    setActionNotice('Cash collected ✓ Now verify customer delivery OTP.');
-  };
-
-  // Called when OTP verification succeeds in DeliveryVerificationSection
-  const handleDeliveryVerified = async (deliveredOrder) => {
-    setOrder(deliveredOrder);
-    setActionNotice('✓ Delivery completed and verified successfully!');
-  };
-
-  if (loading) {
-    return (
-      <div className="p-8 text-center">
-        <p>Loading order details...</p>
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="p-6 text-center">
-        <h3>Order not found</h3>
-        <Button 
-          variant="primary" 
-          className="mt-3" 
-          onClick={() => navigate('/rider')}
-        >
-          Back to Rider Hub
-        </Button>
-      </div>
-    );
-  }
-
-  const currentStatus = normalizeOrderStatus(order.orderStatus || order.status);
-  const isOutForDelivery = currentStatus === ORDER_STATUS.OUT_FOR_DELIVERY;
-  const isArrived = currentStatus === ORDER_STATUS.ARRIVED;
-  const isDelivered = currentStatus === ORDER_STATUS.DELIVERED;
-  const isCashCollected = order.paymentStatus === PAYMENT_STATUS.COLLECTED;
-  const isOtpVerified = order.deliveryVerificationStatus === DELIVERY_VERIFICATION_STATUS.OTP_VERIFIED;
+  const addr = order.deliveryAddress || {};
+  const shop = order.shop || {};
+  const isArrived = status === 'ARRIVED';
+  const cashCollected = order.paymentStatus === 'COLLECTED';
 
   return (
     <div className="rider-order-detail-page">
-      {/* Top Back navigation */}
-      <div className="detail-top-nav">
-        <Link to="/rider" className="back-link">
+      <div className="detail-top-nav flex justify-between items-center">
+        <Link to="/rider" className="back-link flex items-center gap-1">
           <ChevronLeft size={16} />
-          <span>Back to Rider Hub</span>
+          <span>Rider home</span>
         </Link>
-        <span className="order-id-badge font-mono font-bold">#{order.id}</span>
+        <StatusBadge status={ORDER_STATUS_LABELS[status]} type={ORDER_STATUS_TONE[status]} />
       </div>
 
-      {actionNotice && (
-        <div className="action-notice-toast">
-          <CheckCircle2 size={16} />
-          <span>{actionNotice}</span>
+      {notice && (
+        <div className={`alert ${notice.type === 'success' ? 'alert-success' : 'alert-error'} mb-3`}>
+          {notice.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+          <span>{notice.text}</span>
         </div>
       )}
 
-      {/* 1. COMPLETED SCREEN (When delivery is fully completed) */}
-      {isDelivered && (
-        <DeliveryCompletionScreen
-          order={order}
-          onViewOrder={() => navigate('/rider')}
-        />
+      {status === 'DELIVERED' && <DeliveryCompletionScreen order={order} onViewOrder={() => navigate('/rider')} />}
+
+      {status === 'DELIVERY_FAILED' && (
+        <div className="alert alert-warning mb-3">
+          <AlertTriangle size={16} />
+          <span>Delivery marked as failed. Return the items to {shop.name}.</span>
+        </div>
       )}
 
-      {/* 2. DEDICATED ARRIVED WORKFLOW: COLLECT PAYMENT & DELIVERY VERIFICATION */}
       {isArrived && (
-        <div className="rider-arrived-workflow-container">
-          {!isCashCollected ? (
-            /* Step A: Collect Payment Section */
-            <CollectPaymentSection
-              order={order}
-              onPaymentSuccess={handlePaymentCollected}
-              isProcessing={isProcessing}
-            />
-          ) : !isOtpVerified ? (
-            /* Step B: Delivery OTP Verification Section */
-            <DeliveryVerificationSection
-              order={order}
-              onVerificationSuccess={handleDeliveryVerified}
-              isProcessing={isProcessing}
-            />
+        <div className="rider-arrived-workflow-container mb-3">
+          {!cashCollected ? (
+            <CollectPaymentSection order={order} onPaymentSuccess={(o) => { setOrder(o); setNotice({ type: 'success', text: 'Cash collected. Now enter the delivery code.' }); }} isProcessing={busy} />
           ) : (
-            /* Step C: Completed */
-            <DeliveryCompletionScreen
-              order={order}
-              onViewOrder={() => navigate('/rider')}
-            />
+            <DeliveryVerificationSection order={order} onVerificationSuccess={(o) => { setOrder(o); setNotice(null); reloadProfile(); }} isProcessing={busy} />
           )}
         </div>
       )}
 
-      {/* 3. LIVE GPS TELEMETRY & ROUTE MAP */}
-      <div className="gps-map-section-wrapper">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 12px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            marginBottom: '10px',
-            fontSize: '12px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isGpsActive ? '#16a34a' : '#d97706',
-                display: 'inline-block'
-              }}
-            />
-            <span style={{ fontWeight: 600, color: '#111318' }}>
-              {isGpsActive ? 'Live GPS Telemetry Active' : 'GPS Telemetry Paused'}
-            </span>
-            {liveGpsCoords && (
-              <span style={{ color: '#6b7280' }}>
-                ({liveGpsCoords.lat.toFixed(4)}, {liveGpsCoords.lng.toFixed(4)})
-              </span>
-            )}
+      {GPS_STATUSES.includes(status) && (
+        <div className="gps-map-section-wrapper mb-3">
+          <div className="text-xs mb-2">
+            {gpsError ? <span className="text-error">{gpsError}</span> : gps ? <span className="text-success">Sharing live location</span> : <span className="text-muted">Waiting for GPS…</span>}
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            style={{ padding: '3px 8px', fontSize: '11px' }}
-            onClick={() => setIsGpsActive(!isGpsActive)}
-          >
-            {isGpsActive ? 'Pause GPS' : 'Resume GPS'}
-          </Button>
+          <LiveTrackingMap riderLocation={gps} customerLocation={addr} hubLocation={shop} route={route} height="280px" riderName="You" orderId={order._id} />
         </div>
+      )}
 
-        <LiveTrackingMap
-          riderLocation={liveGpsCoords || order?.rider?.location}
-          customerLocation={order?.deliveryAddress}
-          hubLocation={order?.shop}
-          route={route}
-          routeError={routeError}
-          height="280px"
-          riderName="You (Partner)"
-          orderId={order?.id || order?._id}
-        />
-      </div>
-
-      {/* 4. CUSTOMER & ADDRESS DETAILS CARD */}
-      <div className="rider-info-card">
-        <div className="customer-header-row">
-          <div>
-            <span className="tag-pill">{order?.deliveryAddress?.tag || 'Home'} Delivery</span>
-            <h3 className="customer-name">{order?.customer?.name || 'Customer'}</h3>
-            <p className="address-full">{order?.deliveryAddress?.line1}, {order?.deliveryAddress?.city}</p>
-          </div>
-          <a href={`tel:${order?.customer?.phone}`} className="call-customer-btn" title="Call Customer">
-            <Phone size={18} />
-          </a>
-        </div>
-
-        {order?.deliveryInstructions && (
-          <div className="delivery-note-box">
-            <strong>Customer Instruction:</strong>
-            <p>{order.deliveryInstructions}</p>
-          </div>
-        )}
-
-        <div className="payment-mode-box">
-          <span className="label">Payment Mode:</span>
-          <PaymentStatusBadge
-            paymentStatus={order.paymentStatus}
-            paymentMethod={order.paymentMethod}
-            amount={order.totalAmount || order.billing?.grandTotal}
-            compact={true}
-          />
-        </div>
-      </div>
-
-      {/* 5. ORDER MANIFEST */}
-      <div className="rider-info-card">
-        <h4 className="card-heading">Package Manifest ({order?.items?.length || 0} items)</h4>
-        <div className="items-manifest-list">
-          {order?.items?.map((item, idx) => (
-            <div key={idx} className="manifest-row">
-              <span className="qty-chip">{item.quantity}x</span>
-              <span className="name">{item.name}</span>
-              <span className="unit text-muted text-xs">({item.unit})</span>
+      {['ASSIGNED', 'PICKED_UP'].includes(status) && (
+        <Card className="mb-3">
+          <div className="flex items-start gap-2">
+            <Store size={18} />
+            <div>
+              <div className="text-xs text-muted">PICK UP FROM</div>
+              <div className="font-semibold">{shop.name}</div>
+              <div className="text-sm">{[shop.address?.street, shop.address?.area, shop.address?.city].filter(Boolean).join(', ')}</div>
+              {shop.phone && <a href={`tel:${shop.phone}`} className="text-sm">{shop.phone}</a>}
             </div>
-          ))}
+          </div>
+        </Card>
+      )}
+
+      <Card className="mb-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-xs text-muted">DELIVER TO • {addr.label}</div>
+            <h3 className="font-bold">{addr.recipientName}</h3>
+            <p className="text-sm">{getFullAddressString(addr)}</p>
+            {addr.landmark && <p className="text-sm muted-note">Landmark: {addr.landmark}</p>}
+          </div>
+          {addr.recipientPhone && (
+            <a href={`tel:${addr.recipientPhone}`} className="btn btn-secondary btn-sm" aria-label="Call customer">
+              <Phone size={16} />
+            </a>
+          )}
         </div>
+        {order.deliveryInstructions && <div className="alert alert-info mt-2">Customer note: {order.deliveryInstructions}</div>}
+        <div className="text-sm mt-2">
+          Collect: <strong>₹{order.totalAmount}</strong> cash {cashCollected && '(collected)'}
+        </div>
+      </Card>
+
+      <Card className="mb-3">
+        <h4 className="font-bold mb-2">Items ({order.itemCount})</h4>
+        <ul className="text-sm space-y-1">
+          {order.items.map((item) => (
+            <li key={String(item.product)}>
+              {item.quantity} × {item.name} <span className="text-muted">({item.unit})</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <div className="rider-action-bar space-y-2">
+        {status === 'ASSIGNED' && (
+          <Button variant="primary" size="lg" className="w-full" disabled={busy} isLoading={busy} onClick={() => run(() => riderService.pickup(order._id), 'Picked up. Start the delivery when you leave the store.')}>
+            <Navigation size={18} style={{ marginRight: 8 }} />
+            Confirm pickup from store
+          </Button>
+        )}
+        {status === 'PICKED_UP' && (
+          <Button variant="primary" size="lg" className="w-full" disabled={busy} isLoading={busy} onClick={() => run(() => deliveryService.startDeliveryRun(order._id), 'On the way. The customer can now see your location.')}>
+            <Navigation size={18} style={{ marginRight: 8 }} />
+            Start delivery
+          </Button>
+        )}
+        {status === 'OUT_FOR_DELIVERY' && (
+          <Button variant="primary" size="lg" className="w-full arrived-cta-btn" disabled={busy} isLoading={busy} onClick={() => run(() => deliveryService.markArrived(order._id), 'Marked arrived. Collect the cash.')}>
+            <MapPin size={18} style={{ marginRight: 8 }} />
+            I have arrived
+          </Button>
+        )}
+        {['OUT_FOR_DELIVERY', 'ARRIVED'].includes(status) && (
+          <Button variant="secondary" className="w-full" disabled={busy} onClick={() => { setFailReason(''); setFailOpen(true); }}>
+            Could not deliver
+          </Button>
+        )}
       </div>
 
-      {/* 6. PRIMARY ACTION CONTROLS BAR (Mobile-First Sticky/Stacked) */}
-      <div className="rider-action-bar">
-        {(currentStatus === ORDER_STATUS.READY_FOR_PICKUP || currentStatus === ORDER_STATUS.READY || currentStatus === ORDER_STATUS.ASSIGNED) && (
+      <Modal isOpen={failOpen} onClose={() => setFailOpen(false)} title="Why could the order not be delivered?">
+        <FormField label="Reason" htmlFor="fail-reason">
+          <Input id="fail-reason" value={failReason} onChange={(e) => setFailReason(e.target.value)} maxLength={300} placeholder="e.g. Customer not reachable" autoFocus />
+        </FormField>
+        <div className="actions-row" style={{ justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => setFailOpen(false)}>
+            Back
+          </Button>
           <Button
             variant="primary"
-            size="lg"
-            className="w-full flex items-center justify-center gap-2"
-            onClick={handlePickup}
-            disabled={isProcessing}
+            disabled={!failReason.trim() || busy}
+            onClick={async () => {
+              setFailOpen(false);
+              await run(() => deliveryService.markFailed(order._id, failReason.trim()), 'Delivery marked as failed.');
+            }}
           >
-            <Navigation size={18} />
-            <span>Confirm Picked Up</span>
+            Confirm
           </Button>
-        )}
-
-        {currentStatus === ORDER_STATUS.PICKED_UP && (
-          <Button
-            variant="primary"
-            size="lg"
-            className="w-full flex items-center justify-center gap-2"
-            onClick={() => handleStageUpdate(ORDER_STATUS.OUT_FOR_DELIVERY)}
-            disabled={isProcessing}
-          >
-            <Navigation size={18} />
-            <span>Start Delivery Run</span>
-          </Button>
-        )}
-
-        {isOutForDelivery && (
-          <Button
-            variant="primary"
-            size="lg"
-            className="w-full flex items-center justify-center gap-2 arrived-cta-btn"
-            onClick={handleArrivedAtCustomer}
-            disabled={isProcessing}
-            loading={isProcessing}
-            loadingText="Updating Status..."
-          >
-            {!isProcessing && (
-              <>
-                <MapPin size={18} />
-                <span>Arrived at Customer</span>
-              </>
-            )}
-          </Button>
-        )}
-
-        {isArrived && !isCashCollected && (
-          <div className="rider-guidance-pill warning">
-            <Banknote size={16} />
-            <span>Collect ₹{order.totalAmount || order.billing?.grandTotal} cash from customer above</span>
-          </div>
-        )}
-
-        {isArrived && isCashCollected && !isOtpVerified && (
-          <div className="rider-guidance-pill info">
-            <KeyRound size={16} />
-            <span>Enter the customer's 4-digit Delivery OTP above</span>
-          </div>
-        )}
-
-        {isDelivered && (
-          <div className="delivery-completed-banner">
-            <CheckCircle2 size={24} className="text-success" />
-            <span>Delivery Completed Successfully</span>
-          </div>
-        )}
-      </div>
+        </div>
+      </Modal>
     </div>
   );
 };

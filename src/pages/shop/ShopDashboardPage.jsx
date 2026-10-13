@@ -1,269 +1,163 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { shopService } from '@/services/shopService';
-import {
-  ShoppingBag,
-  Clock,
-  ChefHat,
-  Bike,
-  DollarSign,
-  TrendingUp,
-  ArrowUpRight,
-  ChevronRight,
-  Eye,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react';
-import { PageHeader, Button, StatusBadge, Card } from '@/components/ui';
+import { orderService } from '@/services/orderService';
+import { openSocket } from '@/services/socket';
+import { useMyShop } from '@/components/shop/ShopLayout';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
+import { ChevronRight, Eye, PackageOpen, AlertTriangle, Plus } from 'lucide-react';
+import { PageHeader, Button, StatusBadge, Card, LoadingState, EmptyState } from '@/components/ui';
 import './ShopDashboardPage.scss';
 
+const OPEN_STATUSES = 'PENDING,ACCEPTED,PREPARING,READY,ASSIGNED,PICKED_UP,OUT_FOR_DELIVERY,ARRIVED,DELIVERY_FAILED';
+
+const Kpi = ({ label, value, hint }) => (
+  <div className="kpi-tile">
+    <div className="kpi-tile-label">{label}</div>
+    <div className="kpi-tile-value">{value}</div>
+    {hint && <div className="kpi-tile-hint">{hint}</div>}
+  </div>
+);
+
 export const ShopDashboardPage = () => {
+  const { shop } = useMyShop();
   const [metrics, setMetrics] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      setLoading(true);
-      const m = await shopService.getShopMetrics();
-      const o = await shopService.getShopOrders();
+  const load = useCallback(async () => {
+    try {
+      const [m, o] = await Promise.all([shopService.getMyMetrics(), orderService.getOrders({ status: OPEN_STATUSES, limit: 10 })]);
       setMetrics(m);
-      setOrders(o);
+      setOrders(o.orders);
+    } catch {
+      // The layout shows store-level errors.
+    } finally {
       setLoading(false);
-    };
-
-    loadDashboard();
+    }
   }, []);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'delivered':
-        return <StatusBadge status="Delivered" type="success" />;
-      case 'out_for_delivery':
-        return <StatusBadge status="Out for Delivery" type="primary" />;
-      case 'preparing':
-        return <StatusBadge status="Preparing" type="warning" />;
-      case 'ready':
-        return <StatusBadge status="Ready to Dispatch" type="info" />;
-      default:
-        return <StatusBadge status="Order Placed" type="neutral" />;
-    }
-  };
+  useEffect(() => {
+    load();
+    // New orders and status changes for this store arrive over the socket.
+    const socket = openSocket();
+    socket.on('order_status_update', load);
+    const interval = setInterval(load, 60000);
+    return () => {
+      socket.close();
+      clearInterval(interval);
+    };
+  }, [load]);
+
+  if (loading) return <LoadingState text="Loading dashboard..." fullHeight />;
 
   return (
     <div className="shop-dashboard-page">
-      {/* Top Header */}
       <PageHeader
-        title="Darkstore Operations Dashboard"
-        subtitle="Real-time fulfillment metrics for P Mart Sasaram Hub (GT Road)"
+        title="Store dashboard"
+        subtitle={shop ? `${shop.name} • open ${shop.openTime}–${shop.closeTime}` : undefined}
         action={
-          <Link to="/shop/products/new" style={{ textDecoration: 'none' }}>
-            <Button variant="primary">
-              + Add New Product
-            </Button>
-          </Link>
+          <Button component={Link} to="/shop/products/new" variant="primary">
+            <Plus size={16} style={{ marginRight: 6 }} />
+            Add product
+          </Button>
         }
       />
 
-      {/* KPI Cards Row */}
-      <div className="kpi-cards-grid">
-        <div className="kpi-card">
-          <div className="kpi-head">
-            <span className="kpi-label">Today's Orders</span>
-            <div className="kpi-icon-box red">
-              <ShoppingBag size={18} />
-            </div>
-          </div>
-          <div className="kpi-metric">{metrics?.todayOrders || 148}</div>
-          <div className="kpi-trend positive">
-            <TrendingUp size={13} />
-            <span>+14.2% vs yesterday</span>
-          </div>
+      {metrics && (
+        <div className="kpi-grid mb-6">
+          <Kpi label="Orders today" value={metrics.todayOrders} hint={metrics.todayCancelled ? `${metrics.todayCancelled} cancelled or rejected` : undefined} />
+          <Kpi label="Waiting to accept" value={metrics.pendingOrders} />
+          <Kpi label="Accepted / preparing" value={metrics.acceptedOrders + metrics.preparingOrders} />
+          <Kpi label="Ready for pickup" value={metrics.readyOrders} />
+          <Kpi label="With riders" value={metrics.inDeliveryOrders} />
+          <Kpi label="Delivered revenue today" value={`₹${metrics.todayRevenue.toLocaleString('en-IN')}`} />
         </div>
+      )}
 
-        <div className="kpi-card">
-          <div className="kpi-head">
-            <span className="kpi-label">Pending Acceptance</span>
-            <div className="kpi-icon-box amber">
-              <Clock size={18} />
-            </div>
-          </div>
-          <div className="kpi-metric">{metrics?.pendingOrders || 12}</div>
-          <div className="kpi-trend">
-            <span>Avg response: 45 secs</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-head">
-            <span className="kpi-label">In Preparation</span>
-            <div className="kpi-icon-box blue">
-              <ChefHat size={18} />
-            </div>
-          </div>
-          <div className="kpi-metric">{metrics?.preparingOrders || 6}</div>
-          <div className="kpi-trend">
-            <span>Packing bay queue normal</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-head">
-            <span className="kpi-label">Out for Delivery</span>
-            <div className="kpi-icon-box green">
-              <Bike size={18} />
-            </div>
-          </div>
-          <div className="kpi-metric">{metrics?.outForDelivery || 0}</div>
-          <div className="kpi-trend positive">
-            <span>{metrics?.outForDelivery || 0} fleet riders active</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-head">
-            <span className="kpi-label">Today's Revenue</span>
-            <div className="kpi-icon-box charcoal">
-              <DollarSign size={18} />
-            </div>
-          </div>
-          <div className="kpi-metric">₹{metrics?.todayRevenue?.toLocaleString('en-IN') || '48,920'}</div>
-          <div className="kpi-trend positive">
-            <TrendingUp size={13} />
-            <span>+8.4% target met</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Orders Section */}
-      <div className="recent-orders-section">
-        <div className="section-head-bar">
+      <Card className="mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div>
-            <h3 className="section-heading">Recent Orders Queue</h3>
-            <p className="section-sub">Incoming orders requiring fulfillment and packing</p>
+            <h3 className="section-heading">Open orders</h3>
+            <p className="muted-note">Orders that still need action from the store or a rider</p>
           </div>
-          <Link to="/shop/orders" className="view-all-link">
-            <span>View All Orders</span>
+          <Link to="/shop/orders" className="view-all-link flex items-center gap-1">
+            <span>All orders</span>
             <ChevronRight size={16} />
           </Link>
         </div>
-
-        <div className="pmart-table-wrapper">
-          <table className="pmart-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Items Count</th>
-                <th>Total</th>
-                <th>Payment</th>
-                <th>Status</th>
-                <th>Assigned Rider</th>
-                <th>Time</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <span className="font-semibold text-dark">#{o.id}</span>
-                  </td>
-                  <td>
-                    <div className="customer-cell">
-                      <div className="cust-name">{o.customer.name}</div>
-                      <div className="cust-phone">{o.customer.phone}</div>
-                    </div>
-                  </td>
-                  <td>{o.items.length} items</td>
-                  <td>
-                    <span className="font-bold">₹{o.totalAmount || o.billing?.grandTotal || 0}</span>
-                  </td>
-                  <td>
-                    <span className="text-secondary text-sm">{o.payment.method}</span>
-                  </td>
-                  <td>{getStatusBadge(o.status)}</td>
-                  <td>
-                    {o.rider ? (
-                      <div className="rider-cell">
-                        <Bike size={14} className="rider-icon" />
-                        <span>{o.rider.name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted text-sm">Unassigned</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className="text-muted text-xs">
-                      {new Date(o.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </td>
-                  <td>
-                    <Link to={`/shop/orders/${o.id}`} style={{ textDecoration: 'none' }}>
-                      <Button variant="secondary" size="sm" className="action-view-btn">
-                        <Eye size={13} style={{ marginRight: '4px' }} />
-                        <span>Manage</span>
-                      </Button>
-                    </Link>
-                  </td>
+        {orders.length === 0 ? (
+          <EmptyState icon={PackageOpen} title="No open orders" description="New orders will appear here automatically." />
+        ) : (
+          <div className="pmart-table-wrapper">
+            <table className="pmart-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Rider</th>
+                  <th>Placed</th>
+                  <th />
                 </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o._id}>
+                    <td className="font-semibold">#{o.orderNumber}</td>
+                    <td>
+                      <div>{o.customer?.name}</div>
+                      <div className="muted-note">{o.customer?.phone}</div>
+                    </td>
+                    <td>{o.itemCount}</td>
+                    <td className="font-bold">₹{o.totalAmount}</td>
+                    <td>
+                      <StatusBadge status={ORDER_STATUS_LABELS[o.status]} type={ORDER_STATUS_TONE[o.status]} />
+                    </td>
+                    <td>{o.rider?.name || <span className="muted-note">Not assigned</span>}</td>
+                    <td>{new Date(o.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>
+                      <Button component={Link} to={`/shop/orders/${o._id}`} variant="secondary" size="sm">
+                        <Eye size={13} style={{ marginRight: 4 }} />
+                        Manage
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {metrics && (
+        <Card>
+          <h3 className="section-heading mb-1">Low stock</h3>
+          <p className="muted-note mb-3">Active products with {metrics.lowStockThreshold} or fewer units left</p>
+          {metrics.lowStockProducts.length === 0 ? (
+            <p className="text-sm text-muted">All products are above the low-stock level.</p>
+          ) : (
+            <ul className="space-y-2">
+              {metrics.lowStockProducts.map((p) => (
+                <li key={p._id} className="flex justify-between items-center">
+                  <span className="flex items-center gap-2">
+                    <AlertTriangle size={14} className={p.stockCount === 0 ? 'text-error' : 'text-warning'} />
+                    {p.name} <span className="muted-note">({p.unit})</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <StatusBadge status={p.stockCount === 0 ? 'Out of stock' : `${p.stockCount} left`} type={p.stockCount === 0 ? 'error' : 'warning'} />
+                    <Link to={`/shop/products/${p._id}`} className="text-sm">
+                      Restock
+                    </Link>
+                  </span>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Operational Highlights Cards */}
-      <div className="operational-cards-grid mt-6">
-        <div className="ops-card">
-          <h4 className="ops-title">Fulfillment SLA Breakdown</h4>
-          <div className="sla-progress-list">
-            <div className="sla-row">
-              <span className="label">Order Acceptance (&lt;60s)</span>
-              <span className="val">99.4% on time</span>
-            </div>
-            <div className="progress-bar-wrap">
-              <div className="progress-bar-fill" style={{ width: '99.4%', backgroundColor: '#10B981' }} />
-            </div>
-
-            <div className="sla-row">
-              <span className="label">Order Packing (&lt;3 mins)</span>
-              <span className="val">98.1% on time</span>
-            </div>
-            <div className="progress-bar-wrap">
-              <div className="progress-bar-fill" style={{ width: '98.1%', backgroundColor: '#10B981' }} />
-            </div>
-
-            <div className="sla-row">
-              <span className="label">Rider Handover (&lt;2 mins)</span>
-              <span className="val">97.8% on time</span>
-            </div>
-            <div className="progress-bar-wrap">
-              <div className="progress-bar-fill" style={{ width: '97.8%', backgroundColor: '#F20D18' }} />
-            </div>
-          </div>
-        </div>
-
-        <div className="ops-card">
-          <h4 className="ops-title">Inventory Low Stock Alerts</h4>
-          <div className="low-stock-list">
-            <div className="stock-alert-item">
-              <div className="stock-info">
-                <span className="item-name">Amul Taaza Milk 1L</span>
-                <span className="stock-level">Only 12 packs remaining</span>
-              </div>
-              <StatusBadge status="Restock Now" type="error" />
-            </div>
-            <div className="stock-alert-item">
-              <div className="stock-info">
-                <span className="item-name">Mother Dairy Classic Dahi 400g</span>
-                <span className="stock-level">Only 8 tubs remaining</span>
-              </div>
-              <StatusBadge status="Low Stock" type="warning" />
-            </div>
-          </div>
-        </div>
-      </div>
+            </ul>
+          )}
+        </Card>
+      )}
     </div>
   );
 };

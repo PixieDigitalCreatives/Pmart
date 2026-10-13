@@ -1,5 +1,7 @@
 # PMart Security Audit Tracker
 
+> **HISTORICAL DOCUMENT — superseded on 2026-10-13.** This describes the code and database before the rebuild (TypeScript backend, old collections, seed data and the Playwright suite, all since removed). File names, collections and test references below may no longer exist. Current state: [Developer Handover Report](PMart_DEVELOPER_HANDOVER_REPORT.md), [Database Reference](PMart_DATABASE_REFERENCE.md), [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) and [SECURITY.md](../SECURITY.md).
+
 ## Security Checklist
 *Based on 54 comprehensive checks. Adapted for MERN, JWT, Socket.IO, MapTiler.*
 

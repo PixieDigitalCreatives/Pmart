@@ -1,178 +1,123 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Bike,
-  Navigation,
-  MapPin,
-  Clock,
-  Phone,
-  ShieldCheck,
-  Search,
-  Filter,
-  Eye,
-  Store,
-  ChevronRight,
-  Layers,
-  Crosshair,
-  AlertTriangle
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LiveDeliveryMap } from '../../components/admin/LiveDeliveryMap';
+import { Bike, MapPin, Phone, Search, Eye, Store, ChevronRight } from 'lucide-react';
+import { LiveDeliveryMap } from '@/components/admin/LiveDeliveryMap';
+import { adminService } from '@/services/adminService';
+import { openSocket } from '@/services/socket';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
 import { PageHeader, StatusBadge, Input, Button } from '@/components/ui';
-import { io } from 'socket.io-client';
-import api from '../../services/apiClient';
 import './AdminLiveDeliveriesPage.scss';
 
-// Note: Ensure your backend URL matches your environment
-const SOCKET_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.VITE_API_BASE_URL?.replace('/api', '')) ||
-  'http://localhost:5000';
+const FILTERS = [
+  { id: 'all', label: 'All active' },
+  { id: 'ASSIGNED', label: 'Assigned' },
+  { id: 'PICKED_UP', label: 'Picked up' },
+  { id: 'OUT_FOR_DELIVERY', label: 'Out for delivery' },
+  { id: 'ARRIVED', label: 'Arrived' },
+  { id: 'DELIVERY_FAILED', label: 'Failed' }
+];
+
+/** Adds `riderLocation` ({lat,lng}) from the order's last tracked point, the shape LiveDeliveryMap reads. */
+const withRiderLocation = (d) => ({
+  ...d,
+  riderLocation: d.tracking?.lat != null ? { lat: d.tracking.lat, lng: d.tracking.lng, updatedAt: d.tracking.updatedAt } : null
+});
 
 export const AdminLiveDeliveriesPage = () => {
   const [deliveries, setDeliveries] = useState([]);
-  const [filter, setFilter] = useState('all'); // 'all' | 'ASSIGNED' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'near_customer'
+  const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [selectedDelivery, setSelectedDelivery] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchDeliveries = async () => {
+  const load = useCallback(async () => {
     try {
-      const res = await api.get('/admin/deliveries');
-      setDeliveries(res.data);
-      if (res.data.length > 0 && !selectedDelivery) {
-        setSelectedDelivery(res.data[0]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch deliveries', error);
+      const list = (await adminService.getActiveDeliveries()).map(withRiderLocation);
+      setDeliveries(list);
+      setSelectedId((cur) => cur || list[0]?._id || null);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchDeliveries();
-
-    // Set up Socket.IO
-    const token = localStorage.getItem('pmart_auth_token');
-    const socket = io(SOCKET_URL, { 
-      transports: ['websocket', 'polling'],
-      auth: { token }
-    });
-
-    socket.on('connect', () => {
-      if (import.meta.env.DEV) console.log('[ADMIN SOCKET] connected, joining admin room');
-      socket.emit('join_admin'); // backend joins 'admin_deliveries' room on this event
-    });
-
-    socket.on('connect_error', (err) => {
-      if (import.meta.env.DEV) console.warn('[ADMIN SOCKET] connect error:', err.message);
-    });
-
-    socket.on('rider:location:update', (data) => {
-      if (import.meta.env.DEV) console.log('[ADMIN GPS RECEIVED]', 'orderId:', data.orderId, 'lat:', data.latitude, 'lng:', data.longitude);
-      setDeliveries(prev => prev.map(d => {
-        if (d._id === data.orderId || d.id === data.orderId || String(d._id) === String(data.orderId)) {
-          return {
-            ...d,
-            tracking: {
-              ...d.tracking,
-              location: { lat: data.latitude, lng: data.longitude },
-              updatedAt: data.timestamp || new Date().toISOString()
-            }
-          };
-        }
-        return d;
-      }));
-    });
-
-    const interval = setInterval(fetchDeliveries, 15000); // Polling fallback
-    return () => {
-      clearInterval(interval);
-      socket.disconnect();
-    };
   }, []);
 
-  const filteredDeliveries = deliveries.filter(item => {
-    if (filter !== 'all') {
-      if (filter === 'near_customer') {
-        // Simple logic for near_customer, skipping real distance calc for now
-        if (item.status !== 'OUT_FOR_DELIVERY') return false;
-      } else if (item.status !== filter) {
-        return false;
-      }
-    }
-    
-    if (search) {
-      const q = search.toLowerCase();
-      const riderName = item.rider?.name || '';
-      const customerName = item.customer?.name || '';
-      const orderNum = item.orderNumber || '';
-      return (
-        orderNum.toLowerCase().includes(q) ||
-        riderName.toLowerCase().includes(q) ||
-        customerName.toLowerCase().includes(q)
+  useEffect(() => {
+    load();
+    const socket = openSocket();
+    socket.on('connect', () => socket.emit('join_admin'));
+    socket.on('order_status_update', load);
+    socket.on('rider:location:update', (p) => {
+      setDeliveries((prev) =>
+        prev.map((d) => (String(d._id) === String(p.orderId) ? { ...d, riderLocation: { lat: p.latitude, lng: p.longitude, updatedAt: p.timestamp } } : d))
       );
-    }
-    return true;
-  });
+    });
+    const interval = setInterval(load, 30000);
+    return () => {
+      clearInterval(interval);
+      socket.close();
+    };
+  }, [load]);
+
+  const q = search.trim().toLowerCase();
+  const filtered = deliveries.filter(
+    (d) =>
+      (filter === 'all' || d.status === filter) &&
+      (!q || [d.orderNumber, d.rider?.name, d.customer?.name, d.deliveryAddress?.recipientName].some((v) => (v || '').toLowerCase().includes(q)))
+  );
+  const selected = deliveries.find((d) => d._id === selectedId) || null;
+  const addr = selected?.deliveryAddress || {};
 
   return (
     <div className="admin-live-deliveries-page">
-      {/* Top Header */}
       <PageHeader
-        title="Real-Time Fleet & Delivery Operations"
-        subtitle="Live GPS telemetry of darkstore dispatch, moving riders, and active express customer drop-offs"
+        title="Live deliveries"
+        subtitle="Orders assigned to riders, with their last reported position"
         action={
           <div className="header-stats-badge">
             <span className="live-pulsing-dot" />
-            <span>{deliveries.length} Active Deliveries</span>
+            <span>{deliveries.length} active</span>
           </div>
         }
       />
 
-      {/* Filter & Search Bar */}
       <div className="delivery-filter-bar">
         <div className="search-box">
           <Search size={16} className="search-icon" />
-          <Input
-            type="text"
-            placeholder="Search order ID, rider name, customer..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input placeholder="Order number, rider or customer" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-
         <div className="filter-pill-group">
-          {[
-            { id: 'all', label: 'All Active' },
-            { id: 'ASSIGNED', label: 'Assigned' },
-            { id: 'PICKED_UP', label: 'Picked Up' },
-            { id: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
-            { id: 'near_customer', label: 'Near Customer (<500m)' }
-          ].map(f => (
-            <Button
-              key={f.id}
-              type="button"
-              className={`filter-pill ${filter === f.id ? 'active' : ''}`}
-              onClick={() => setFilter(f.id)}
-            >
+          {FILTERS.map((f) => (
+            <Button key={f.id} type="button" className={`filter-pill ${filter === f.id ? 'active' : ''}`} onClick={() => setFilter(f.id)}>
               {f.label}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Main Grid: Logistics Map (70%) + Side Details Inspector (30%) */}
       <div className="operations-grid">
-        {/* Logistics Operations Map */}
         <div className="logistics-map-card">
-          <LiveDeliveryMap deliveries={filteredDeliveries} selectedDelivery={selectedDelivery} />
+          <LiveDeliveryMap deliveries={filtered} selectedDelivery={selected} onSelect={(d) => setSelectedId(d._id)} />
+          {filtered.length > 0 && (
+            <div className="pmart-table-wrapper mt-3">
+              <table className="pmart-table">
+                <tbody>
+                  {filtered.map((d) => (
+                    <tr key={d._id} onClick={() => setSelectedId(d._id)} style={{ cursor: 'pointer', background: d._id === selectedId ? 'rgba(242,13,24,0.05)' : undefined }}>
+                      <td className="font-semibold">#{d.orderNumber}</td>
+                      <td>{d.rider?.name || '—'}</td>
+                      <td>
+                        <StatusBadge status={ORDER_STATUS_LABELS[d.status]} type={ORDER_STATUS_TONE[d.status]} />
+                      </td>
+                      <td className="muted-note">{d.riderLocation?.updatedAt ? `GPS ${new Date(d.riderLocation.updatedAt).toLocaleTimeString('en-IN')}` : 'No GPS yet'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* Side Inspector Panel */}
         <div className="inspector-side-col">
-          {selectedDelivery ? (
+          {selected ? (
             <div className="rider-inspection-panel">
               <div className="panel-head">
                 <div className="rider-profile">
@@ -180,108 +125,84 @@ export const AdminLiveDeliveriesPage = () => {
                     <Bike size={22} />
                   </div>
                   <div>
-                    <h3 className="rider-name">{selectedDelivery.rider?.name || 'Unassigned'}</h3>
-                    <p className="rider-sub">{selectedDelivery.rider?.vehicleNumber || 'No vehicle'} • ⭐ {selectedDelivery.rider?.rating || 'N/A'}</p>
+                    <h3 className="rider-name">{selected.rider?.name || 'No rider'}</h3>
+                    <p className="rider-sub">{[selected.rider?.vehicleType, selected.rider?.vehicleNumber].filter(Boolean).join(' • ') || '—'}</p>
                   </div>
                 </div>
-                <StatusBadge status={selectedDelivery.status.replace(/_/g, ' ')} type="neutral" />
+                <StatusBadge status={ORDER_STATUS_LABELS[selected.status]} type={ORDER_STATUS_TONE[selected.status]} />
               </div>
 
               <div className="panel-body">
-                {/* Telemetry Strip */}
                 <div className="telemetry-box">
                   <div className="tele-item">
-                    <span className="label">Live ETA</span>
-                    <span className="val text-success">Calculating...</span>
+                    <span className="label">Last GPS update</span>
+                    <span className="val">{selected.riderLocation?.updatedAt ? new Date(selected.riderLocation.updatedAt).toLocaleTimeString('en-IN') : 'None yet'}</span>
                   </div>
                   <div className="tele-item">
-                    <span className="label">Distance</span>
-                    <span className="val">Calculating...</span>
-                  </div>
-                  <div className="tele-item">
-                    <span className="label">Speed</span>
-                    <span className="val">{selectedDelivery.rider?.speed || '0'} km/h</span>
-                  </div>
-                  <div className="tele-item">
-                    <span className="label">GPS</span>
-                    <span className="val font-mono">
-                      {selectedDelivery.tracking?.location?.lat?.toFixed(4) || 'N/A'}, 
-                      {selectedDelivery.tracking?.location?.lng?.toFixed(4) || 'N/A'}
-                    </span>
+                    <span className="label">Position</span>
+                    <span className="val font-mono">{selected.riderLocation ? `${selected.riderLocation.lat.toFixed(4)}, ${selected.riderLocation.lng.toFixed(4)}` : '—'}</span>
                   </div>
                 </div>
 
-                {/* Order & Hub Details */}
                 <div className="detail-section">
-                  <div className="section-label">Order Details</div>
+                  <div className="section-label">Order</div>
                   <div className="detail-row">
-                    <span className="key">Order ID:</span>
-                    <Link to={`/admin/orders/${selectedDelivery._id}`} className="order-link">
-                      #{selectedDelivery.orderNumber || selectedDelivery._id.slice(-6)}
+                    <span className="key">Number:</span>
+                    <Link to={`/admin/orders/${selected._id}`} className="order-link">
+                      #{selected.orderNumber}
                       <ChevronRight size={13} />
                     </Link>
                   </div>
                   <div className="detail-row">
-                    <span className="key">Basket:</span>
-                    <span className="value">{selectedDelivery.items?.length || 0} items (₹{selectedDelivery.totalAmount || 0})</span>
+                    <span className="key">Amount:</span>
+                    <span className="value">₹{selected.totalAmount} COD • {selected.paymentStatus === 'COLLECTED' ? 'collected' : 'pending'}</span>
                   </div>
                   <div className="detail-row">
-                    <span className="key">Payment:</span>
-                    <span className="value font-bold">{selectedDelivery.paymentMethod || 'COD'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="key">Payment Status:</span>
-                    <span className="value text-warning font-bold">
-                      {selectedDelivery.paymentStatus || 'PENDING'}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="key">Delivery OTP:</span>
-                    <span className="value text-muted font-bold">
-                      {selectedDelivery.deliveryVerificationStatus === 'OTP_VERIFIED' ? 'OTP VERIFIED ✓' : 'OTP PENDING'}
-                    </span>
+                    <span className="key">Delivery code:</span>
+                    <span className="value">{selected.deliveryVerificationStatus === 'OTP_VERIFIED' ? 'Verified' : 'Not verified'}</span>
                   </div>
                 </div>
 
                 <div className="detail-section">
-                  <div className="section-label">Fulfillment Hub</div>
+                  <div className="section-label">Store</div>
                   <div className="hub-card">
                     <Store size={16} className="hub-icon" />
                     <div>
-                      <div className="hub-title">{selectedDelivery.shop?.name || 'Shop'}</div>
-                      <div className="hub-address">{selectedDelivery.shop?.location?.address || 'Shop Address'}</div>
+                      <div className="hub-title">{selected.shop?.name}</div>
+                      <div className="hub-address">{[selected.shop?.address?.street, selected.shop?.address?.city].filter(Boolean).join(', ')}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="detail-section">
-                  <div className="section-label">Customer Delivery Point</div>
+                  <div className="section-label">Customer</div>
                   <div className="customer-card">
                     <MapPin size={16} className="cust-icon" />
                     <div>
-                      <div className="cust-name">{selectedDelivery.customer?.name || 'Customer'}</div>
-                      <div className="cust-address">{selectedDelivery.deliveryAddress?.street || 'Delivery Address'}</div>
-                      <div className="cust-phone">Phone: {selectedDelivery.customer?.phone || 'N/A'}</div>
+                      <div className="cust-name">{addr.recipientName}</div>
+                      <div className="cust-address">{[addr.houseNumber, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')}</div>
+                      <div className="cust-phone">{addr.recipientPhone}</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Operations Actions */}
                 <div className="panel-actions">
-                  <a href={`tel:${selectedDelivery.rider?.phone}`} className="btn btn-primary btn-sm btn-full">
-                    <Phone size={14} />
-                    <span>Contact Rider ({selectedDelivery.rider?.phone || 'N/A'})</span>
-                  </a>
-                  <Link to={`/admin/orders/${selectedDelivery._id}`} className="btn btn-secondary btn-sm btn-full">
+                  {selected.rider?.phone && (
+                    <a href={`tel:${selected.rider.phone}`} className="btn btn-primary btn-sm btn-full">
+                      <Phone size={14} />
+                      <span>Call rider</span>
+                    </a>
+                  )}
+                  <Link to={`/admin/orders/${selected._id}`} className="btn btn-secondary btn-sm btn-full">
                     <Eye size={14} />
-                    <span>View Full Order Details</span>
+                    <span>Open order</span>
                   </Link>
                 </div>
               </div>
             </div>
           ) : (
             <div className="no-selection-card">
-              <p>{loading ? 'Loading active deliveries...' : 'No active deliveries to inspect'}</p>
+              <p>{loading ? 'Loading active deliveries…' : 'No active deliveries right now.'}</p>
             </div>
           )}
         </div>

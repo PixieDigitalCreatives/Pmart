@@ -1,106 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Loader2, RotateCcw } from 'lucide-react';
-import { deliveryOtpService } from '@/services/deliveryOtpService';
 import { deliveryService } from '@/services/deliveryService';
+import { useCart } from '@/context/CartContext';
 import './DeliveryVerificationSection.scss';
-import { Input, Button } from '@/components/ui';
 
-export const DeliveryVerificationSection = ({
-  order,
-  onVerificationSuccess = () => {},
-  isProcessing = false
-}) => {
-  const [digits, setDigits] = useState(['', '', '', '']);
+const RESEND_COOLDOWN_SECONDS = 30;
+
+/** Rider-side entry of the customer's delivery code; the code length follows the server's OTP_LENGTH. */
+export const DeliveryVerificationSection = ({ order, onVerificationSuccess = () => {}, isProcessing = false }) => {
+  const { settings } = useCart();
+  const length = settings?.otpLength === 6 ? 6 : 4;
+  const blank = () => Array(length).fill('');
+
+  const [digits, setDigits] = useState(blank);
   const [verifying, setVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successNotice, setSuccessNotice] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [resending, setResending] = useState(false);
   const [resendNotice, setResendNotice] = useState('');
+  const inputRefs = useRef([]);
 
-  const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
-
-  // Check cooldown on mount
+  // Re-size the inputs if the server reports a different code length after the first render.
   useEffect(() => {
-    const orderId = order?.id || order?._id;
-    if (orderId) {
-      deliveryOtpService.getResendCooldown(orderId).then(sec => {
-        setCooldownRemaining(sec);
-      });
-    }
-  }, [order?.id, order?._id]);
+    setDigits((d) => (d.length === length ? d : Array(length).fill('')));
+  }, [length]);
 
-  // Cooldown countdown timer
   useEffect(() => {
-    if (cooldownRemaining <= 0) return;
-    const interval = setInterval(() => {
-      setCooldownRemaining(prev => Math.max(0, prev - 1));
-    }, 1000);
+    if (cooldownRemaining <= 0) return undefined;
+    const interval = setInterval(() => setCooldownRemaining((prev) => Math.max(0, prev - 1)), 1000);
     return () => clearInterval(interval);
   }, [cooldownRemaining]);
 
+  const focusAt = (i) => inputRefs.current[i]?.focus();
+
   const handleDigitChange = (index, value) => {
-    const val = value.slice(-1); // only keep last character
+    const val = value.slice(-1);
     if (val && !/^[0-9]$/.test(val)) return;
-
-    const newDigits = [...digits];
-    newDigits[index] = val;
-    setDigits(newDigits);
+    const next = [...digits];
+    next[index] = val;
+    setDigits(next);
     setErrorMessage('');
-
-    // Auto-advance to next input
-    if (val && index < 3) {
-      inputRefs[index + 1].current?.focus();
-    }
+    if (val && index < length - 1) focusAt(index + 1);
   };
 
   const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs[index - 1].current?.focus();
-    }
+    if (e.key === 'Backspace' && !digits[index] && index > 0) focusAt(index - 1);
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length);
     if (!pasted) return;
-
-    const newDigits = ['', '', '', ''];
-    for (let i = 0; i < pasted.length; i++) {
-      newDigits[i] = pasted[i];
-    }
-    setDigits(newDigits);
+    const next = blank();
+    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
+    setDigits(next);
     setErrorMessage('');
-    const nextIdx = Math.min(3, pasted.length);
-    inputRefs[nextIdx].current?.focus();
+    focusAt(Math.min(length - 1, pasted.length));
   };
 
   const fullOtp = digits.join('');
-  const isComplete = fullOtp.length === 4;
+  const isComplete = fullOtp.length === length;
 
   const handleVerifySubmit = async (e) => {
     if (e) e.preventDefault();
     if (!isComplete || verifying || isProcessing) return;
-
     setVerifying(true);
     setErrorMessage('');
     const orderId = order.id || order._id;
-
     try {
-      // 1. Verify OTP with deliveryOtpService
-      await deliveryOtpService.verifyDeliveryOtp(orderId, fullOtp);
-
-      // 2. Finalize delivery completion via deliveryService
-      const result = await deliveryService.completeDelivery(orderId);
-
+      // Verifying an already-verified code is a no-op, so a retry after a failed completion is safe.
+      await deliveryService.verifyOtp(orderId, fullOtp);
+      const result = await deliveryService.complete(orderId);
       setSuccessNotice(true);
-
-      // Trigger completion callback
-      setTimeout(() => {
-        onVerificationSuccess(result.order);
-      }, 700);
+      setTimeout(() => onVerificationSuccess(result.order), 700);
     } catch (err) {
-      console.error(err);
       setErrorMessage(err.message || 'Verification failed. Please try again.');
     } finally {
       setVerifying(false);
@@ -112,16 +86,14 @@ export const DeliveryVerificationSection = ({
     setResending(true);
     setErrorMessage('');
     setResendNotice('');
-    const orderId = order.id || order._id;
-
     try {
-      const res = await deliveryOtpService.resendDeliveryOtp(orderId);
-      setCooldownRemaining(res.cooldownSeconds || 30);
-      setResendNotice(res.message || 'New OTP sent to customer mobile.');
-      setDigits(['', '', '', '']);
-      inputRefs[0].current?.focus();
+      const res = await deliveryService.regenerateOtp(order.id || order._id);
+      setCooldownRemaining(RESEND_COOLDOWN_SECONDS);
+      setResendNotice(res.message || 'A new code is now showing in the customer app.');
+      setDigits(blank());
+      focusAt(0);
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to resend OTP.');
+      setErrorMessage(err.message || 'Failed to generate a new code.');
     } finally {
       setResending(false);
     }
@@ -135,28 +107,28 @@ export const DeliveryVerificationSection = ({
       </div>
 
       <div className="verification-card-body">
-        {/* Payment Confirmation Banner */}
-        <div className="payment-confirmed-banner">
-          <div className="banner-left">
-            <CheckCircle2 size={18} className="check-svg" />
-            <span className="banner-text">Payment Received</span>
+        {order?.paymentStatus === 'COLLECTED' && (
+          <div className="payment-confirmed-banner">
+            <div className="banner-left">
+              <CheckCircle2 size={18} className="check-svg" />
+              <span className="banner-text">Payment Received</span>
+            </div>
+            <span className="amount-pill">₹{order?.totalAmount} Cash</span>
           </div>
-          <span className="amount-pill">₹{order?.totalAmount || order?.billing?.grandTotal} Cash</span>
-        </div>
+        )}
 
-        <p className="verification-instruction">
-          For security, verify the customer's delivery OTP.
-        </p>
+        <p className="verification-instruction">Ask the customer for the {length}-digit delivery code shown in their PMart app.</p>
 
-        {/* 4-Digit Input Form */}
         <form onSubmit={handleVerifySubmit} className="otp-form-box">
-          <label htmlFor="auto-id-needed" className="input-field-label">Enter Customer OTP</label>
+          <p className="input-field-label" id="delivery-otp-label">
+            Enter Customer OTP
+          </p>
 
-          <div className="digit-inputs-row" onPaste={handlePaste}>
+          <div className="digit-inputs-row" role="group" aria-labelledby="delivery-otp-label" onPaste={handlePaste}>
             {digits.map((digit, idx) => (
               <input
                 key={idx}
-                ref={inputRefs[idx]}
+                ref={(el) => (inputRefs.current[idx] = el)}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -172,7 +144,6 @@ export const DeliveryVerificationSection = ({
             ))}
           </div>
 
-          {/* Feedback & Error Alerts */}
           {errorMessage && (
             <div className="verification-alert alert-error">
               <AlertCircle size={16} />
@@ -194,12 +165,7 @@ export const DeliveryVerificationSection = ({
             </div>
           )}
 
-          {/* Primary Action Button */}
-          <button
-            type="submit"
-            className="btn btn-primary btn-lg btn-full verify-submit-btn"
-            disabled={!isComplete || verifying || successNotice || isProcessing}
-          >
+          <button type="submit" className="btn btn-primary btn-lg btn-full verify-submit-btn" disabled={!isComplete || verifying || successNotice || isProcessing}>
             {verifying ? (
               <>
                 <Loader2 size={18} className="spinner" />
@@ -219,21 +185,11 @@ export const DeliveryVerificationSection = ({
           </button>
         </form>
 
-        {/* Resend OTP Bar */}
         <div className="resend-otp-footer">
-          <span className="resend-prompt">Customer didn't receive code?</span>
-          <button
-            type="button"
-            className="btn-resend-link"
-            onClick={handleResendOtp}
-            disabled={cooldownRemaining > 0 || resending}
-          >
+          <span className="resend-prompt">Code expired or locked?</span>
+          <button type="button" className="btn-resend-link" onClick={handleResendOtp} disabled={cooldownRemaining > 0 || resending}>
             <RotateCcw size={13} className={resending ? 'spinner' : ''} />
-            {cooldownRemaining > 0 ? (
-              <span>Resend in {cooldownRemaining}s</span>
-            ) : (
-              <span>Resend OTP</span>
-            )}
+            {cooldownRemaining > 0 ? <span>Resend in {cooldownRemaining}s</span> : <span>Generate new code</span>}
           </button>
         </div>
       </div>

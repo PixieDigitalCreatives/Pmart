@@ -1,141 +1,131 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authService } from '../services/authService';
-import apiClient from '../services/apiClient';
+import { getAccessToken } from '../services/apiClient';
 
 const AuthContext = createContext(null);
 
+/** Landing page for each role after sign-in. */
+export const homeForRole = (role) => {
+  switch (role) {
+    case 'ADMIN':
+    case 'EMPLOYEE':
+      return '/admin';
+    case 'SHOP_OWNER':
+      return '/shop';
+    case 'RIDER':
+      return '/rider';
+    default:
+      return '/';
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const applyUser = useCallback((u) => setUser(u || null), []);
+
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await apiClient.get('/auth/me');
-        if (response.data && response.data.user) {
-          const u = response.data.user;
-          setUser(u);
-          setRole(u.role || 'CUSTOMER');
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        setUser(null);
-        setRole(null);
-        setIsAuthenticated(false);
-      } finally {
+    let cancelled = false;
+    const restore = async () => {
+      if (!getAccessToken()) {
         setLoading(false);
+        return;
+      }
+      try {
+        const me = await authService.me();
+        if (!cancelled) applyUser(me);
+      } catch (err) {
+        if (cancelled) return;
+        const status = err.response?.status;
+        if (status === 401 || status === 403) {
+          authService.clearLocalSession();
+          applyUser(null);
+        } else {
+          // Server unreachable or failing: stay signed in with the last known profile; API calls will
+          // re-validate the session once the server is back.
+          applyUser(authService.getStoredUser());
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-    checkAuth();
-  }, []);
+    restore();
 
-  /**
-   * Login with phone and password.
-   */
+    const onExpired = () => applyUser(null);
+    window.addEventListener('pmart:session-expired', onExpired);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('pmart:session-expired', onExpired);
+    };
+  }, [applyUser]);
+
   const login = async (phone, password) => {
-    try {
-      const response = await authService.login(phone, password);
-      if (response.success) {
-        setUser(response.data.user);
-        setRole(response.data.user.role);
-        setIsAuthenticated(true);
-        return {
-          success: true,
-          user: response.data.user,
-          profileComplete: response.data.profileComplete,
-        };
-      }
-    } catch (error) {
-      throw error;
-    }
+    const data = await authService.login(phone, password);
+    applyUser(data.user);
+    return data.user;
   };
 
-  /**
-   * Register with phone, password, and name.
-   */
-  const register = async (phone, password, name) => {
-    try {
-      const response = await authService.register(phone, password, name);
-      if (response.success) {
-        setUser(response.data.user);
-        setRole(response.data.user.role);
-        setIsAuthenticated(true);
-        return { success: true, user: response.data.user };
-      }
-    } catch (error) {
-      throw error;
-    }
+  const register = async (name, phone, password) => {
+    const data = await authService.register(name, phone, password);
+    applyUser(data.user);
+    return data.user;
   };
 
-  /**
-   * Login with Google.
-   */
   const googleLogin = async (idToken) => {
-    try {
-      const response = await authService.googleLogin(idToken);
-      if (response.success) {
-        setUser(response.data.user);
-        setRole(response.data.user.role);
-        setIsAuthenticated(true);
-        return {
-          success: true,
-          user: response.data.user,
-          profileComplete: response.data.profileComplete,
-        };
-      }
-    } catch (error) {
-      throw error;
-    }
+    const data = await authService.googleLogin(idToken);
+    applyUser(data.user);
+    return data.user;
   };
 
-  /**
-   * Complete rider profile after Admin provision + Google login.
-   */
-  const completeRiderProfile = async (data) => {
-    try {
-      const response = await apiClient.put('/rider/profile', data);
-      if (response.data.success) {
-        const updatedUser = { ...user, profileComplete: true, ...response.data.rider };
-        setUser(updatedUser);
-        return { success: true, user: updatedUser };
-      }
-    } catch (error) {
-      throw error;
-    }
+  const completeProfile = async (payload) => {
+    const updated = await authService.completeProfile(payload);
+    applyUser(updated);
+    return updated;
   };
 
-  const completeProfile = async (data) => {
-    try {
-      const response = await authService.completeProfile(data);
-      if (response.success) {
-        setUser(response.user);
-        return { success: true, user: response.user };
-      }
-    } catch (error) {
-      throw error;
-    }
+  const changePassword = async (currentPassword, newPassword, confirmPassword) => {
+    const data = await authService.changePassword(currentPassword, newPassword, confirmPassword);
+    applyUser(data.user);
+    return data.user;
+  };
+
+  const updateProfile = async (payload) => {
+    const updated = await authService.updateProfile(payload);
+    applyUser(updated);
+    return updated;
   };
 
   const logout = async () => {
     await authService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
-    setRole(null);
+    applyUser(null);
   };
+
+  /** ADMIN has every permission; EMPLOYEE only those granted. */
+  const can = useCallback(
+    (permission) => {
+      if (!user) return false;
+      if (user.role === 'ADMIN') return true;
+      return user.role === 'EMPLOYEE' && Array.isArray(user.permissions) && user.permissions.includes(permission);
+    },
+    [user]
+  );
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        role,
-        isAuthenticated,
+        role: user?.role || null,
+        isAuthenticated: Boolean(user),
         loading,
-        login, register, googleLogin,
+        login,
+        register,
+        googleLogin,
         completeProfile,
-        completeRiderProfile,
+        changePassword,
+        updateProfile,
         logout,
+        can
       }}
     >
       {!loading && children}
@@ -145,8 +135,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

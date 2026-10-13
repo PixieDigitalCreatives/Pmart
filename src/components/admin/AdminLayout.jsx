@@ -1,101 +1,78 @@
 import React, { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import {
-  LayoutDashboard,
-  Users,
-  Store,
-  Bike,
-  Package,
-  ShoppingBag,
-  CreditCard,
-  FileBarChart,
-  Settings,
-  LogOut,
-  Search,
-  Bell,
-  Shield,
-  ExternalLink,
-  Menu,
-  X,
-  Navigation
-} from 'lucide-react';
-import './AdminLayout.scss';
+import { LayoutDashboard, Users, Store, Package, Layers, ShoppingBag, CreditCard, FileBarChart, Settings, LogOut, Shield, ExternalLink, Menu, X, Navigation } from 'lucide-react';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-import { Input, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
+import './AdminLayout.scss';
+
+// `permission: null` = visible to all staff; `anyOf` = visible with any listed permission.
+const NAV = [
+  { name: 'Overview', path: '/admin', icon: LayoutDashboard, permission: null },
+  { name: 'Live deliveries', path: '/admin/live-deliveries', icon: Navigation, permission: 'orders.read' },
+  { name: 'Orders', path: '/admin/orders', icon: ShoppingBag, permission: 'orders.read' },
+  { name: 'Stores', path: '/admin/stores', icon: Store, permission: 'shops.manage' },
+  { name: 'Products', path: '/admin/products', icon: Package, permission: 'catalog.manage' },
+  { name: 'Categories', path: '/admin/categories', icon: Layers, permission: 'catalog.manage' },
+  { name: 'People', path: '/admin/users', icon: Users, anyOf: ['customers.read', 'riders.read', 'employees.manage'] },
+  { name: 'Payments', path: '/admin/payments', icon: CreditCard, permission: 'reports.read' },
+  { name: 'Reports', path: '/admin/reports', icon: FileBarChart, permission: 'reports.read' },
+  { name: 'Settings', path: '/admin/settings', icon: Settings, permission: 'settings.read' }
+];
 
 export const AdminLayout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const adminNav = [
-    { name: 'Platform Overview', path: '/admin', icon: LayoutDashboard },
-    { name: 'Live Deliveries', path: '/admin/live-deliveries', icon: Navigation },
-    { name: 'All Orders', path: '/admin/orders', icon: ShoppingBag },
-    { name: 'User Management', path: '/admin/users', icon: Users },
-    { name: 'Catalog Governance', path: '/admin/products', icon: Package },
-    { name: 'Payments & Settlement', path: '/admin/payments', icon: CreditCard },
-    { name: 'Analytics & Reports', path: '/admin/reports', icon: FileBarChart },
-    { name: 'System Settings', path: '/admin/settings', icon: Settings }
-  ];
+  const visible = NAV.filter((item) => (item.anyOf ? item.anyOf.some(can) : !item.permission || can(item.permission)));
 
   return (
     <div className="admin-portal-wrapper">
-      {/* Enterprise Sidebar */}
-      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+      <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-head">
           <Link to="/admin" className="admin-brand">
-            <img src="/Pmart.png" alt="PMart Enterprise" className="admin-logo" />
+            <img src="/Pmart.png" alt="PMart" className="admin-logo" />
             <div className="brand-meta">
-              <span className="badge-tag">ENTERPRISE HQ</span>
-              <span className="platform-name">Admin Console</span>
+              <span className="badge-tag">OPERATIONS</span>
+              <span className="platform-name">Admin console</span>
             </div>
           </Link>
-          <Button className="mobile-close" onClick={() => setMobileMenuOpen(false)}>
+          <Button className="mobile-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
             <X size={18} />
           </Button>
         </div>
 
         <nav className="admin-nav-list">
-          {adminNav.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.path === '/admin'}
-                className={({ isActive }) => `admin-nav-link ${isActive ? 'active' : ''}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Icon size={18} className="link-icon" />
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
+          {visible.map(({ name, path, icon: Icon }) => (
+            <NavLink key={path} to={path} end={path === '/admin'} className={({ isActive }) => `admin-nav-link ${isActive ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
+              <Icon size={18} className="link-icon" />
+              <span>{name}</span>
+            </NavLink>
+          ))}
         </nav>
 
         <div className="admin-sidebar-foot">
           <Link to="/" className="foot-link">
             <ExternalLink size={14} />
-            <span>Storefront Front</span>
+            <span>View storefront</span>
           </Link>
-
           <div className="admin-profile-strip">
             <div className="avatar-shield">
               <Shield size={16} />
             </div>
             <div className="admin-info">
-              <div className="name">{user?.name || 'Ananya Saxena'}</div>
-              <div className="role">Central Operations</div>
+              <div className="name">{user?.name}</div>
+              <div className="role">{user?.role === 'ADMIN' ? 'Administrator' : 'Staff'}</div>
             </div>
             <Button
               className="logout-btn"
-              onClick={() => {
-                logout();
+              onClick={async () => {
+                await logout();
                 navigate('/login');
               }}
-              title="Logout"
+              title="Sign out"
+              aria-label="Sign out"
             >
               <LogOut size={16} />
             </Button>
@@ -103,45 +80,22 @@ export const AdminLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Container */}
       <div className="admin-main-container">
-        {/* Top Header */}
         <header className="admin-topbar">
           <div className="topbar-left">
-            <Button className="mobile-toggle-btn" onClick={() => setMobileMenuOpen(true)}>
+            <Button className="mobile-toggle-btn" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>
-            <div className="admin-search-bar">
-              <Search size={16} className="search-icon" />
-              <Input
-                type="text"
-                placeholder="Global search orders, shops, users, transactions..."
-              />
-            </div>
           </div>
-
           <div className="topbar-right">
-            <div className="system-health-badge">
-              <span className="pulse-dot" />
-              <span>Platform Operational</span>
-            </div>
-
-            <Button className="icon-notice-btn" aria-label="Alerts">
-              <Bell size={18} />
-              <span className="dot" />
-            </Button>
-
-            <div className="admin-user-pill">
-              <span className="role-tag">Super Admin</span>
-            </div>
+            <Link to="/account/change-password" className="text-sm">
+              Change password
+            </Link>
           </div>
         </header>
 
-        {/* Content View */}
         <main className="admin-content-view">
-          <ErrorBoundary fallbackMessage="An error occurred in the Admin Portal.">
-            {children}
-          </ErrorBoundary>
+          <ErrorBoundary fallbackMessage="An error occurred in the admin console.">{children}</ErrorBoundary>
         </main>
       </div>
     </div>

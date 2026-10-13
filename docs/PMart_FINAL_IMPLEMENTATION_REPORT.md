@@ -1,5 +1,7 @@
 # PMart Final Implementation Report
 
+> **HISTORICAL DOCUMENT — superseded on 2026-10-13.** This describes the code and database before the rebuild (TypeScript backend, old collections, seed data and the Playwright suite, all since removed). File names, collections and test references below may no longer exist. Current state: [Developer Handover Report](PMart_DEVELOPER_HANDOVER_REPORT.md), [Database Reference](PMart_DATABASE_REFERENCE.md), [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) and [SECURITY.md](../SECURITY.md).
+
 ## 1. Bugs found
 - **IDOR Vulnerabilities:** `SHOP_OWNER` could potentially update shops they did not own in `shop.controller.ts`. Customer/Rider endpoints lacked strict ownership checks in certain queries.
 - **Backend Compilation Errors:** `TS18046` errors occurred due to untyped array iterators in Mongoose queries (e.g. `s => s._id`).

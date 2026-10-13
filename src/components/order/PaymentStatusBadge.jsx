@@ -1,15 +1,17 @@
 import React from 'react';
-import { Banknote, CheckCircle2, Clock } from 'lucide-react';
-import { PAYMENT_STATUS } from '@/types/orderTypes';
+import { CheckCircle2, Clock } from 'lucide-react';
+import { PAYMENT_STATUS, paymentDisplay } from '@/types/orderTypes';
 import './PaymentStatusBadge.scss';
 
 export const PaymentStatusBadge = ({
   paymentStatus = PAYMENT_STATUS.PENDING,
+  orderStatus,
   paymentMethod = 'COD',
   amount = null,
   compact = false
 }) => {
-  const isCollected = paymentStatus === PAYMENT_STATUS.COLLECTED || paymentStatus === 'Paid';
+  const isCollected = paymentStatus === PAYMENT_STATUS.COLLECTED;
+  const { label } = paymentDisplay({ paymentStatus, status: orderStatus });
 
   return (
     <div className={`pmart-payment-status-badge ${isCollected ? 'status-collected' : 'status-pending'} ${compact ? 'compact' : ''}`}>
@@ -22,7 +24,7 @@ export const PaymentStatusBadge = ({
         </span>
         <span className="status-separator">•</span>
         <span className="status-tag">
-          {isCollected ? 'Payment Collected' : 'Payment Pending'}
+          {`Payment ${label.toLowerCase()}`}
         </span>
         {amount !== null && (
           <>

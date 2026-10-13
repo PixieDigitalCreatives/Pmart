@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { ShoppingBag, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,8 +8,10 @@ import { Button } from '@/components/ui';
 
 export const StickyMobileCart = () => {
   const { totalQuantity, billSummary, setIsCartOpen } = useCart();
+  const { pathname } = useLocation();
 
-  if (totalQuantity === 0) return null;
+  // The cart and checkout pages already show the bill; the floating bar would only duplicate it.
+  if (totalQuantity === 0 || pathname === '/cart' || pathname === '/checkout') return null;
 
   return (
     <AnimatePresence>
