@@ -1,0 +1,10 @@
+# Only the web app is deployed to Vercel. Never upload the API, local data or backups.
+backend/
+backups/
+scratch/
+test-results/
+dist/
+node_modules/
+.env
+.env.*
+!.env.example

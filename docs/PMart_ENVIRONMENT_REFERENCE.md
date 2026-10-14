@@ -19,7 +19,8 @@ The file is always read from `backend/.env`, whatever the working directory; rea
 | `REFRESH_TOKEN_TTL_DAYS` | no | `7` | Refresh-cookie lifetime |
 | `OTP_LENGTH` | no | `4` | Delivery code length, `4` or `6`. The apps read it from `/api/settings/public` |
 | `ALLOWED_ORIGINS` | production | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated browser origins for CORS and Socket.IO. Outside production any localhost / 127.x.x.x port is also allowed |
-| `COOKIE_SAME_SITE` | no | `none` (prod) / `strict` (dev) | Cookie SameSite attribute: `strict`, `lax`, or `none`. Use `none` (with HTTPS) when frontend (e.g. Netlify) and backend (e.g. Render) are on different domains |
+| `COOKIE_SAME_SITE` | no | `none` (prod) / `strict` (dev) | Sign-in cookie SameSite: `strict`, `lax` or `none`. With the recommended Vercel rewrite (browser only talks to the Vercel domain) use `strict`. `none` is only for a browser calling the API on another site directly, which breaks wherever third-party cookies are blocked (Safari, and `*.vercel.app` / `*.onrender.com` are always different sites) |
+| `TRUST_PROXY` | no | `1` | Number of reverse proxies in front of the API, used to find the client IP for rate limits. Render alone = `1`; Vercel rewrite → Render = `2` |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | no | — | Firebase Admin service account. All three are needed for Google sign-in; without them `/auth/google` returns 503 and the web app hides the Google button |
 | `MAPTILER_API_KEY` | no | — | Server-side reverse geocoding for `/addresses/reverse-geocode` (503 without it; the web app falls back to its own key) |
 | `OSRM_CACHE_TTL` | no | `3600` | Seconds to cache road routes |
@@ -34,8 +35,10 @@ The file is always read from `backend/.env`, whatever the working directory; rea
 |---|---|---|
 | `VITE_MAPTILER_API_KEY` | for maps | Map tiles, address search and the reverse-geocode fallback. Restrict it to your domains in the MapTiler dashboard |
 | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` (`VITE_FIREBASE_MEASUREMENT_ID` optional) | for Google sign-in | Firebase web config. The Google button only shows when these are set **and** the backend reports `googleSignIn: true` |
-| `VITE_API_BASE_URL` | no | API base URL. Default `/api` (same origin — the dev server proxies it) |
-| `VITE_SOCKET_URL` | no | Socket.IO origin. Default: the page's origin (proxied in development) |
+| `VITE_API_BASE_URL` | no | API base URL. Default `/api` (same origin — the dev server proxies it locally; `vercel.json` forwards it in production). Leave unset on Vercel |
+| `VITE_SOCKET_URL` | production | Socket.IO origin. Default: the page's origin (proxied in development). On Vercel set it to the Render URL, e.g. `https://pmart-backend.onrender.com` (Vercel can't forward WebSockets) |
+
+Hosting setup for Render + Vercel: [PMart_DEPLOYMENT.md](PMart_DEPLOYMENT.md).
 
 ## Dev-server only (shell environment, not `.env`)
 | Variable | Default | Purpose |

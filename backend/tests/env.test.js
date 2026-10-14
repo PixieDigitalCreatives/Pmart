@@ -31,6 +31,8 @@ describe('environment validation', () => {
     ['JWT_SECRET is missing', { JWT_SECRET: undefined }],
     ['OTP_ENCRYPTION_KEY is not 64 hex chars', { OTP_ENCRYPTION_KEY: 'abc' }],
     ['OTP_LENGTH is unsupported', { OTP_LENGTH: '5' }],
+    ['TRUST_PROXY is not a small whole number', { TRUST_PROXY: 'yes' }],
+    ['COOKIE_SAME_SITE is unknown', { COOKIE_SAME_SITE: 'loose' }],
     ['COOKIE_SAME_SITE is invalid', { COOKIE_SAME_SITE: 'invalid' }],
     ['JWT_SECRET is short in production', { NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(10) }],
     ['JWT_SECRET is weak in production', { NODE_ENV: 'production', JWT_SECRET: `secret${'x'.repeat(40)}` }]

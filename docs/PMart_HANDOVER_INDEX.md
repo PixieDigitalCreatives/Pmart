@@ -7,6 +7,7 @@ _Updated 2026-10-13 after the database rebuild and the removal of all mock/demo/
 2. [Database Reference](PMart_DATABASE_REFERENCE.md) — the 11 MongoDB collections, fields, indexes and rules.
 3. [API Reference](PMart_API_REFERENCE.md) — every endpoint, who may call it, the order state machine, sockets.
 4. [Environment Reference](PMart_ENVIRONMENT_REFERENCE.md) — backend and web-app variables.
+   [Deployment](PMart_DEPLOYMENT.md) — Render (API) + Vercel (web app) step by step.
 5. [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) — what is verified, how, and what is not.
 6. [Remaining Work](PMart_REMAINING_WORK.md) — prioritised next steps (rotate the MapTiler key first).
 7. [Test Strategy](PMart_TEST_STRATEGY.md) — backend suites and how the manual browser run was done.

@@ -1,13 +1,18 @@
+# Render Blueprint for the PMart API (backend/). Dashboard → New → Blueprint → select this repo.
+# Values marked `sync: false` are typed into the Render dashboard; they are never stored in git.
 services:
   - type: web
-    name: pmart-backend
+    name: pmart-backend # keep this name: renaming creates a new service with a new URL
     runtime: node
     rootDir: backend
-    plan: free
-    buildCommand: npm install
+    region: singapore # closest Render region to India (region can't be changed after creation)
+    plan: free # free sleeps after 15 min idle: first request takes ~1 min and live updates drop; use starter for real traffic
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: PORT
@@ -17,12 +22,26 @@ services:
       - key: MONGODB_DB_NAME
         value: pmart
       - key: JWT_SECRET
-        generateValue: true
+        generateValue: true # Render generates a strong secret (production requires 32+ chars)
       - key: OTP_ENCRYPTION_KEY
-        sync: false
+        sync: false # 64 hex chars; once orders exist never change it
       - key: ALLOWED_ORIGINS
-        sync: false
+        sync: false # your Vercel domain, e.g. https://pmart.vercel.app (comma-separate several, no trailing slash)
+      # The web app calls /api through a Vercel rewrite (same site), so the session cookie is first-party.
       - key: COOKIE_SAME_SITE
-        value: none
+        value: strict
+      # Browser → Vercel → Render load balancer → API = 2 proxies; needed for real client IPs in rate limits.
+      - key: TRUST_PROXY
+        value: "2"
+      - key: OTP_LENGTH
+        value: "4"
       - key: LOG_LEVEL
         value: info
+      - key: MAPTILER_API_KEY
+        sync: false # optional: server-side address lookup
+      - key: FIREBASE_PROJECT_ID
+        sync: false # optional: Google sign-in needs all three
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false

@@ -72,7 +72,7 @@ docs/           Architecture, database, API, environment, status and remaining w
 ```
 
 ## Documentation
-Start with [docs/PMart_HANDOVER_INDEX.md](docs/PMart_HANDOVER_INDEX.md). Project rules for contributors are in
+Start with [docs/PMart_HANDOVER_INDEX.md](docs/PMart_HANDOVER_INDEX.md). Deploying: [docs/PMart_DEPLOYMENT.md](docs/PMart_DEPLOYMENT.md) (Render + Vercel). Project rules for contributors are in
 [AGENTS.md](AGENTS.md); design decisions in [DECISIONS.md](DECISIONS.md).
 
 ## License

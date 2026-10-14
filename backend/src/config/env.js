@@ -34,6 +34,8 @@ const envSchema = z.object({
   OTP_ENCRYPTION_KEY: z.string().regex(/^[0-9a-fA-F]{64}$/, 'Must be a 64 character hex string (32 bytes)'),
   ALLOWED_ORIGINS: z.string().optional(),
   COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).optional(),
+  // Number of reverse proxies in front of the API (Render = 1; Vercel rewrite → Render = 2). Used for client IPs/rate limits.
+  TRUST_PROXY: z.string().default('1').transform(Number).refine((n) => Number.isInteger(n) && n >= 0 && n <= 5, 'TRUST_PROXY must be 0-5'),
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
