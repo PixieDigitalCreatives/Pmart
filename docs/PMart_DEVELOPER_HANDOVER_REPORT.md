@@ -8,7 +8,7 @@ a rider delivers it and collects cash, and the customer confirms the handover wi
 serves four portals: customer storefront (`/`), store portal (`/shop`), rider app (`/rider`) and admin console (`/admin`).
 
 Status: every portal has been exercised end to end in a browser against the real backend and an empty database
-(see the [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) for exactly what was and was not verified), and 80
+(see the [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) for exactly what was and was not verified), and 94
 backend tests pass. The database ships **empty** — there is no seed or demo data.
 
 ## 2. Stack
@@ -90,6 +90,8 @@ each move is in the [API Reference](PMart_API_REFERENCE.md). Key rules:
 - **Transactions need a replica set.** Atlas is fine; a plain local `mongod` is not.
 - **SCSS files must not start with a UTF-8 BOM.** Vite prepends the shared `@use` lines, which pushed a BOM into the first selector of `LoginPage.scss` and silently disabled it. `vite.config.js` now strips BOMs, but save files as UTF-8 without BOM.
 - **Rate limits** are off in development unless `RATE_LIMIT_IN_DEV=true`.
+- **Public catalog caching**: An in-memory bounded LRU/TTL cache (`backend/src/utils/cache.js`) caches public categories, tagged collections, settings, and product listings with automatic invalidation on any catalog or store mutation. Private and cart/checkout endpoints use strict `Cache-Control: no-store` and always query MongoDB within transactions.
+- **Compound indexing & fast pagination**: Product catalog uses compound indexes (`{ categorySlug, subcategory, isActive, createdAt: -1 }`, price/discount sorts, and full-text search) with fast count calculation on initial pages.
 - **MARG ERP integration** is a stub and stays disabled (no API specification; see `DECISIONS.md`).
 
 ## 9. What was removed in the 2026-10-13 rebuild

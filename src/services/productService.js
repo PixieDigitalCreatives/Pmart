@@ -1,25 +1,25 @@
 import apiClient from './apiClient';
 
 export const productService = {
-  /** Storefront listing: { products, totalCount, page, totalPages } */
-  async getProducts(params = {}) {
-    const res = await apiClient.get('/products', { params });
+  /** Storefront listing: { products, totalCount, page, totalPages, hasMore } */
+  async getProducts(params = {}, signal) {
+    const res = await apiClient.get('/products', { params, signal });
     return res.data.data;
   },
 
-  async getProductBySlug(slug) {
-    const res = await apiClient.get(`/products/slug/${encodeURIComponent(slug)}`);
+  async getProductBySlug(slug, signal) {
+    const res = await apiClient.get(`/products/slug/${encodeURIComponent(slug)}`, { signal });
     return res.data.data;
   },
 
-  async getProductsByTag(tag, limit = 8) {
-    const res = await apiClient.get(`/products/tag/${encodeURIComponent(tag)}`, { params: { limit } });
+  async getProductsByTag(tag, limit = 8, signal) {
+    const res = await apiClient.get(`/products/tag/${encodeURIComponent(tag)}`, { params: { limit }, signal });
     return res.data.data;
   },
 
-  async searchProducts(query) {
+  async searchProducts(query, signal) {
     if (!query || !query.trim()) return [];
-    const res = await apiClient.get('/products/search', { params: { q: query.trim() } });
+    const res = await apiClient.get('/products/search', { params: { q: query.trim() }, signal });
     return res.data.data;
   },
 

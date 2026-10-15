@@ -99,7 +99,7 @@ export const HomePage = () => {
                   {categories.map((cat) => (
                     <Link key={cat._id} to={`/category/${cat.slug}`} className="category-pill-card">
                       <div className="cat-image-box">
-                        {cat.imageUrl ? <img src={cat.imageUrl} alt="" loading="lazy" /> : <Store size={28} aria-hidden="true" />}
+                        {cat.imageUrl ? <img src={cat.imageUrl} alt="" loading="lazy" decoding="async" /> : <Store size={28} aria-hidden="true" />}
                       </div>
                       <span className="cat-name">{cat.name}</span>
                     </Link>

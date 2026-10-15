@@ -68,8 +68,18 @@ ProductSchema.pre('validate', function deriveDiscount() {
 ProductSchema.index({ slug: 1 }, { unique: true });
 ProductSchema.index({ shop: 1, sku: 1 }, { unique: true, partialFilterExpression: { sku: { $type: 'string' } } });
 ProductSchema.index({ category: 1, isActive: 1, createdAt: -1 });
+ProductSchema.index({ categorySlug: 1, isActive: 1, createdAt: -1 });
+ProductSchema.index({ categorySlug: 1, subcategory: 1, isActive: 1, createdAt: -1 });
 ProductSchema.index({ tags: 1, isActive: 1 });
 ProductSchema.index({ shop: 1, isActive: 1, stockCount: 1 });
+ProductSchema.index({ isActive: 1, createdAt: -1 });
+ProductSchema.index({ isActive: 1, price: 1 });
+ProductSchema.index({ isActive: 1, price: -1 });
+ProductSchema.index({ isActive: 1, discount: -1 });
+ProductSchema.index(
+  { name: 'text', brand: 'text', tags: 'text' },
+  { weights: { name: 10, brand: 5, tags: 2 }, name: 'ProductTextIndex', background: true }
+);
 
 const Product = mongoose.model('Product', ProductSchema);
 

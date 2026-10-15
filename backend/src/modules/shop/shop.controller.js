@@ -12,6 +12,8 @@ const { hashPassword } = require('../../utils/auth');
 const { parseLatLng } = require('../../utils/geo');
 const { startOfDayIST, daysAgo } = require('../../utils/time');
 const { notFound, conflict, badRequest } = require('../../utils/http-error');
+const { memoryCache } = require('../../utils/cache');
+const { invalidateActiveShopCache } = require('../catalog/catalog.controller');
 
 const addressSchema = z.object({
   street: z.string().trim().min(1, 'Street is required').max(200),
@@ -167,6 +169,8 @@ class ShopController {
     shop.set(data);
     await shop.save();
     await recordAudit(req, AuditAction.UPDATE, 'Shop', shop._id, Object.keys(data));
+    invalidateActiveShopCache();
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: shop });
   }
 
@@ -238,6 +242,8 @@ class ShopController {
 
     const shop = await Shop.create({ ...data, owner: ownerId });
     await recordAudit(req, AuditAction.CREATE, 'Shop', shop._id, { name: shop.name });
+    invalidateActiveShopCache();
+    memoryCache.delByPrefix('catalog:');
     res.status(201).json({ success: true, data: await shop.populate('owner', 'name phone email role isActive') });
   }
 
@@ -249,6 +255,8 @@ class ShopController {
     shop.set(data);
     await shop.save();
     await recordAudit(req, AuditAction.UPDATE, 'Shop', shop._id, Object.keys(data));
+    invalidateActiveShopCache();
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: await shop.populate('owner', 'name phone email role isActive') });
   }
 }

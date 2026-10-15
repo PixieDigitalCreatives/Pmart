@@ -6,6 +6,14 @@ import { motion } from 'framer-motion';
 import './ProductCard.scss';
 
 
+function getThumbnailUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  if (url.includes('images.unsplash.com')) {
+    return url.replace(/w=\d+/, 'w=360').replace(/q=\d+/, 'q=75');
+  }
+  return url;
+}
+
 export const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const { getItemQuantity, addItem, updateQuantity } = useCart();
@@ -36,7 +44,15 @@ export const ProductCard = ({ product }) => {
       {/* Top Media & Badges */}
       <div className="card-media-wrapper">
         {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} loading="lazy" className="product-img" />
+          <img
+            src={getThumbnailUrl(product.imageUrl)}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            width="180"
+            height="180"
+            className="product-img"
+          />
         ) : (
           <div className="product-img product-img-placeholder" aria-hidden="true">
             <Package size={36} />

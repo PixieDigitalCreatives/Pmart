@@ -23,6 +23,7 @@ export const SearchPage = () => {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => setCategories([]));
@@ -30,44 +31,57 @@ export const SearchPage = () => {
 
   // Reset to the first page whenever the query or a filter changes.
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
     productService
-      .getProducts({
+      .getProducts(
+        {
+          search: query || undefined,
+          category: category || undefined,
+          sort,
+          inStockOnly: inStockOnly ? 'true' : undefined,
+          maxPrice: maxPrice ? Number(maxPrice) : undefined,
+          page: 1,
+          limit: PAGE_SIZE
+        },
+        controller.signal
+      )
+      .then((res) => {
+        setProducts(res.products);
+        setTotalCount(res.totalCount);
+        setPage(1);
+      })
+      .catch((err) => {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        setProducts([]);
+      })
+      .finally(() => setLoading(false));
+    return () => {
+      controller.abort();
+    };
+  }, [query, category, sort, inStockOnly, maxPrice]);
+
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const next = page + 1;
+    try {
+      const res = await productService.getProducts({
         search: query || undefined,
         category: category || undefined,
         sort,
         inStockOnly: inStockOnly ? 'true' : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
-        page: 1,
+        page: next,
         limit: PAGE_SIZE
-      })
-      .then((res) => {
-        if (cancelled) return;
-        setProducts(res.products);
-        setTotalCount(res.totalCount);
-        setPage(1);
-      })
-      .catch(() => !cancelled && setProducts([]))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [query, category, sort, inStockOnly, maxPrice]);
-
-  const loadMore = async () => {
-    const next = page + 1;
-    const res = await productService.getProducts({
-      search: query || undefined,
-      category: category || undefined,
-      sort,
-      inStockOnly: inStockOnly ? 'true' : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      page: next,
-      limit: PAGE_SIZE
-    });
-    setProducts((prev) => [...prev, ...res.products]);
-    setPage(next);
+      });
+      setProducts((prev) => [...prev, ...res.products]);
+      setPage(next);
+    } catch {
+      // Keep existing products
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const hasFilters = category || inStockOnly || maxPrice;
@@ -168,8 +182,8 @@ export const SearchPage = () => {
                 </div>
                 {products.length < totalCount && (
                   <div className="text-center mt-6">
-                    <Button variant="secondary" onClick={loadMore}>
-                      Show more
+                    <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                      {loadingMore ? 'Loading...' : 'Show more'}
                     </Button>
                   </div>
                 )}

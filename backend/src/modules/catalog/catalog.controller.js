@@ -9,6 +9,7 @@ const { recordAudit, AuditAction } = require('../admin/audit.model');
 const { escapeRegExp } = require('../../utils/regex');
 const { z, assertObjectId, parsePagination, parseSearch } = require('../../utils/validation');
 const { notFound, conflict, forbidden, badRequest } = require('../../utils/http-error');
+const { memoryCache, MemoryCache } = require('../../utils/cache');
 
 const PUBLIC_PRODUCT_FIELDS =
   'name slug brand unit price mrp discount stockCount imageUrl gallery categorySlug category subcategory tags shop description specifications nutrition isActive sku';
@@ -64,8 +65,23 @@ function assertCatalogManager(user) {
   if (!isShopOwner(user) && !hasPermission(user, 'catalog.manage')) throw forbidden('Missing permission: catalog.manage');
 }
 
+let cachedActiveShopIds = null;
+let activeShopIdsExpiresAt = 0;
+
 async function activeShopIds() {
-  return Shop.distinct('_id', { isActive: true });
+  const now = Date.now();
+  if (cachedActiveShopIds && now < activeShopIdsExpiresAt) {
+    return cachedActiveShopIds;
+  }
+  const ids = await Shop.distinct('_id', { isActive: true });
+  cachedActiveShopIds = ids;
+  activeShopIdsExpiresAt = now + 60 * 1000;
+  return ids;
+}
+
+function invalidateActiveShopCache() {
+  cachedActiveShopIds = null;
+  activeShopIdsExpiresAt = 0;
 }
 
 async function resolveProductShop(user, requestedShop) {
@@ -177,34 +193,75 @@ class CatalogController {
   // ---------- Categories (public) ----------
 
   static async getCategories(req, res) {
-    const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
+    const cacheKey = 'categories:all';
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.json({ success: true, data: cached });
+    }
+
+    const categories = await Category.find({ isActive: true })
+      .select('name slug description imageUrl subcategories sortOrder')
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
+
+    memoryCache.set(cacheKey, categories, 300);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ success: true, data: categories });
   }
 
   static async getCategoryBySlug(req, res) {
-    const category = await Category.findOne({ slug: String(req.params.slug), isActive: true });
+    const slug = String(req.params.slug);
+    const cacheKey = `categories:${slug}`;
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.json({ success: true, data: cached });
+    }
+
+    const category = await Category.findOne({ slug, isActive: true }).lean();
     if (!category) throw notFound('Category not found');
+
+    memoryCache.set(cacheKey, category, 300);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ success: true, data: category });
   }
 
   // ---------- Products (public) ----------
 
   static async getProducts(req, res) {
+    const cacheKey = MemoryCache.makeKey('catalog:list', req.query);
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      return res.json({ success: true, data: cached });
+    }
+
     const { page, limit, skip } = parsePagination(req.query, { defaultLimit: 24, maxLimit: 60 });
     const search = parseSearch(req.query.search);
     const filter = { isActive: true, shop: { $in: await activeShopIds() } };
 
     if (req.query.category) {
-      const category = await Category.findOne({ slug: String(req.query.category), isActive: true }).select('_id');
-      if (!category) return res.json({ success: true, data: { products: [], totalCount: 0, page, totalPages: 0 } });
-      filter.category = category._id;
+      const catVal = String(req.query.category).trim();
+      if (/^[0-9a-fA-F]{24}$/.test(catVal)) {
+        filter.category = catVal;
+      } else {
+        filter.categorySlug = catVal;
+      }
     }
-    if (req.query.subcategory) filter.subcategory = String(req.query.subcategory);
-    if (req.query.tag) filter.tags = String(req.query.tag).toLowerCase();
+    if (req.query.subcategory) filter.subcategory = String(req.query.subcategory).trim();
+    if (req.query.brand) filter.brand = String(req.query.brand).trim();
+    if (req.query.tag) filter.tags = String(req.query.tag).toLowerCase().trim();
+
+    if (req.query.discountOnly === 'true' || req.query.hasDiscount === 'true') {
+      filter.discount = { $gt: 0 };
+    }
+
     if (search) {
       const rx = { $regex: escapeRegExp(search), $options: 'i' };
       filter.$or = [{ name: rx }, { brand: rx }, { tags: rx }];
     }
+
     const minPrice = Number(req.query.minPrice);
     const maxPrice = Number(req.query.maxPrice);
     if (req.query.minPrice !== undefined && Number.isFinite(minPrice)) filter.price = { ...filter.price, $gte: minPrice };
@@ -212,50 +269,118 @@ class CatalogController {
     if (req.query.inStockOnly === 'true') filter.stockCount = { $gt: 0 };
 
     const sort = SORTS[req.query.sort] || SORTS.newest;
-    const [products, totalCount] = await Promise.all([
-      Product.find(filter).select(LIST_PRODUCT_FIELDS).sort(sort).skip(skip).limit(limit).lean(),
-      Product.countDocuments(filter)
-    ]);
-    res.json({ success: true, data: { products, totalCount, page, totalPages: Math.ceil(totalCount / limit) } });
+
+    const products = await Product.find(filter)
+      .select(LIST_PRODUCT_FIELDS)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Fast count optimization: if page 1 has fewer products than limit, count is products.length
+    let totalCount;
+    if (page === 1 && products.length < limit) {
+      totalCount = products.length;
+    } else {
+      totalCount = await Product.countDocuments(filter);
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const result = {
+      products,
+      totalCount,
+      page,
+      totalPages,
+      hasMore: page < totalPages
+    };
+
+    memoryCache.set(cacheKey, result, 30);
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.json({ success: true, data: result });
   }
 
   static async searchProducts(req, res) {
     const q = parseSearch(req.query.q);
     if (!q) return res.json({ success: true, data: [] });
+
+    const cacheKey = `catalog:search:${q.toLowerCase()}`;
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+      return res.json({ success: true, data: cached });
+    }
+
     const rx = { $regex: escapeRegExp(q), $options: 'i' };
     const products = await Product.find({ isActive: true, shop: { $in: await activeShopIds() }, $or: [{ name: rx }, { brand: rx }] })
       .select(LIST_PRODUCT_FIELDS)
       .limit(10)
       .lean();
+
+    memoryCache.set(cacheKey, products, 30);
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({ success: true, data: products });
   }
 
   static async getProductsByTag(req, res) {
+    const tag = String(req.params.tag).toLowerCase();
     const limit = Math.min(24, Math.max(1, parseInt(req.query.limit, 10) || 8));
-    const products = await Product.find({ tags: String(req.params.tag).toLowerCase(), isActive: true, shop: { $in: await activeShopIds() } })
+    const cacheKey = `catalog:tag:${tag}:${limit}`;
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.json({ success: true, data: cached });
+    }
+
+    const products = await Product.find({ tags: tag, isActive: true, shop: { $in: await activeShopIds() } })
       .select(LIST_PRODUCT_FIELDS)
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
+
+    memoryCache.set(cacheKey, products, 60);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ success: true, data: products });
   }
 
   static async getProductBySlug(req, res) {
-    const product = await Product.findOne({ slug: String(req.params.slug), isActive: true, shop: { $in: await activeShopIds() } })
+    const slug = String(req.params.slug);
+    const cacheKey = `catalog:slug:${slug}`;
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.json({ success: true, data: cached });
+    }
+
+    const product = await Product.findOne({ slug, isActive: true, shop: { $in: await activeShopIds() } })
       .select(PUBLIC_PRODUCT_FIELDS)
       .populate('category', 'name slug')
-      .populate('shop', 'name isAcceptingOrders');
+      .populate('shop', 'name isAcceptingOrders')
+      .lean();
     if (!product) throw notFound('Product not found');
+
+    memoryCache.set(cacheKey, product, 60);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ success: true, data: product });
   }
 
   static async getProductById(req, res) {
     assertObjectId(req.params.id, 'product id');
+    const cacheKey = `catalog:id:${req.params.id}`;
+    const cached = memoryCache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+      return res.json({ success: true, data: cached });
+    }
+
     const product = await Product.findOne({ _id: req.params.id, isActive: true, shop: { $in: await activeShopIds() } })
       .select(PUBLIC_PRODUCT_FIELDS)
       .populate('category', 'name slug')
-      .populate('shop', 'name isAcceptingOrders');
+      .populate('shop', 'name isAcceptingOrders')
+      .lean();
     if (!product) throw notFound('Product not found');
+
+    memoryCache.set(cacheKey, product, 60);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ success: true, data: product });
   }
 
@@ -320,6 +445,7 @@ class CatalogController {
       slug: await uniqueSlug(Product, slugify(data.name))
     });
     await recordAudit(req, AuditAction.CREATE, 'Product', product._id, { name: product.name, sku: product.sku });
+    memoryCache.delByPrefix('catalog:');
     res.status(201).json({ success: true, data: product });
   }
 
@@ -510,6 +636,7 @@ class CatalogController {
           bulk: true,
           count: created.length
         });
+        memoryCache.delByPrefix('catalog:');
       }
     }
 
@@ -548,6 +675,7 @@ class CatalogController {
     product.set(productPayload(data));
     await product.save();
     await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, { fields: Object.keys(data) });
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: product });
   }
 
@@ -558,6 +686,7 @@ class CatalogController {
     product.isActive = isActive;
     await product.save();
     await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, { isActive });
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: product });
   }
 
@@ -567,6 +696,7 @@ class CatalogController {
     const product = await loadManagedProduct(req.user, req.params.id);
     await Product.deleteOne({ _id: product._id });
     await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku });
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, message: 'Product removed from products' });
   }
 
@@ -590,6 +720,10 @@ class CatalogController {
       } catch (err) {
         errors.push({ id, message: err.message || 'Could not delete product' });
       }
+    }
+
+    if (deletedCount > 0) {
+      memoryCache.delByPrefix('catalog:');
     }
 
     res.json({
@@ -639,6 +773,10 @@ class CatalogController {
       }
     }
 
+    if (updatedCount > 0) {
+      memoryCache.delByPrefix('catalog:');
+    }
+
     res.json({
       success: true,
       data: {
@@ -676,6 +814,8 @@ class CatalogController {
       slug: data.slug ? base : await uniqueSlug(Category, base)
     });
     await recordAudit(req, AuditAction.CREATE, 'Category', category._id, { name: category.name });
+    memoryCache.delByPrefix('categories:');
+    memoryCache.delByPrefix('catalog:');
     res.status(201).json({ success: true, data: category });
   }
 
@@ -687,6 +827,8 @@ class CatalogController {
     category.set({ ...data, imageUrl: data.imageUrl === '' ? undefined : data.imageUrl ?? category.imageUrl });
     await category.save();
     await recordAudit(req, AuditAction.UPDATE, 'Category', category._id, { fields: Object.keys(data) });
+    memoryCache.delByPrefix('categories:');
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: category });
   }
 
@@ -696,6 +838,8 @@ class CatalogController {
     const category = await Category.findByIdAndUpdate(req.params.id, { isActive }, { new: true });
     if (!category) throw notFound('Category not found');
     await recordAudit(req, AuditAction.UPDATE, 'Category', category._id, { isActive });
+    memoryCache.delByPrefix('categories:');
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, data: category });
   }
 
@@ -709,8 +853,10 @@ class CatalogController {
     }
     await category.deleteOne();
     await recordAudit(req, AuditAction.DELETE, 'Category', category._id, { name: category.name });
+    memoryCache.delByPrefix('categories:');
+    memoryCache.delByPrefix('catalog:');
     res.json({ success: true, message: 'Category deleted' });
   }
 }
 
-module.exports = { CatalogController };
+module.exports = { CatalogController, invalidateActiveShopCache };

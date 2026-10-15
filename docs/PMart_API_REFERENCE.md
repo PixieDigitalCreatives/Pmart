@@ -26,8 +26,8 @@ permissions granted: `dashboard.read`, `orders.read`, `orders.manage`, `catalog.
 | GET | `/health` | `{ status, database, timestamp }`; 503 when MongoDB is disconnected |
 | GET | `/settings/public` | `freeDeliveryThreshold, baseDeliveryFee, platformHandlingFee, supportPhone, supportEmail, otpLength, googleSignIn` |
 | GET | `/categories`, `/categories/:slug` | Active categories, sorted by `sortOrder` (management list `/manage/categories` adds product counts) |
-| GET | `/products` | `?category&subcategory&search&sort(newest|price-low|price-high|discount|name)&page&limit`; active products from active shops |
-| GET | `/products/search`, `/products/tag/:tag`, `/products/slug/:slug`, `/products/:id` | Storefront reads |
+| GET | `/products` | `?category&subcategory&brand&search&tag&hasDiscount&minPrice&maxPrice&inStockOnly&sort(newest|price-low|price-high|discount|name)&page&limit`; active products from active shops. Cached in-memory (30s TTL). Returns `{ products, totalCount, page, totalPages, hasMore }` |
+| GET | `/products/search`, `/products/tag/:tag`, `/products/slug/:slug`, `/products/:id` | Storefront reads with in-memory caching and Cache-Control headers |
 | GET | `/shops` | Active shops (public fields) |
 
 ## Auth — `/auth`

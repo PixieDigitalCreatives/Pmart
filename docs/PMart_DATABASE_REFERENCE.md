@@ -56,8 +56,11 @@ was removed), `otps` / `otpreservations` (the delivery code is stored on the ord
 - `stockCount` — the only stock field. Decremented atomically at checkout (`$inc` guarded by `stockCount >= qty`)
   and restored exactly once when an order is cancelled or rejected (`orders.inventoryRestored` guard).
 - `imageUrl`, `gallery`, `specifications` and `nutrition` (string maps), `isActive`.
-- Indexes: unique `slug`; unique partial `{ shop, sku }`; `{ category, isActive, createdAt: -1 }`; `{ tags, isActive }`;
-  `{ shop, isActive, stockCount }` (low-stock lists).
+- Indexes: unique `slug`; unique partial `{ shop, sku }`; `{ category, isActive, createdAt: -1 }`;
+  `{ categorySlug, isActive, createdAt: -1 }`; `{ categorySlug, subcategory, isActive, createdAt: -1 }`;
+  `{ tags, isActive }`; `{ shop, isActive, stockCount }` (low-stock lists); `{ isActive, createdAt: -1 }`;
+  `{ isActive, price: 1 }`; `{ isActive, price: -1 }`; `{ isActive, discount: -1 }`;
+  text index `{ name, brand, tags }` (`ProductTextIndex`).
 
 ## 5. `carts`
 - `user` → `users` (unique), `items: [{ product, quantity }]`. Prices are never stored in the cart; the server

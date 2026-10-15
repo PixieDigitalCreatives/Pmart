@@ -12,6 +12,8 @@ const { Category, Product } = require('../src/modules/catalog/catalog.model');
 const { Address } = require('../src/modules/address/address.model');
 const { RiderProfile } = require('../src/modules/rider/rider.model');
 const { hashPassword } = require('../src/utils/auth');
+const { memoryCache } = require('../src/utils/cache');
+const { invalidateActiveShopCache } = require('../src/modules/catalog/catalog.controller');
 
 let replSet;
 let seq = 0;
@@ -36,6 +38,8 @@ async function stopDb() {
 }
 
 async function clearDb() {
+  memoryCache.clear();
+  invalidateActiveShopCache();
   for (const model of models) await model.deleteMany({});
 }
 

@@ -11,11 +11,14 @@ const { errorHandler, notFoundHandler } = require('./middleware/error.middleware
 const { Settings } = require('./modules/admin/settings.model');
 const { HttpError } = require('./utils/http-error');
 const { isGoogleSignInEnabled } = require('./config/firebase-admin');
+const { perfLogger } = require('./middleware/perf-logger');
+const { memoryCache } = require('./utils/cache');
 
 const app = express();
 
 app.set('trust proxy', env.TRUST_PROXY);
 app.disable('x-powered-by');
+app.use(perfLogger);
 app.use((req, res, next) => {
   const incoming = req.headers['x-request-id'];
   req.headers['x-request-id'] = typeof incoming === 'string' && /^[\w-]{8,64}$/.test(incoming) ? incoming : crypto.randomUUID();
@@ -44,29 +47,44 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/settings/public', async (req, res) => {
+  const cacheKey = 'settings:public';
+  const cached = memoryCache.get(cacheKey);
+  if (cached) {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+    return res.json({ success: true, data: cached });
+  }
+
   const s = await Settings.getSingleton();
-  res.json({
-    success: true,
-    data: {
-      freeDeliveryThreshold: s.freeDeliveryThreshold,
-      baseDeliveryFee: s.baseDeliveryFee,
-      platformHandlingFee: s.platformHandlingFee,
-      supportPhone: s.supportPhone,
-      supportEmail: s.supportEmail,
-      otpLength: env.OTP_LENGTH,
-      googleSignIn: isGoogleSignInEnabled()
-    }
-  });
+  const data = {
+    freeDeliveryThreshold: s.freeDeliveryThreshold,
+    baseDeliveryFee: s.baseDeliveryFee,
+    platformHandlingFee: s.platformHandlingFee,
+    supportPhone: s.supportPhone,
+    supportEmail: s.supportEmail,
+    otpLength: env.OTP_LENGTH,
+    googleSignIn: isGoogleSignInEnabled()
+  };
+  memoryCache.set(cacheKey, data, 120);
+  res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+  res.json({ success: true, data });
 });
 
-app.use('/api/auth', require('./modules/auth/auth.route'));
-app.use('/api/users', require('./modules/users/user.route'));
+// Middleware to prevent caching on private and transactional routes
+const noStore = (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+};
+
+app.use('/api/auth', noStore, require('./modules/auth/auth.route'));
+app.use('/api/users', noStore, require('./modules/users/user.route'));
 app.use('/api/shops', require('./modules/shop/shop.route'));
-app.use('/api/cart', require('./modules/cart/cart.route'));
-app.use('/api/orders', require('./modules/order/order.route'));
-app.use('/api/admin', require('./modules/admin/admin.route'));
-app.use('/api/rider', require('./modules/rider/rider.route'));
-app.use('/api/addresses', require('./modules/address/address.route'));
+app.use('/api/cart', noStore, require('./modules/cart/cart.route'));
+app.use('/api/orders', noStore, require('./modules/order/order.route'));
+app.use('/api/admin', noStore, require('./modules/admin/admin.route'));
+app.use('/api/rider', noStore, require('./modules/rider/rider.route'));
+app.use('/api/addresses', noStore, require('./modules/address/address.route'));
 app.use('/api/routing', require('./modules/routing/routing.route'));
 app.use('/api', require('./modules/catalog/catalog.route'));
 

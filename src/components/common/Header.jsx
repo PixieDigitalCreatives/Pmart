@@ -48,16 +48,25 @@ export const Header = () => {
     }
   }, [routeLocation.pathname, searchParams]);
 
+  const searchDebounceRef = useRef(null);
+  useEffect(() => {
+    return () => clearTimeout(searchDebounceRef.current);
+  }, []);
+
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setSearchQuery(val);
     if (routeLocation.pathname === '/search') {
-      navigate(val.trim() ? `/search?q=${encodeURIComponent(val.trim())}` : '/search', { replace: true });
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => {
+        navigate(val.trim() ? `/search?q=${encodeURIComponent(val.trim())}` : '/search', { replace: true });
+      }, 250);
     }
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    clearTimeout(searchDebounceRef.current);
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     } else {

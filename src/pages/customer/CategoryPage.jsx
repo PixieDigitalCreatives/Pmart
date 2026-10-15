@@ -38,29 +38,44 @@ export const CategoryPage = () => {
     };
   }, [slug]);
 
+  const [loadingMore, setLoadingMore] = useState(false);
+
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
     productService
-      .getProducts({ category: slug, subcategory: subcategory || undefined, sort, page: 1, limit: PAGE_SIZE })
+      .getProducts(
+        { category: slug, subcategory: subcategory || undefined, sort, page: 1, limit: PAGE_SIZE },
+        controller.signal
+      )
       .then((res) => {
-        if (cancelled) return;
         setProducts(res.products);
         setTotalCount(res.totalCount);
         setPage(1);
       })
-      .catch(() => !cancelled && setProducts([]))
-      .finally(() => !cancelled && setLoading(false));
+      .catch((err) => {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        setProducts([]);
+      })
+      .finally(() => setLoading(false));
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [slug, subcategory, sort]);
 
   const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
     const next = page + 1;
-    const res = await productService.getProducts({ category: slug, subcategory: subcategory || undefined, sort, page: next, limit: PAGE_SIZE });
-    setProducts((prev) => [...prev, ...res.products]);
-    setPage(next);
+    try {
+      const res = await productService.getProducts({ category: slug, subcategory: subcategory || undefined, sort, page: next, limit: PAGE_SIZE });
+      setProducts((prev) => [...prev, ...res.products]);
+      setPage(next);
+    } catch {
+      // Keep existing products on network failure
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   if (notFound) {
@@ -143,8 +158,8 @@ export const CategoryPage = () => {
             </div>
             {products.length < totalCount && (
               <div className="text-center mt-6">
-                <Button variant="secondary" onClick={loadMore}>
-                  Show more
+                <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Loading...' : 'Show more'}
                 </Button>
               </div>
             )}

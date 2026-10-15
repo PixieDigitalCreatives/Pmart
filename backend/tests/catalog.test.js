@@ -297,6 +297,65 @@ describe('catalog management', () => {
     expect((await Product.findById(p1._id)).isActive).toBe(false);
     expect((await Product.findById(p2._id)).isActive).toBe(false);
   });
+
+  describe('performance, pagination and caching', () => {
+    it('returns pagination metadata including hasMore and totalPages', async () => {
+      const { shop, category } = await storeWithProducts();
+      for (let i = 1; i <= 5; i += 1) {
+        await createProduct(shop, category, { name: `Batch Item ${i}`, price: 10 + i });
+      }
+
+      const res = await api().get('/api/products').query({ page: 1, limit: 2 });
+      expect(res.status).toBe(200);
+      expect(res.body.data.products).toHaveLength(2);
+      expect(res.body.data.page).toBe(1);
+      expect(res.body.data.totalPages).toBe(3);
+      expect(res.body.data.totalCount).toBe(5);
+      expect(res.body.data.hasMore).toBe(true);
+
+      const page3 = await api().get('/api/products').query({ page: 3, limit: 2 });
+      expect(page3.body.data.products).toHaveLength(1);
+      expect(page3.body.data.hasMore).toBe(false);
+    });
+
+    it('filters products by brand and discountOnly', async () => {
+      const { shop, category } = await storeWithProducts();
+      await createProduct(shop, category, { name: 'Brand A Item', brand: 'BrandA', price: 100, mrp: 120 });
+      await createProduct(shop, category, { name: 'Brand B Item', brand: 'BrandB', price: 80, mrp: 80 });
+
+      const brandRes = await api().get('/api/products').query({ brand: 'BrandA' });
+      expect(brandRes.status).toBe(200);
+      expect(brandRes.body.data.products).toHaveLength(1);
+      expect(brandRes.body.data.products[0].brand).toBe('BrandA');
+
+      const discountRes = await api().get('/api/products').query({ hasDiscount: 'true' });
+      expect(discountRes.status).toBe(200);
+      expect(discountRes.body.data.products).toHaveLength(1);
+      expect(discountRes.body.data.products[0].name).toBe('Brand A Item');
+    });
+
+    it('serves cached public responses and invalidates when a product is modified', async () => {
+      const admin = await createUser('ADMIN');
+      const { shop, category } = await storeWithProducts();
+      const p = await createProduct(shop, category, { name: 'Cache Candidate', price: 50 });
+
+      // First read: populates cache
+      const first = await api().get('/api/products').query({ search: 'Cache' });
+      expect(first.headers['cache-control']).toContain('public');
+      expect(first.body.data.products).toHaveLength(1);
+
+      // Update product via manage route: should trigger cache invalidation
+      await api()
+        .put(`/api/manage/products/${p._id}`)
+        .set(auth(admin))
+        .send({ name: 'Renamed Candidate' });
+
+      // Next read gets fresh data
+      const after = await api().get('/api/products').query({ search: 'Renamed' });
+      expect(after.body.data.products).toHaveLength(1);
+      expect(after.body.data.products[0].name).toBe('Renamed Candidate');
+    });
+  });
 });
 
 
