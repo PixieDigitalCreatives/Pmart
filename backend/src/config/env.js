@@ -78,8 +78,8 @@ env.isAllowedOrigin = (origin) => {
   }
 
   // Allow Vercel and Netlify preview and production deployments
-  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
-  if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(origin)) return true;
+  if (/^https:\/\/([a-z0-9-]+\.)*vercel\.app(:[0-9]+)?$/i.test(origin)) return true;
+  if (/^https:\/\/([a-z0-9-]+\.)*netlify\.app(:[0-9]+)?$/i.test(origin)) return true;
 
   return false;
 };

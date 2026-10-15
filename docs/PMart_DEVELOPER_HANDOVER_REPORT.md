@@ -49,7 +49,7 @@ backups/                   gitignored: database backup and files removed in the 
 6. Sign in as the admin and set up the business: **Stores** (creates the store owner account), **Categories**,
    **Products** (single form or bulk Excel/CSV upload with validation), **People → Riders**, **Settings** (fees, support contact).
 
-For cloud deployment (Render backend + Netlify frontend + MongoDB Atlas), see the [Deployment Guide](PMart_DEPLOYMENT_GUIDE.md). Infrastructure as code configurations are provided in `render.yaml` and `netlify.toml`.
+For cloud deployment (Render backend + Vercel / Netlify frontend + MongoDB Atlas), see the [Deployment Guide](PMart_DEPLOYMENT_GUIDE.md) and [PMart Deployment](PMart_DEPLOYMENT.md). Infrastructure as code configurations are provided in `render.yaml`, `vercel.json` (rewriting `/api/:path*` to `https://pmart-66mp.onrender.com/api/:path*`), and `netlify.toml`. The active Render backend URL is `https://pmart-66mp.onrender.com`, with built-in CORS origin support for `*.vercel.app` and `*.netlify.app` deployments. Catalog items feature Blinkit-style quick-commerce packaged retail imagery populated via `backend/scripts/populate_catalog_images.js`.
 
 ## 5. Authentication and access
 - Phone + password for every role (phones stored as `+91…`). Optional Google sign-in needs Firebase on both sides.
