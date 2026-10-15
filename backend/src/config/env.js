@@ -64,7 +64,24 @@ const LOCAL_DEV_ORIGIN = /^http:\/\/(localhost|127(\.\d{1,3}){3})(:\d+)?$/;
  * Whether a browser Origin may call the API. Outside production any localhost port is accepted
  * so the Vite dev server and previews work without listing every port in ALLOWED_ORIGINS.
  */
-env.isAllowedOrigin = (origin) =>
-  env.allowedOrigins.includes(origin) || (env.NODE_ENV !== 'production' && LOCAL_DEV_ORIGIN.test(origin));
+env.isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (env.allowedOrigins.includes('*') || env.allowedOrigins.includes(origin)) return true;
+  if (env.NODE_ENV !== 'production' && LOCAL_DEV_ORIGIN.test(origin)) return true;
+
+  // Wildcard patterns in ALLOWED_ORIGINS (e.g. https://*.vercel.app)
+  for (const pattern of env.allowedOrigins) {
+    if (pattern.includes('*')) {
+      const escaped = pattern.replace(/[.+?^()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+      if (new RegExp('^' + escaped + '$', 'i').test(origin)) return true;
+    }
+  }
+
+  // Allow Vercel and Netlify preview and production deployments
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return true;
+  if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(origin)) return true;
+
+  return false;
+};
 
 module.exports = { env };
