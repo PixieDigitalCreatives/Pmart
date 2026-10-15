@@ -32,7 +32,7 @@ backend/src/
   config/                  env (validated), db, socket, firebase-admin
   middleware/              auth (protect/authorize/permissions), error, rate-limit
   modules/{auth,users,address,shop,catalog,cart,order,rider,admin,routing}
-  scripts/                 db-init.js, create-admin.js
+  scripts/                 db-init.js, create-admin.js, populate_catalog_images.js
   utils/                   validation, http-error, auth, geo, time, transaction, encryption, logger
 backend/tests/             Jest suites (see Test Strategy)
 docs/                      this documentation
