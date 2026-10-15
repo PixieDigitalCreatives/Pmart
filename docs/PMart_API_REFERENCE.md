@@ -1,6 +1,6 @@
 # PMart API Reference
 
-Base path `/api` (Express 5, `backend/src/app.js`). JSON bodies up to 200 kB. Every response carries an
+Base path `/api` (Express 5, `backend/src/app.js`). JSON bodies up to 5 MB (supporting bulk product uploads). Every response carries an
 `X-Request-Id` header.
 
 **Response shape.** Success: `{ success: true, data, ... }` (lists add `pagination: { page, limit, total, pages }`).
@@ -113,7 +113,7 @@ Socket.IO (same origin, path `/socket.io`, JWT in `auth.token`): rooms `order_<i
 ## Catalog management — `/manage`
 | Path | Who | Notes |
 |---|---|---|
-| `GET/POST /manage/products`, `GET/PUT/DELETE /manage/products/:id`, `PATCH /:id/status` | `catalog.manage` staff (any store) or store owner (own store only) | DELETE archives |
+| `GET/POST /manage/products`, `POST /manage/products/bulk`, `POST /manage/products/bulk-delete`, `PATCH/POST /manage/products/bulk-update`, `GET/PUT/DELETE /manage/products/:id`, `PATCH /:id/status` | `catalog.manage` staff (any store) or store owner (own store only) | Bulk accepts up to 200 products; bulk-delete accepts up to 100 IDs; bulk-update accepts up to 200 IDs for visibility (`isActive`) and stock count (`stockCount: 0` for out-of-stock); DELETE permanently removes the product from the products collection |
 | `GET/POST /manage/categories`, `PUT/DELETE /:id`, `PATCH /:id/status` | Changes: `catalog.manage`. GET: `catalog.manage` staff or store owners (owners see active categories only) | Delete refused (`CATEGORY_IN_USE`) while products use the category |
 
 ## Admin console — `/admin` (ADMIN or EMPLOYEE with the listed permission; mutations rate-limited)

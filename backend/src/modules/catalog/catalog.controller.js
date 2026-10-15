@@ -2,6 +2,7 @@
 
 const { Category, Product, slugify } = require('./catalog.model');
 const { Shop } = require('../shop/shop.model');
+const { Order } = require('../order/order.model');
 const { UserRole } = require('../auth/auth.model');
 const { hasPermission } = require('../../middleware/auth.middleware');
 const { recordAudit, AuditAction } = require('../admin/audit.model');
@@ -67,17 +68,21 @@ async function activeShopIds() {
   return Shop.distinct('_id', { isActive: true });
 }
 
-async function resolveProductShop(user, requestedShopId) {
+async function resolveProductShop(user, requestedShop) {
   if (isShopOwner(user)) {
     const shop = await Shop.findOne({ owner: user._id }).select('_id');
     if (!shop) throw forbidden('No store is linked to your account', 'NO_SHOP');
     return shop._id;
   }
-  if (requestedShopId) {
-    assertObjectId(requestedShopId, 'shop id');
-    const shop = await Shop.findById(requestedShopId).select('_id');
-    if (!shop) throw badRequest('Store not found', 'INVALID_SHOP');
-    return shop._id;
+  if (requestedShop) {
+    const reqStr = String(requestedShop).trim();
+    if (/^[0-9a-fA-F]{24}$/.test(reqStr)) {
+      const shop = await Shop.findById(reqStr).select('_id');
+      if (shop) return shop._id;
+    }
+    const shopByName = await Shop.findOne({ name: { $regex: new RegExp(`^${escapeRegExp(reqStr)}$`, 'i') } }).select('_id');
+    if (shopByName) return shopByName._id;
+    throw badRequest('Store not found', 'INVALID_SHOP');
   }
   const shops = await Shop.find().select('_id').limit(2).lean();
   if (shops.length === 1) return shops[0]._id;
@@ -112,6 +117,59 @@ function productPayload(data) {
   if (out.mrp === null) out.mrp = undefined;
   delete out.category;
   delete out.shop;
+  return out;
+}
+
+function normalizeBulkProduct(raw) {
+  if (!raw || typeof raw !== 'object') return raw;
+  const out = { ...raw };
+
+  if (out.price !== undefined && out.price !== '') out.price = Number(out.price);
+  if (out.mrp !== undefined && out.mrp !== '') out.mrp = Number(out.mrp);
+  else if (out.mrp === '') out.mrp = undefined;
+  if (out.stockCount !== undefined && out.stockCount !== '') out.stockCount = Number(out.stockCount);
+
+  if (typeof out.isActive === 'string') {
+    const s = out.isActive.trim().toLowerCase();
+    out.isActive = s === 'true' || s === 'yes' || s === '1' || s === 'active';
+  } else if (out.isActive === undefined) {
+    out.isActive = true;
+  }
+
+  if (typeof out.tags === 'string') {
+    out.tags = out.tags
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  if (typeof out.gallery === 'string') {
+    out.gallery = out.gallery
+      .split(/[\n,;]+/)
+      .map((u) => u.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof out.specifications === 'string') {
+    out.specifications = Object.fromEntries(
+      out.specifications
+        .split(/[\n;]+/)
+        .map((l) => l.split(':'))
+        .filter((parts) => parts.length >= 2 && parts[0].trim() && parts.slice(1).join(':').trim())
+        .map((parts) => [parts[0].trim().slice(0, 60), parts.slice(1).join(':').trim().slice(0, 200)])
+    );
+  }
+
+  if (typeof out.nutrition === 'string') {
+    out.nutrition = Object.fromEntries(
+      out.nutrition
+        .split(/[\n;]+/)
+        .map((l) => l.split(':'))
+        .filter((parts) => parts.length >= 2 && parts[0].trim() && parts.slice(1).join(':').trim())
+        .map((parts) => [parts[0].trim().slice(0, 60), parts.slice(1).join(':').trim().slice(0, 200)])
+    );
+  }
+
   return out;
 }
 
@@ -265,6 +323,210 @@ class CatalogController {
     res.status(201).json({ success: true, data: product });
   }
 
+  static async bulkCreateProducts(req, res) {
+    assertCatalogManager(req.user);
+    const body = Array.isArray(req.body) ? { products: req.body } : req.body;
+    const { products } = z
+      .object({
+        products: z.array(z.any()).min(1, 'At least one product is required').max(200, 'Maximum 200 products per bulk upload')
+      })
+      .parse(body);
+
+    const created = [];
+    const errors = [];
+    const seenBatchSkus = new Set();
+
+    // 1. Fetch categories and shops once in parallel
+    const [allCategories, allShops] = await Promise.all([
+      Category.find().select('_id name slug').lean(),
+      Shop.find().select('_id name owner').lean()
+    ]);
+
+    const categoryMap = new Map();
+    allCategories.forEach((c) => {
+      categoryMap.set(String(c._id), c);
+      categoryMap.set(c.slug.toLowerCase(), c);
+      categoryMap.set(c.name.toLowerCase().trim(), c);
+    });
+
+    let ownerShopId = null;
+    if (isShopOwner(req.user)) {
+      const ownerShop = allShops.find((s) => String(s.owner) === String(req.user._id));
+      if (!ownerShop) throw forbidden('No store is linked to your account', 'NO_SHOP');
+      ownerShopId = ownerShop._id;
+    }
+
+    const shopMap = new Map();
+    allShops.forEach((s) => {
+      shopMap.set(String(s._id), s._id);
+      shopMap.set(s.name.toLowerCase().trim(), s._id);
+    });
+    const defaultShopId = allShops.length === 1 ? allShops[0]._id : null;
+
+    const resolveShopFast = (requestedShop) => {
+      if (ownerShopId) return ownerShopId;
+      if (requestedShop) {
+        const reqStr = String(requestedShop).trim();
+        const found = shopMap.get(reqStr) || shopMap.get(reqStr.toLowerCase());
+        if (found) return found;
+        throw badRequest(`Store '${requestedShop}' not found`, 'INVALID_SHOP');
+      }
+      if (defaultShopId) return defaultShopId;
+      throw badRequest(allShops.length === 0 ? 'Create a store before adding products' : 'Select which store this product belongs to', 'SHOP_REQUIRED');
+    };
+
+    // 2. Validate and normalize candidates in-memory
+    const validCandidates = [];
+    for (let i = 0; i < products.length; i += 1) {
+      const raw = products[i];
+      try {
+        const normalized = normalizeBulkProduct(raw);
+        const data = productSchema.parse(normalized);
+
+        let category = categoryMap.get(String(data.category)) || categoryMap.get(String(data.category).toLowerCase().trim());
+        if (!category && /^[0-9a-fA-F]{24}$/.test(String(data.category))) {
+          category = categoryMap.get(String(data.category));
+        }
+        if (!category) {
+          throw notFound(`Category '${data.category}' not found`);
+        }
+
+        const shopId = resolveShopFast(data.shop);
+
+        if (data.sku) {
+          const skuKey = `${shopId}_${data.sku.toLowerCase()}`;
+          if (seenBatchSkus.has(skuKey)) {
+            throw conflict(`Product with SKU '${data.sku}' is duplicated in this file`, 'SKU_TAKEN');
+          }
+          seenBatchSkus.add(skuKey);
+        }
+
+        validCandidates.push({
+          row: i + 1,
+          raw,
+          data,
+          shopId,
+          category,
+          baseSlug: slugify(data.name) || 'item'
+        });
+      } catch (err) {
+        errors.push({
+          row: i + 1,
+          name: raw?.name || `Item #${i + 1}`,
+          sku: raw?.sku || '',
+          message: err.errors ? err.errors.map((e) => e.message).join(', ') : err.message || 'Validation error'
+        });
+      }
+    }
+
+    // 3. Batch check for existing SKUs in DB
+    const candidateSkus = validCandidates.filter((c) => c.data.sku);
+    const existingDbSkus = new Set();
+    if (candidateSkus.length > 0) {
+      const distinctShops = Array.from(new Set(candidateSkus.map((c) => c.shopId)));
+      const rawSkus = candidateSkus.map((c) => c.data.sku);
+      const existingInDb = await Product.find({
+        shop: { $in: distinctShops },
+        sku: { $in: rawSkus }
+      }).select('shop sku').lean();
+
+      existingInDb.forEach((p) => {
+        existingDbSkus.add(`${p.shop}_${p.sku.toLowerCase()}`);
+      });
+    }
+
+    const uniqueCandidates = [];
+    for (const c of validCandidates) {
+      if (c.data.sku) {
+        const skuKey = `${c.shopId}_${c.data.sku.toLowerCase()}`;
+        if (existingDbSkus.has(skuKey)) {
+          errors.push({
+            row: c.row,
+            name: c.raw?.name || `Item #${c.row}`,
+            sku: c.data.sku,
+            message: `Product with SKU '${c.data.sku}' already exists`
+          });
+          continue;
+        }
+      }
+      uniqueCandidates.push(c);
+    }
+
+    // 4. Batch generate unique slugs
+    const baseSlugs = Array.from(new Set(uniqueCandidates.map((c) => c.baseSlug)));
+    const takenSlugs = new Set();
+    if (baseSlugs.length > 0) {
+      const existingSlugs = await Product.find({
+        $or: baseSlugs.map((b) => ({ slug: new RegExp(`^${escapeRegExp(b)}(-\\d+)?$`) }))
+      }).select('slug').lean();
+      existingSlugs.forEach((p) => takenSlugs.add(p.slug));
+    }
+
+    const docsToInsert = [];
+    for (const c of uniqueCandidates) {
+      const root = c.baseSlug;
+      let slug = root;
+      let counter = 2;
+      while (takenSlugs.has(slug)) {
+        slug = `${root}-${counter}`;
+        counter += 1;
+      }
+      takenSlugs.add(slug);
+
+      docsToInsert.push({
+        ...productPayload(c.data),
+        shop: c.shopId,
+        category: c.category._id,
+        categorySlug: c.category.slug,
+        slug
+      });
+    }
+
+    // 5. Batch insert valid items
+    if (docsToInsert.length > 0) {
+      try {
+        const inserted = await Product.insertMany(docsToInsert, { ordered: false });
+        created.push(...inserted);
+      } catch (err) {
+        if (err.insertedDocs && err.insertedDocs.length > 0) {
+          created.push(...err.insertedDocs);
+        }
+        if (err.writeErrors) {
+          err.writeErrors.forEach((we) => {
+            const idx = we.index;
+            const c = uniqueCandidates[idx];
+            errors.push({
+              row: c ? c.row : idx + 1,
+              name: c?.raw?.name || `Item #${idx + 1}`,
+              sku: c?.raw?.sku || '',
+              message: we.errmsg || 'Failed to insert product'
+            });
+          });
+        }
+      }
+
+      if (created.length > 0) {
+        await recordAudit(req, AuditAction.CREATE, 'Product', null, {
+          bulk: true,
+          count: created.length
+        });
+      }
+    }
+
+    errors.sort((a, b) => a.row - b.row);
+
+    res.status(created.length > 0 ? 201 : 400).json({
+      success: created.length > 0,
+      data: {
+        total: products.length,
+        createdCount: created.length,
+        failedCount: errors.length,
+        created,
+        errors
+      }
+    });
+  }
+
   static async updateProduct(req, res) {
     assertCatalogManager(req.user);
     const product = await loadManagedProduct(req.user, req.params.id);
@@ -299,14 +561,94 @@ class CatalogController {
     res.json({ success: true, data: product });
   }
 
-  /** Products are archived, never hard-deleted, so order history keeps its references. */
+  /** Permanently remove a product from the products collection on delete. */
   static async archiveProduct(req, res) {
     assertCatalogManager(req.user);
     const product = await loadManagedProduct(req.user, req.params.id);
-    product.isActive = false;
-    await product.save();
-    await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { archived: true });
-    res.json({ success: true, message: 'Product archived' });
+    await Product.deleteOne({ _id: product._id });
+    await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku });
+    res.json({ success: true, message: 'Product removed from products' });
+  }
+
+  static async bulkDeleteProducts(req, res) {
+    assertCatalogManager(req.user);
+    const { ids } = z
+      .object({
+        ids: z.array(z.string().min(1)).min(1, 'At least one product id is required').max(100, 'Maximum 100 products per bulk delete')
+      })
+      .parse(req.body);
+
+    let deletedCount = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        const product = await loadManagedProduct(req.user, id);
+        await Product.deleteOne({ _id: product._id });
+        await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku, bulk: true });
+        deletedCount += 1;
+      } catch (err) {
+        errors.push({ id, message: err.message || 'Could not delete product' });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalRequested: ids.length,
+        deletedCount,
+        failedCount: errors.length,
+        errors
+      }
+    });
+  }
+
+  static async bulkUpdateProducts(req, res) {
+    assertCatalogManager(req.user);
+    const { ids, isActive, stockCount } = z
+      .object({
+        ids: z.array(z.string().min(1)).min(1, 'At least one product id is required').max(200, 'Maximum 200 products per bulk update'),
+        isActive: z.boolean().optional(),
+        stockCount: z.number().int().min(0, 'Stock count must be at least 0').optional()
+      })
+      .refine((data) => data.isActive !== undefined || data.stockCount !== undefined, {
+        message: 'At least one field to update (isActive or stockCount) must be provided'
+      })
+      .parse(req.body);
+
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const id of ids) {
+      try {
+        const product = await loadManagedProduct(req.user, id);
+        const updates = {};
+        if (isActive !== undefined) {
+          product.isActive = isActive;
+          updates.isActive = isActive;
+        }
+        if (stockCount !== undefined) {
+          product.stockCount = stockCount;
+          updates.stockCount = stockCount;
+        }
+        await product.save();
+        await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, { ...updates, bulk: true });
+        updatedCount += 1;
+      } catch (err) {
+        errors.push({ id, message: err.message || 'Could not update product' });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalRequested: ids.length,
+        updatedCount,
+        failedCount: errors.length,
+        errors
+      },
+      message: `Updated ${updatedCount} product${updatedCount !== 1 ? 's' : ''}`
+    });
   }
 
   // ---------- Category management (ADMIN / catalog.manage) ----------
@@ -341,7 +683,7 @@ class CatalogController {
     assertObjectId(req.params.id, 'category id');
     const category = await Category.findById(req.params.id);
     if (!category) throw notFound('Category not found');
-    const { slug, ...data } = categorySchema.partial().parse(req.body);
+    const { slug: _slug, ...data } = categorySchema.partial().parse(req.body);
     category.set({ ...data, imageUrl: data.imageUrl === '' ? undefined : data.imageUrl ?? category.imageUrl });
     await category.save();
     await recordAudit(req, AuditAction.UPDATE, 'Category', category._id, { fields: Object.keys(data) });

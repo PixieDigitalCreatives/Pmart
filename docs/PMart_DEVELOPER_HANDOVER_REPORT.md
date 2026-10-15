@@ -47,7 +47,7 @@ backups/                   gitignored: database backup and files removed in the 
 5. In the project root: `npm install`, then `npm run dev`. Vite proxies `/api` and `/socket.io` to `PMART_API_TARGET`
    (default `http://localhost:5000`); set it if the API runs elsewhere.
 6. Sign in as the admin and set up the business: **Stores** (creates the store owner account), **Categories**,
-   **Products**, **People → Riders**, **Settings** (fees, support contact).
+   **Products** (single form or bulk Excel/CSV upload with validation), **People → Riders**, **Settings** (fees, support contact).
 
 For cloud deployment (Render backend + Netlify frontend + MongoDB Atlas), see the [Deployment Guide](PMart_DEPLOYMENT_GUIDE.md). Infrastructure as code configurations are provided in `render.yaml` and `netlify.toml`.
 

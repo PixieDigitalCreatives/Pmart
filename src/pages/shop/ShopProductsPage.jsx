@@ -4,8 +4,9 @@ import { productService } from '@/services/productService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { BulkProductUploadModal } from '@/components/shop/BulkProductUploadModal';
 import { useToast } from '@/context/ToastContext';
-import { Package, Plus, Search, Edit, Archive, Eye, EyeOff } from 'lucide-react';
+import { Package, Plus, Search, Edit, Eye, EyeOff, Upload, Trash2, PackageX } from 'lucide-react';
 import { PageHeader, Button, StatusBadge, Input, Select, LoadingState, EmptyState } from '@/components/ui';
 import './ShopProductsPage.scss';
 import { plural } from '@/utils/plural';
@@ -23,8 +24,14 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ products: [], totalCount: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
-  const [toArchive, setToArchive] = useState(null);
-  const [archiving, setArchiving] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showBulkOutOfStockConfirm, setShowBulkOutOfStockConfirm] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +64,29 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
     return () => clearTimeout(t);
   }, [search]);
 
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (data.products.length === 0) return;
+    const allSelected = data.products.every((p) => selectedIds.has(p._id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.products.map((p) => p._id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const toggleActive = async (p) => {
     try {
       await productService.setProductActive(p._id, !p.isActive);
@@ -67,17 +97,77 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
     }
   };
 
-  const archive = async () => {
-    setArchiving(true);
+  const handleDeleteSingle = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
     try {
-      await productService.archiveProduct(toArchive._id);
-      toast.success(`${toArchive.name} archived.`);
-      setToArchive(null);
+      const res = await productService.deleteProduct(toDelete._id, true);
+      toast.success(res.message || `"${toDelete.name}" deleted.`);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(toDelete._id);
+        return next;
+      });
+      setToDelete(null);
       load();
     } catch (err) {
-      toast.error(apiErrorMessage(err));
+      toast.error(apiErrorMessage(err, 'Could not delete product.'));
     } finally {
-      setArchiving(false);
+      setDeleting(false);
+    }
+  };
+
+  const handleBulkVisibility = async (isActive) => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const res = await productService.bulkUpdateProducts(Array.from(selectedIds), { isActive });
+      const count = res.updatedCount;
+      toast.success(
+        isActive
+          ? `Made ${count} product${count !== 1 ? 's' : ''} visible in store.`
+          : `Hidden ${count} product${count !== 1 ? 's' : ''} from store.`
+      );
+      setSelectedIds(new Set());
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not update products status.'));
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkOutOfStock = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const res = await productService.bulkUpdateProducts(Array.from(selectedIds), { stockCount: 0 });
+      const count = res.updatedCount;
+      toast.success(`Marked ${count} product${count !== 1 ? 's' : ''} as out of stock.`);
+      setSelectedIds(new Set());
+      setShowBulkOutOfStockConfirm(false);
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not mark products out of stock.'));
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await productService.bulkDeleteProducts(Array.from(selectedIds), true);
+      const total = res.deletedCount || 0;
+      toast.success(`Successfully removed ${total} product${total !== 1 ? 's' : ''}.`);
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not delete products.'));
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -87,10 +177,16 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
         title="Products"
         subtitle={isStaff ? 'All stores' : 'Your store catalog'}
         action={
-          <Button component={Link} to={`${basePath}/new`} variant="primary">
-            <Plus size={16} style={{ marginRight: 8 }} />
-            Add product
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button type="button" variant="outline" onClick={() => setShowBulkUpload(true)}>
+              <Upload size={16} style={{ marginRight: 8 }} />
+              Bulk upload
+            </Button>
+            <Button component={Link} to={`${basePath}/new`} variant="primary">
+              <Plus size={16} style={{ marginRight: 8 }} />
+              Add product
+            </Button>
+          </div>
         }
       />
 
@@ -110,6 +206,77 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
         <span className="muted-note">{plural(data.totalCount, 'product')}</span>
       </div>
 
+      {/* Bulk selection bar */}
+      {selectedIds.size > 0 && (
+        <div className="bulk-selection-bar">
+          <div className="selection-count">
+            <span className="count-badge">{selectedIds.size}</span>
+            <span>product{selectedIds.size > 1 ? 's' : ''} selected</span>
+          </div>
+          <div className="selection-actions">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkUpdating || isBulkDeleting}
+              onClick={() => handleBulkVisibility(true)}
+              className="bulk-btn bulk-btn-visible"
+              title="Make selected products visible in store"
+            >
+              <Eye size={14} style={{ marginRight: 6 }} />
+              Make visible
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkUpdating || isBulkDeleting}
+              onClick={() => handleBulkVisibility(false)}
+              className="bulk-btn bulk-btn-hide"
+              title="Hide selected products from store"
+            >
+              <EyeOff size={14} style={{ marginRight: 6 }} />
+              Hide
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkUpdating || isBulkDeleting}
+              onClick={() => setShowBulkOutOfStockConfirm(true)}
+              className="bulk-btn bulk-btn-stock"
+              title="Set stock count to 0 for selected products"
+            >
+              <PackageX size={14} style={{ marginRight: 6 }} />
+              Mark out of stock
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              disabled={isBulkUpdating || isBulkDeleting}
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="delete-selected-btn"
+              title="Permanently remove selected products"
+            >
+              <Trash2 size={14} style={{ marginRight: 6 }} />
+              Delete selected
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBulkUpdating || isBulkDeleting}
+              onClick={clearSelection}
+              className="clear-sel-btn"
+              title="Clear selection"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <LoadingState text="Loading products..." />
       ) : data.products.length === 0 ? (
@@ -124,6 +291,15 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
           <table className="pmart-table">
             <thead>
               <tr>
+                <th style={{ width: 44, textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    className="product-checkbox"
+                    checked={data.products.length > 0 && data.products.every((p) => selectedIds.has(p._id))}
+                    onChange={toggleSelectAll}
+                    aria-label="Select all products on this page"
+                  />
+                </th>
                 <th>Product</th>
                 <th>Category</th>
                 {isStaff && <th>Store</th>}
@@ -135,7 +311,16 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
             </thead>
             <tbody>
               {data.products.map((p) => (
-                <tr key={p._id}>
+                <tr key={p._id} className={selectedIds.has(p._id) ? 'row-selected' : ''}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      className="product-checkbox"
+                      checked={selectedIds.has(p._id)}
+                      onChange={() => toggleSelect(p._id)}
+                      aria-label={`Select ${p.name}`}
+                    />
+                  </td>
                   <td>
                     <div className="flex items-center gap-2">
                       {p.imageUrl ? <img src={p.imageUrl} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} /> : <Package size={20} className="text-gray-400" />}
@@ -167,11 +352,9 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
                     <Button variant="secondary" size="sm" onClick={() => toggleActive(p)} title={p.isActive ? 'Hide from store' : 'Show in store'} aria-label={p.isActive ? `Hide ${p.name}` : `Show ${p.name}`}>
                       {p.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
                     </Button>{' '}
-                    {p.isActive && (
-                      <Button variant="secondary" size="sm" onClick={() => setToArchive(p)} title="Archive" aria-label={`Archive ${p.name}`}>
-                        <Archive size={14} />
-                      </Button>
-                    )}
+                    <Button variant="secondary" size="sm" onClick={() => setToDelete(p)} title="Delete product" aria-label={`Delete ${p.name}`} className="delete-action">
+                      <Trash2 size={14} />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -195,15 +378,48 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
       )}
 
       <ConfirmationModal
-        isOpen={Boolean(toArchive)}
-        onClose={() => !archiving && setToArchive(null)}
-        onConfirm={archive}
-        title="Archive product"
-        message={toArchive ? `Archive "${toArchive.name}"? It will be hidden from the store. Past orders keep their record.` : ''}
-        confirmText="Archive"
+        isOpen={Boolean(toDelete)}
+        onClose={() => !deleting && setToDelete(null)}
+        onConfirm={handleDeleteSingle}
+        title="Delete product"
+        message={toDelete ? `Are you sure you want to delete "${toDelete.name}"? This action cannot be undone.` : ''}
+        confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
-        loading={archiving}
+        loading={deleting}
+      />
+
+      <ConfirmationModal
+        isOpen={showBulkOutOfStockConfirm}
+        onClose={() => !isBulkUpdating && setShowBulkOutOfStockConfirm(false)}
+        onConfirm={handleBulkOutOfStock}
+        title={`Mark ${selectedIds.size} product${selectedIds.size > 1 ? 's' : ''} out of stock`}
+        message={`Are you sure you want to set the stock to 0 for ${selectedIds.size} selected product${selectedIds.size > 1 ? 's' : ''}? Customers will no longer be able to add them to their cart.`}
+        confirmText="Mark out of stock"
+        cancelText="Cancel"
+        variant="warning"
+        loading={isBulkUpdating}
+      />
+
+      <ConfirmationModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => !isBulkDeleting && setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title={`Delete ${selectedIds.size} products`}
+        message={`Are you sure you want to delete the ${selectedIds.size} selected products? This action cannot be undone.`}
+        confirmText={`Delete ${selectedIds.size} products`}
+        cancelText="Cancel"
+        variant="danger"
+        loading={isBulkDeleting}
+      />
+
+      <BulkProductUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+        onSuccess={() => {
+          load();
+        }}
+        isStaff={isStaff}
       />
     </div>
   );

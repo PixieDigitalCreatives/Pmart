@@ -40,6 +40,11 @@ export const productService = {
     return res.data.data;
   },
 
+  async bulkCreateProducts(products) {
+    const res = await apiClient.post('/manage/products/bulk', { products }, { timeout: 120000 });
+    return res.data.data;
+  },
+
   async updateProduct(id, data) {
     const res = await apiClient.put(`/manage/products/${id}`, data);
     return res.data.data;
@@ -53,5 +58,20 @@ export const productService = {
   async archiveProduct(id) {
     const res = await apiClient.delete(`/manage/products/${id}`);
     return res.data;
+  },
+
+  async deleteProduct(id, hard = true) {
+    const res = await apiClient.delete(`/manage/products/${id}`, { params: hard ? { hard: 1 } : {} });
+    return res.data;
+  },
+
+  async bulkDeleteProducts(ids, hard = true) {
+    const res = await apiClient.post('/manage/products/bulk-delete', { ids, hard }, { timeout: 60000 });
+    return res.data.data;
+  },
+
+  async bulkUpdateProducts(ids, updates = {}) {
+    const res = await apiClient.patch('/manage/products/bulk-update', { ids, ...updates }, { timeout: 60000 });
+    return res.data.data;
   }
 };

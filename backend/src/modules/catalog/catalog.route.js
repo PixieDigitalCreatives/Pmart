@@ -20,6 +20,10 @@ router.get('/products/:id', CatalogController.getProductById);
 
 // Catalog management: ADMIN, EMPLOYEE(catalog.manage), SHOP_OWNER (own store; enforced in the controller)
 router.get('/manage/products', protect, CatalogController.getManagedProducts);
+router.post('/manage/products/bulk', protect, CatalogController.bulkCreateProducts);
+router.post('/manage/products/bulk-delete', protect, CatalogController.bulkDeleteProducts);
+router.patch('/manage/products/bulk-update', protect, CatalogController.bulkUpdateProducts);
+router.post('/manage/products/bulk-update', protect, CatalogController.bulkUpdateProducts);
 router.get('/manage/products/:id', protect, CatalogController.getManagedProduct);
 router.post('/manage/products', protect, CatalogController.createProduct);
 router.put('/manage/products/:id', protect, CatalogController.updateProduct);

@@ -132,13 +132,14 @@ describe('catalog management', () => {
     await expect(createProduct(shop, category, { sku: 'SKU-1' })).rejects.toThrow(/duplicate key/);
   });
 
-  it('archives instead of deleting, and refuses to delete a category in use', async () => {
+  it('permanently deletes a product, and refuses to delete a category in use', async () => {
     const admin = await createUser('ADMIN');
     const { shop, category } = await storeWithProducts();
     const product = await createProduct(shop, category);
+    await createProduct(shop, category, { name: 'Another Item' });
 
     expect((await api().delete(`/api/manage/products/${product._id}`).set(auth(admin))).status).toBe(200);
-    expect((await Product.findById(product._id)).isActive).toBe(false);
+    expect(await Product.findById(product._id)).toBeNull();
 
     const inUse = await api().delete(`/api/manage/categories/${category._id}`).set(auth(admin));
     expect(inUse.status).toBe(409);
@@ -152,4 +153,150 @@ describe('catalog management', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
+
+  it('creates products in bulk and resolves categories by name or id', async () => {
+    const admin = await createUser('ADMIN');
+    const { shop, category } = await storeWithProducts();
+
+    const payload = [
+      {
+        name: 'Bulk Product 1',
+        category: category.name,
+        shop: String(shop._id),
+        unit: '1 kg',
+        price: 99,
+        mrp: 120,
+        stockCount: 50,
+        sku: 'BULK-SKU-1',
+        specifications: 'Origin: India; Shelf life: 12 months',
+        tags: 'daily-essentials, fresh-picks'
+      },
+      {
+        name: 'Bulk Product 2',
+        category: String(category._id),
+        shop: String(shop._id),
+        unit: '500 g',
+        price: 49,
+        stockCount: 20,
+        sku: 'BULK-SKU-2'
+      }
+    ];
+
+    const res = await api()
+      .post('/api/manage/products/bulk')
+      .set(auth(admin))
+      .send({ products: payload });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.createdCount).toBe(2);
+    expect(res.body.data.failedCount).toBe(0);
+
+    const p1 = await Product.findOne({ sku: 'BULK-SKU-1' });
+    expect(p1).toBeTruthy();
+    expect(p1.name).toBe('Bulk Product 1');
+    expect(Object.fromEntries(p1.specifications)).toMatchObject({ Origin: 'India', 'Shelf life': '12 months' });
+    expect(p1.tags).toEqual(['daily-essentials', 'fresh-picks']);
+  });
+
+  it('bulk upload reports row-level errors for invalid items while importing valid items', async () => {
+    const { owner, category } = await storeWithProducts();
+
+    const payload = [
+      {
+        name: 'Valid Item',
+        category: category.name,
+        unit: '1 pc',
+        price: 25,
+        stockCount: 10,
+        sku: 'VALID-1'
+      },
+      {
+        name: 'Bad Item',
+        category: 'Nonexistent Category',
+        unit: '1 pc',
+        price: -10,
+        stockCount: 10
+      }
+    ];
+
+    const res = await api()
+      .post('/api/manage/products/bulk')
+      .set(auth(owner))
+      .send({ products: payload });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.createdCount).toBe(1);
+    expect(res.body.data.failedCount).toBe(1);
+    expect(res.body.data.errors[0].row).toBe(2);
+  });
+
+  it('deletes an unreferenced product on delete request', async () => {
+    const admin = await createUser('ADMIN');
+    const { shop, category } = await storeWithProducts();
+    const product = await createProduct(shop, category, { name: 'To Be Deleted' });
+
+    const res = await api()
+      .delete(`/api/manage/products/${product._id}`)
+      .set(auth(admin));
+
+    expect(res.status).toBe(200);
+    expect(await Product.findById(product._id)).toBeNull();
+  });
+
+  it('bulk deletes multiple products and reports deleted count', async () => {
+    const { owner, shop, category } = await storeWithProducts();
+    const p1 = await createProduct(shop, category, { name: 'Item 1' });
+    const p2 = await createProduct(shop, category, { name: 'Item 2' });
+
+    const res = await api()
+      .post('/api/manage/products/bulk-delete')
+      .set(auth(owner))
+      .send({ ids: [String(p1._id), String(p2._id)], hard: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.deletedCount).toBe(2);
+    expect(await Product.findById(p1._id)).toBeNull();
+    expect(await Product.findById(p2._id)).toBeNull();
+  });
+
+  it('bulk updates product visibility and out-of-stock count', async () => {
+    const { owner, shop, category } = await storeWithProducts();
+    const p1 = await createProduct(shop, category, { name: 'Item Alpha', stockCount: 25, isActive: true });
+    const p2 = await createProduct(shop, category, { name: 'Item Beta', stockCount: 15, isActive: false });
+
+    // Mark out of stock in bulk
+    const oosRes = await api()
+      .patch('/api/manage/products/bulk-update')
+      .set(auth(owner))
+      .send({ ids: [String(p1._id), String(p2._id)], stockCount: 0 });
+
+    expect(oosRes.status).toBe(200);
+    expect(oosRes.body.data.updatedCount).toBe(2);
+    expect((await Product.findById(p1._id)).stockCount).toBe(0);
+    expect((await Product.findById(p2._id)).stockCount).toBe(0);
+
+    // Make visible in bulk
+    const visRes = await api()
+      .patch('/api/manage/products/bulk-update')
+      .set(auth(owner))
+      .send({ ids: [String(p1._id), String(p2._id)], isActive: true });
+
+    expect(visRes.status).toBe(200);
+    expect(visRes.body.data.updatedCount).toBe(2);
+    expect((await Product.findById(p1._id)).isActive).toBe(true);
+    expect((await Product.findById(p2._id)).isActive).toBe(true);
+
+    // Hide in bulk
+    const hideRes = await api()
+      .post('/api/manage/products/bulk-update')
+      .set(auth(owner))
+      .send({ ids: [String(p1._id), String(p2._id)], isActive: false });
+
+    expect(hideRes.status).toBe(200);
+    expect(hideRes.body.data.updatedCount).toBe(2);
+    expect((await Product.findById(p1._id)).isActive).toBe(false);
+    expect((await Product.findById(p2._id)).isActive).toBe(false);
+  });
 });
+
+

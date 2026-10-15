@@ -36,6 +36,8 @@ backend and the seeded Playwright suite and no longer apply._
 | Store | Accept → pack → ready → assign rider | VERIFIED | API + UI |
 | Store | Reject with reason, cancel, send out again after failure | VERIFIED | API + UI (stock restored exactly once) |
 | Store | Products CRUD (own store), low stock | VERIFIED | API + UI (as admin; owner product list checked) |
+| Store | Bulk product actions (bulk delete, bulk out of stock, bulk visible/hidden) | VERIFIED | API (`catalog.test.js` bulk update & delete tests) + UI (table selection bar, action buttons, confirmation modals) |
+| Store | Bulk product upload (.xlsx / .csv with live preview & validation) | VERIFIED | API (`catalog.test.js` bulk suite) + UI (drag-and-drop modal, XLSX/CSV template generator) |
 | Rider | Online/offline, assignment appears live | VERIFIED | UI |
 | Rider | Pickup → start → arrived → collect cash → code → delivered | VERIFIED | API + UI (wrong code: "4 attempt(s) left"; right code delivered; rider back online, stats updated) |
 | Rider | Could not deliver | VERIFIED | API + UI |
