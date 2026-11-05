@@ -1,11 +1,6 @@
 .pmart-profile-page {
   padding: 24px 0 48px;
 
-  .profile-menu-container {
-    max-width: 580px;
-    margin: 0 auto;
-  }
-
   .account-details-view {
     max-width: 640px;
     margin: 0 auto;
@@ -29,42 +24,49 @@
 
         &:hover {
           background-color: $surface-secondary;
-          border-color: #CBD5E1;
+          border-color: $border-dark;
         }
       }
     }
   }
 
-  .profile-layout-grid {
+  // ProfilePage renders .profile-menu-container (grid columns set inline); .profile-layout-grid is the older name.
+  .profile-layout-grid,
+  .profile-menu-container {
     display: grid;
     grid-template-columns: 280px 1fr;
     gap: 28px;
     align-items: flex-start;
 
     @include tablet-down {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr !important; // beats the inline desktop columns on small screens
+    }
+
+    > * {
+      min-width: 0;
     }
 
     // Sidebar
     .profile-sidebar {
       background: $white;
-      border: 1px solid $border-color;
+      border: 1px solid $border-light;
       border-radius: $radius-2xl;
       overflow: hidden;
-      box-shadow: $shadow-xs;
+      box-shadow: $shadow-sm;
 
       .user-card-summary {
+        @include brand-surface(50% 0%);
         padding: 28px 20px;
         text-align: center;
-        background-color: #FAFBFD;
-        border-bottom: 1px solid $border-color;
+        border-bottom: 1px solid $charcoal-border;
 
         .avatar-wrap {
           width: 64px;
           height: 64px;
           border-radius: 50%;
-          background-color: $pmart-red-light;
-          color: $pmart-red;
+          background: $brand-gradient;
+          color: $white;
+          box-shadow: 0 8px 20px rgba(242, 13, 24, 0.35), 0 0 0 4px $on-dark-fill;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -73,13 +75,13 @@
 
         .user-name {
           font-size: 16px;
-          font-weight: $font-weight-bold;
-          color: $charcoal-black;
+          font-weight: $font-weight-extrabold;
+          color: $white;
         }
 
         .user-phone {
           font-size: 13px;
-          color: $text-muted;
+          color: $on-dark-body;
           margin-top: 2px;
         }
 
@@ -87,7 +89,7 @@
           display: inline-block;
           font-size: 11px;
           font-weight: $font-weight-semibold;
-          background: #EEF2F6;
+          background: $surface-secondary;
           color: $text-secondary;
           padding: 3px 10px;
           border-radius: $radius-pill;
@@ -112,8 +114,8 @@
           transition: all $transition-fast;
 
           &:hover {
-            background-color: $surface-secondary;
-            color: $charcoal-black;
+            background-color: $pmart-red-light;
+            color: $pmart-red-active;
           }
 
           .arrow {
@@ -122,13 +124,19 @@
           }
 
           &.logout-link {
+            background: transparent;
+            border-color: transparent;
+            border-top-color: $border-light;
+            border-radius: 0 0 $radius-md $radius-md;
+            justify-content: flex-start;
+            font-weight: $font-weight-semibold;
             color: $error;
             margin-top: 8px;
-            border-top: 1px solid $border-light;
             cursor: pointer;
 
             &:hover {
               background-color: $error-bg;
+              box-shadow: none;
             }
           }
         }

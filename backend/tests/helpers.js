@@ -1,7 +1,7 @@
 'use strict';
 
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
+const { signAccessToken } = require('../src/utils/jwt');
 const request = require('supertest');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const app = require('../src/app');
@@ -59,7 +59,7 @@ async function createUser(role = 'CUSTOMER', overrides = {}) {
   return user;
 }
 
-const tokenFor = (user) => jwt.sign({ id: String(user._id) }, process.env.JWT_SECRET, { expiresIn: '1h' });
+const tokenFor = (user) => signAccessToken(user._id);
 const auth = (user) => ({ Authorization: `Bearer ${tokenFor(user)}` });
 const api = () => request(app);
 

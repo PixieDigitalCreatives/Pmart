@@ -6,8 +6,7 @@
   // Sidebar
   .admin-sidebar {
     width: 270px;
-    background-color: #111318;
-    color: $white;
+    @include portal-sidebar;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -15,8 +14,7 @@
     bottom: 0;
     left: 0;
     z-index: 800;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    transition: transform $transition-fast;
+    transition: transform $transition-smooth;
 
     @include tablet-down {
       transform: translateX(-100%);
@@ -31,7 +29,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid $on-dark-line;
 
       .admin-brand {
         display: flex;
@@ -41,6 +39,7 @@
         .admin-logo {
           height: 38px;
           width: auto;
+          @include logo-chip(4px);
         }
 
         .brand-meta {
@@ -50,7 +49,7 @@
           .badge-tag {
             font-size: 9px;
             font-weight: $font-weight-extrabold;
-            color: #A855F7;
+            color: $pmart-red;
             letter-spacing: 0.08em;
           }
 
@@ -63,7 +62,8 @@
       }
 
       .mobile-close {
-        color: #9CA3AF;
+        @include ghost-icon-btn($on-dark-muted, $on-dark-fill, $white);
+        padding: 6px;
         display: none;
 
         @include tablet-down {
@@ -81,56 +81,41 @@
       overflow-y: auto;
       @include custom-scrollbar;
 
+      .admin-nav-section {
+        margin: 14px 14px 4px;
+        font-size: 10.5px;
+        font-weight: $font-weight-bold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: $on-dark-muted;
+        opacity: 0.8;
+      }
+
       .admin-nav-link {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: $radius-md;
-        font-size: 13.5px;
-        font-weight: $font-weight-medium;
-        color: #9CA3AF;
-        text-decoration: none;
-        transition: all $transition-fast;
-
-        &:hover {
-          color: $white;
-          background-color: rgba(255, 255, 255, 0.06);
-        }
-
-        &.active {
-          color: $white;
-          background-color: $pmart-red;
-          font-weight: $font-weight-semibold;
-
-          .link-icon {
-            color: $white;
-          }
-        }
-
-        .link-icon {
-          color: #9CA3AF;
-        }
+        @include portal-nav-link;
       }
     }
 
     .admin-sidebar-foot {
       padding: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid $on-dark-line;
 
       .foot-link {
         display: flex;
         align-items: center;
         gap: 8px;
         font-size: 12px;
-        color: #9CA3AF;
+        color: $on-dark-body;
         padding: 8px 12px;
         border-radius: $radius-md;
-        background: rgba(255, 255, 255, 0.04);
+        background: $on-dark-fill;
+        border: 1px solid $on-dark-line;
         margin-bottom: 12px;
+        transition: background-color $transition-fast, color $transition-fast;
 
         &:hover {
           color: $white;
+          background: $on-dark-fill-hover;
         }
       }
 
@@ -143,8 +128,9 @@
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: rgba(168, 85, 247, 0.2);
-          color: #A855F7;
+          background: $brand-gradient;
+          color: $white;
+          box-shadow: 0 4px 12px rgba(242, 13, 24, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -161,17 +147,13 @@
 
           .role {
             font-size: 11px;
-            color: #9CA3AF;
+            color: $on-dark-muted;
           }
         }
 
         .logout-btn {
-          color: #9CA3AF;
+          @include ghost-icon-btn($on-dark-muted, rgba(239, 68, 68, 0.14), $error-border);
           padding: 6px;
-
-          &:hover {
-            color: $error;
-          }
         }
       }
     }
@@ -180,6 +162,8 @@
   // Main Container
   .admin-main-container {
     flex: 1;
+    // Lets wide tables scroll inside their own wrapper instead of widening the whole page.
+    min-width: 0;
     margin-left: 270px;
     display: flex;
     flex-direction: column;
@@ -190,8 +174,7 @@
 
     .admin-topbar {
       height: 64px;
-      background: $white;
-      border-bottom: 1px solid $border-color;
+      @include portal-topbar;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -212,8 +195,9 @@
         max-width: 480px;
 
         .mobile-toggle-btn {
+          @include ghost-icon-btn($charcoal-black);
+          padding: 6px;
           display: none;
-          color: $charcoal-black;
 
           @include tablet-down {
             display: block;
@@ -236,15 +220,17 @@
             height: 38px;
             padding-left: 36px;
             padding-right: 14px;
-            background: $surface-secondary;
-            border: 1px solid $border-color;
-            border-radius: $radius-md;
+            background: $bg-light;
+            border: 1px solid $border-light;
+            border-radius: $radius-pill;
             font-size: 13px;
             outline: none;
+            transition: border-color $transition-fast, box-shadow $transition-fast, background-color $transition-fast;
 
             &:focus {
               border-color: $pmart-red;
               background: $white;
+              box-shadow: $focus-ring;
             }
           }
         }
@@ -296,15 +282,15 @@
         }
 
         .admin-user-pill {
-          background-color: $surface-secondary;
-          border: 1px solid $border-color;
-          padding: 4px 10px;
-          border-radius: $radius-sm;
+          background-color: $pmart-red-light;
+          border: 1px solid $pmart-red-light-border;
+          padding: 4px 12px;
+          border-radius: $radius-pill;
 
           .role-tag {
             font-size: 11px;
             font-weight: $font-weight-bold;
-            color: $charcoal-black;
+            color: $pmart-red-active;
           }
         }
       }

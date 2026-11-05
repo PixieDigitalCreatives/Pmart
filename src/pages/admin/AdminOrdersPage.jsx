@@ -4,7 +4,7 @@ import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useToast } from '@/context/ToastContext';
 import { ORDER_STATUS, ORDER_STATUS_LABELS, ORDER_STATUS_TONE, paymentDisplay } from '@/types/orderTypes';
-import { Search, Eye, Download, Package } from 'lucide-react';
+import { TbSearch as Search, TbEye as Eye, TbDownload as Download, TbPackage as Package } from 'react-icons/tb';
 import { PageHeader, StatusBadge, Button, EmptyState, Input, Select, LoadingState } from '@/components/ui';
 import './AdminOrdersPage.scss';
 import { plural } from '@/utils/plural';

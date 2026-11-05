@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { TbAlertCircle as AlertCircle } from 'react-icons/tb';
 import { Button } from '@/components/ui';
 
 export const ErrorMessage = ({ title = 'Error', message, onRetry }) => {

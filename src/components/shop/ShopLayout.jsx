@@ -3,7 +3,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { shopService } from '@/services/shopService';
 import { apiErrorMessage } from '@/services/apiClient';
-import { LayoutDashboard, ShoppingBag, Package, Bike, BarChart3, Settings, LogOut, User, Menu, X, ExternalLink, AlertTriangle } from 'lucide-react';
+import { TbLayoutDashboard as LayoutDashboard, TbShoppingBag as ShoppingBag, TbPackage as Package, TbMotorbike as Bike, TbChartBar as BarChart3, TbSettings as Settings, TbLogout as LogOut, TbUser as User, TbMenu2 as Menu, TbX as X, TbExternalLink as ExternalLink, TbAlertTriangle as AlertTriangle } from 'react-icons/tb';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Button } from '@/components/ui';
 import './ShopLayout.scss';

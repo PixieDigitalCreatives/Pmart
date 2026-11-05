@@ -58,8 +58,8 @@ graph LR
    | `MONGODB_DB_NAME` | `pmart` |
    | `JWT_SECRET` | 32+ random characters: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
    | `OTP_ENCRYPTION_KEY` | Exactly 64 hex characters (32 bytes): `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-   | `ALLOWED_ORIGINS` | Comma-separated frontend URL(s), e.g. `https://your-site.netlify.app` |
-   | `COOKIE_SAME_SITE` | `none` (required for cross-site cookie transmission between Netlify and Render over HTTPS) |
+   | `ALLOWED_ORIGINS` | **Required.** Exact frontend origin(s), comma-separated, `https://` only, e.g. `https://your-site.netlify.app`. The API will not start in production without it or with a `*` pattern; preview URLs must be listed one by one |
+   | `COOKIE_SAME_SITE` | `none` for this Netlify layout (the browser calls Render directly, so the cookie is cross-site). The default is `strict`, which is right only behind a same-site proxy such as the Vercel rewrite |
    | `LOG_LEVEL` | `info` |
    | `MAPTILER_API_KEY` | (Optional) Server-side geocoding key |
    | `FIREBASE_PROJECT_ID` | (Optional) If Google Sign-In is enabled |
@@ -75,7 +75,7 @@ Once the backend service is deployed:
    ```bash
    npm run db:init
    ```
-   This creates the 11 collections, compound indexes, and default settings.
+   This creates the 20 collections (11 core + 9 inventory/billing), compound indexes, and default settings.
 3. Create your first administrative user:
    ```bash
    npm run create-admin -- --name "Super Admin" --phone 9876543210
@@ -114,7 +114,13 @@ Now that you have both URLs:
    - Save and let Render redeploy.
 2. Verify cross-origin cookies:
    - PMart uses rotating refresh tokens in `httpOnly` cookies at `/api/auth`.
-   - Because Netlify and Render are on different domains, `COOKIE_SAME_SITE` defaults to `none` in production with `secure: true`. This allows silent token refresh without unexpected logouts.
+   - Because Netlify and Render are on different sites, set `COOKIE_SAME_SITE=none` explicitly (it defaults to `strict`
+     since 2026-11-05; the API logs a warning in production when it is `none`). The cookie is then `Secure`. Browsers
+     that block third-party cookies (Safari) will still drop it, so prefer the Vercel layout in
+     [PMart_DEPLOYMENT.md](PMart_DEPLOYMENT.md), where the API is reached through a same-site rewrite.
+3. Content-Security-Policy: `netlify.toml` allows API and socket connections only to `https://pmart-66mp.onrender.com`.
+   If your Render URL is different, change the `connect-src` entry (both `https://` and `wss://`) before deploying,
+   or every API call is blocked by the browser.
 
 ---
 

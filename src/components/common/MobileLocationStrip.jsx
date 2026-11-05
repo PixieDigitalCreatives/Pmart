@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Clock } from 'lucide-react';
+import { TbChevronDown as ChevronDown, TbClock as Clock } from 'react-icons/tb';
 import { useLocation } from '@/context/LocationContext';
 import { getFullAddressString } from '@/utils/addressUtils';
 import './MobileLocationStrip.scss';

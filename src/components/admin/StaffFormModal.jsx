@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { TbCopy as Copy, TbCheck as Check } from 'react-icons/tb';
 import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';

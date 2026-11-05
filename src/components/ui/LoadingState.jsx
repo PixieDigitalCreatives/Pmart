@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { TbLoader2 as Loader2 } from 'react-icons/tb';
 
 export const LoadingState = ({ text = 'Loading...', fullHeight = false }) => {
   return (

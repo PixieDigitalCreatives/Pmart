@@ -1,6 +1,6 @@
 # PMart API Reference
 
-Base path `/api` (Express 5, `backend/src/app.js`). JSON bodies up to 5 MB (supporting bulk product uploads). Every response carries an
+Base path `/api` (Express 5, `backend/src/app.js`). JSON bodies up to 5 MB (supporting bulk product uploads and photo uploads; CSV imports under `/inventory/imports` up to 12 MB). Every response carries an
 `X-Request-Id` header.
 
 **Response shape.** Success: `{ success: true, data, ... }` (lists add `pagination: { page, limit, total, pages }`).
@@ -9,16 +9,27 @@ Error: `{ success: false, code, message, requestId, details? }`. Codes worth han
 `CORS_FORBIDDEN` (403), `NOT_FOUND` (404), `DUPLICATE` and domain conflicts (409), `RATE_LIMITED` (429),
 `GOOGLE_NOT_CONFIGURED` / `GEOCODING_NOT_CONFIGURED` (503). Unexpected 5xx messages are masked.
 
-**Authentication.** `Authorization: Bearer <accessToken>` (JWT, `JWT_EXPIRES_IN`, default 1 h). The refresh token is an
-httpOnly cookie scoped to `/api/auth`, rotated on every refresh and stored only as a sha256 hash. Accounts with
+**Authentication.** `Authorization: Bearer <accessToken>` (JWT, `JWT_EXPIRES_IN`, default 1 h; HS256 only, issuer
+`pmart-api`, audience `pmart-app` — tokens without them are refused since 2026-11-05, and the web app refreshes
+silently). The refresh token is an httpOnly cookie (`SameSite=Strict` unless `COOKIE_SAME_SITE` says otherwise) scoped
+to `/api/auth`, rotated on every refresh and stored only as a sha256 hash. Accounts with
 `mustChangePassword` can call only `/auth/me`, `/auth/password` and `/auth/logout` until they set a new password.
 
 **Roles.** `CUSTOMER`, `SHOP_OWNER`, `RIDER`, `EMPLOYEE`, `ADMIN`. `ADMIN` has every permission; an `EMPLOYEE` has only the
-permissions granted: `dashboard.read`, `orders.read`, `orders.manage`, `catalog.manage`, `shops.manage`, `customers.read`,
-`riders.read`, `riders.manage`, `employees.manage`, `reports.read`, `settings.read`, `settings.manage`.
+permissions granted: `dashboard.read`, `orders.read`, `orders.manage`, `catalog.manage`, `catalog.delete`, `catalog.import`,
+`images.verify`, `inventory.read`, `inventory.restock`, `inventory.adjust`, `inventory.negative_stock`, `invoices.create`,
+`invoices.read`, `invoices.cancel`, `billing.price_override`, `payments.record`, `payments.read`, `shops.manage`,
+`customers.read`, `riders.read`, `riders.manage`, `employees.manage`, `reports.read`, `settings.read`, `settings.manage`.
+The **Store Manager** preset is `dashboard.read`, `inventory.read`, `inventory.restock`, `invoices.create`,
+`invoices.read`, `payments.record`, `payments.read`.
 
-**CORS.** Browser origins must be in `ALLOWED_ORIGINS`. Outside production any `http://localhost:<port>` or
+**CORS.** Browser origins must be in `ALLOWED_ORIGINS`; in production only exact entries match (no wildcards, no
+blanket `*.vercel.app` / `*.netlify.app`). Outside production any `http://localhost:<port>` or
 `http://127.x.x.x:<port>` origin is also accepted. Other origins get `403 CORS_FORBIDDEN`.
+
+**Rate limits** (production; see SECURITY.md): sign-in is limited per IP and, separately, to 8 failed attempts per
+mobile number per 15 minutes whatever the IP (`429 RATE_LIMITED`); checkout, delivery-code, password-change, admin
+mutation, rider-location, routing and barcode-lookup limits count per signed-in user.
 
 ## Public
 | Method | Path | Notes |
@@ -69,7 +80,7 @@ permissions granted: `dashboard.read`, `orders.read`, `orders.manage`, `catalog.
 | POST | `/:id/assign-rider` | store owner, `orders.manage` | `{ riderId }`; atomically claims an AVAILABLE rider; allowed until pickup |
 | POST | `/:id/verify-otp` | assigned rider | `{ otp }`; 5 attempts, then regenerate |
 | POST | `/:id/resend-otp` | assigned rider | New code shown in the customer app |
-| PUT | `/:id/payment-status` | assigned rider | `{ paymentStatus: "COLLECTED" }` at the door |
+| PUT | `/:id/payment-status` | assigned rider, `orders.manage` | Rider: `{ paymentStatus: "COLLECTED" }` at the door (order `ARRIVED`). Staff override: `{ paymentStatus, reason }` — reason (3+ characters) required (`400 REASON_REQUIRED`), `REFUNDED` only from `COLLECTED` (`409 INVALID_PAYMENT_TRANSITION`); written to order history and the audit log (`OrderPayment`, before/after, reason) |
 | POST | `/:id/deliver` | assigned rider | Requires payment collected and code verified |
 
 State machine (`order.service.js#TRANSITIONS`; the status endpoint accepts only these moves):
@@ -113,7 +124,7 @@ Socket.IO (same origin, path `/socket.io`, JWT in `auth.token`): rooms `order_<i
 ## Catalog management — `/manage`
 | Path | Who | Notes |
 |---|---|---|
-| `GET/POST /manage/products`, `POST /manage/products/bulk`, `POST /manage/products/bulk-delete`, `PATCH/POST /manage/products/bulk-update`, `GET/PUT/DELETE /manage/products/:id`, `PATCH /:id/status` | `catalog.manage` staff (any store) or store owner (own store only) | Bulk accepts up to 200 products; bulk-delete accepts up to 100 IDs; bulk-update accepts up to 200 IDs for visibility (`isActive`) and stock count (`stockCount: 0` for out-of-stock); DELETE permanently removes the product from the products collection |
+| `GET/POST /manage/products`, `POST /manage/products/bulk`, `POST /manage/products/bulk-delete`, `PATCH/POST /manage/products/bulk-update`, `GET/PUT/DELETE /manage/products/:id`, `PATCH /:id/status` | Writes: `catalog.manage` staff (any store) or store owner (own store only). Reads (`GET`): also `inventory.read`. DELETE and bulk-delete: `catalog.delete` or store owner. Any stock change (`stockCount` on PUT or bulk-update): `inventory.adjust` or store owner | Products carry the 17 inventory CSV fields (see [Inventory & Billing §4](PMart_INVENTORY_BILLING.md)). List filters: `search` + `field` (`name`, `code`, `barcode`, `company`, `manufacturer`), `stock` (`in`, `low`, `out`), `online` (`listed`, `hidden`), `image` (`VERIFIED`, `PENDING`, `NOT_AVAILABLE`), `sort` (`name`, `code`, `stock`, `-stock`, `price`, `-price`, `updated`, `newest`). Create/update/get return `warnings` for barcodes shared with other products. `stockCount` on create is opening stock; later stock edits are written to the stock ledger as adjustments. Image URLs are no longer accepted here (photos go through `/inventory/.../images`); bulk-upload image URLs become pending candidates. A category is required to list a product online. Bulk accepts up to 200 products; bulk-delete up to 100 IDs; bulk-update up to 200 IDs. DELETE permanently removes the product (invoices and the ledger keep their snapshots) |
 | `GET/POST /manage/categories`, `PUT/DELETE /:id`, `PATCH /:id/status` | Changes: `catalog.manage`. GET: `catalog.manage` staff or store owners (owners see active categories only) | Delete refused (`CATEGORY_IN_USE`) while products use the category |
 
 ## Admin console — `/admin` (ADMIN or EMPLOYEE with the listed permission; mutations rate-limited)
@@ -134,8 +145,27 @@ Socket.IO (same origin, path `/socket.io`, JWT in `auth.token`): rooms `order_<i
 | PATCH | `/riders/:id/status` | `riders.manage` (not while BUSY) |
 | POST | `/riders/:id/reset-password` | `riders.manage` |
 | GET/POST/PUT | `/employees`, `/employees/:id` | `employees.manage` (changes: ADMIN only; cannot deactivate yourself) |
-| POST | `/employees/:id/activation-link` | `employees.manage` |
+| POST | `/employees/:id/activation-link` | `employees.manage`; a non-admin only for employees whose permissions they also hold (`403 PERMISSION_ESCALATION`) |
 | GET/PUT | `/settings` | `settings.read` / `settings.manage` |
+
+## Inventory, billing and reports — `/inventory`, `/billing`, `/reports`, `/product-images`
+Staff only (ADMIN or EMPLOYEE with the listed permission). The full endpoint table, request rules (idempotency keys,
+negative-stock and price-override permissions, payment limits) and response fields are in
+[Inventory & Billing §12](PMart_INVENTORY_BILLING.md). `GET /product-images/:id` is public and serves only approved
+photos. The inventory CSV export (`/inventory/export.csv`) writes values exactly as stored (every cell quoted, no
+formula escaping) so codes such as `+000462` round-trip unchanged.
+
+`DELETE /billing/invoices/:id` (ADMIN only, 2026-11-05) permanently deletes an invoice. Body
+`{ reason (3–300 chars), refundMethod? }`. An invoice that is not cancelled is cancelled first in the same transaction
+(stock not already returned goes back through the ledger; money paid is refunded, so `refundMethod` is required when
+anything was paid: 400 `REFUND_METHOD_REQUIRED`). The invoice and its payment/refund rows are deleted; stock-ledger
+rows are kept and an `auditlogs` entry (`resource: "Invoice"`, `action: "DELETE"`) stores a snapshot. Response
+`{ _id, number, deleted: true, stockRestored, refunded, refundMethod, paymentsDeleted }`; repeating it returns the
+same with `replayed: true`; an unknown id is 404; staff (any permissions) get 403. The number is not reused.
+
+`PUT /admin/settings` also accepts `billing: { businessName, businessAddress, businessPhone, gstin, invoicePrefix,
+taxMode, defaultTaxRate, taxLabel, gstSplit, roundTotal, paymentTermsDays, allowNegativeStock, invoiceFooter }`
+(partial updates keep the other fields).
 
 ## Routing — `/routing`
 `GET /routing?origin=lng,lat&destination=lng,lat&profile=driving|cycling|walking` (signed in, 30/min): road route via the public OSRM server, cached in memory (`OSRM_CACHE_TTL`).

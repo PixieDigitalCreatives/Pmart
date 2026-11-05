@@ -16,8 +16,8 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background-color: #dcfce7;
-    color: #16a34a;
+    background-color: $leaf-green-light;
+    color: $leaf-green;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -63,7 +63,7 @@
       padding: 16px 18px;
       border-radius: $radius-lg;
       border: 1px solid $border-color;
-      background: #f8fafc;
+      background: $bg-light;
 
       .card-icon-box {
         width: 44px;
@@ -76,45 +76,45 @@
       }
 
       &.payment-card {
-        border-color: #bbf7d0;
-        background: #f0fdf4;
+        border-color: $success-border;
+        background: $success-bg;
 
         .card-icon-box {
-          background: #dcfce7;
-          color: #15803d;
+          background: $leaf-green-light;
+          color: $leaf-green;
         }
 
         .amount-highlight {
           font-size: 20px;
           font-weight: 800;
-          color: #15803d;
+          color: $leaf-green;
         }
 
         .status-caption {
           font-size: 12px;
-          color: #166534;
+          color: $success-text;
           font-weight: 600;
         }
       }
 
       &.delivery-card {
-        border-color: #bfdbfe;
-        background: #eff6ff;
+        border-color: $info-border;
+        background: $info-bg;
 
         .card-icon-box {
-          background: #dbeafe;
-          color: #1d4ed8;
+          background: $info-border;
+          color: $info-text;
         }
 
         .delivery-status-highlight {
           font-size: 16px;
           font-weight: 800;
-          color: #1e3a8a;
+          color: $info-text;
         }
 
         .status-caption {
           font-size: 12px;
-          color: #2563eb;
+          color: $info;
           font-weight: 600;
         }
       }

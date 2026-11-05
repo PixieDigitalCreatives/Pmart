@@ -22,7 +22,7 @@
 
     .map-simulation-area {
       height: 180px;
-      background: #E5E9F0;
+      background: $border-color;
       position: relative;
       overflow: hidden;
 
@@ -32,8 +32,8 @@
         left: 20px;
         right: 40px;
         bottom: 20px;
-        border-top: 4px solid #111318;
-        border-right: 4px solid #111318;
+        border-top: 4px solid $charcoal-black;
+        border-right: 4px solid $charcoal-black;
         border-top-right-radius: 30px;
       }
 
@@ -139,12 +139,12 @@
     }
 
     .delivery-note-box {
-      background: #FFFBEB;
-      border: 1px solid #FDE68A;
+      background: $warning-bg;
+      border: 1px solid $warning-border;
       border-radius: $radius-md;
       padding: 10px 12px;
       font-size: 12.5px;
-      color: #92400E;
+      color: $warning-text;
       margin-bottom: 12px;
 
       strong {
@@ -309,8 +309,8 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: #059669;
-    border-color: #059669;
+    background: $success;
+    border-color: $success;
     color: $white;
     font-size: 16px;
     font-weight: $font-weight-bold;
@@ -318,8 +318,8 @@
     box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
 
     &:hover:not(:disabled) {
-      background: #047857;
-      border-color: #047857;
+      background: $success-text;
+      border-color: $success-text;
     }
 
     .spinner {
@@ -339,15 +339,15 @@
     text-align: center;
 
     &.warning {
-      background: #FEF3C7;
-      color: #92400E;
-      border: 1px solid #FDE68A;
+      background: $warning-bg;
+      color: $warning-text;
+      border: 1px solid $warning-border;
     }
 
     &.info {
-      background: #EFF6FF;
-      color: #1E40AF;
-      border: 1px solid #BFDBFE;
+      background: $info-bg;
+      color: $info-text;
+      border: 1px solid $info-border;
     }
   }
 }

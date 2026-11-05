@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Bike, MapPin, Phone, Search, Eye, Store, ChevronRight } from 'lucide-react';
+import { TbMotorbike as Bike, TbMapPin as MapPin, TbPhone as Phone, TbSearch as Search, TbEye as Eye, TbBuildingStore as Store, TbChevronRight as ChevronRight } from 'react-icons/tb';
 import { LiveDeliveryMap } from '@/components/admin/LiveDeliveryMap';
 import { adminService } from '@/services/adminService';
 import { openSocket } from '@/services/socket';

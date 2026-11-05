@@ -4,7 +4,7 @@ import { orderService } from '@/services/orderService';
 import { useCart } from '@/context/CartContext';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, ACTIVE_ORDER_STATUSES, PAST_ORDER_STATUSES } from '@/types/orderTypes';
-import { RefreshCw, Eye, PackageX, Package } from 'lucide-react';
+import { TbRefresh as RefreshCw, TbEye as Eye, TbPackageOff as PackageX, TbPackage as Package } from 'react-icons/tb';
 import { PageHeader, Button, EmptyState, Card, StatusBadge, LoadingState } from '@/components/ui';
 import './OrdersPage.scss';
 

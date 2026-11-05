@@ -1,19 +1,34 @@
 @use "sass:color";
 @use 'variables' as *;
 @use 'mixins' as *;
+@use 'breakpoints' as *;
 
 // Modal Overrides & Enhancements
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 20px;
-  border-bottom: 1px solid $border-color;
-  
+  border-bottom: 1px solid $border-light;
+
   h2 {
     margin: 0;
+    font-family: $font-family-display;
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: $font-weight-extrabold;
+    letter-spacing: $letter-spacing-tight;
+    color: $charcoal-black;
+  }
+
+  .btn-icon {
+    border-radius: $radius-pill;
+    background: $bg-light;
+
+    &:hover {
+      background: $pmart-red-light;
+      color: $pmart-red;
+    }
   }
 }
 
@@ -29,24 +44,44 @@
   justify-content: center;
   padding: 48px 20px;
   text-align: center;
-  background: $surface-secondary;
+  background:
+    radial-gradient(ellipse 50% 60% at 50% 0%, rgba(242, 13, 24, 0.05) 0%, transparent 70%),
+    $white;
   border-radius: $radius-xl;
-  border: 1px dashed $border-color;
-  
+  border: 1px dashed $border-dark;
+
   &-icon {
-    color: $text-muted;
+    width: 72px;
+    height: 72px;
+    border-radius: $radius-pill;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $pmart-red-light;
+    color: $pmart-red;
     margin-bottom: 16px;
+    box-shadow: 0 0 0 8px rgba(255, 241, 241, 0.55);
+
+    svg {
+      width: 34px;
+      height: 34px;
+    }
   }
-  
+
   &-title {
     margin: 0 0 8px;
+    font-family: $font-family-display;
     font-size: 1.125rem;
-    color: $text-primary;
+    font-weight: $font-weight-extrabold;
+    letter-spacing: $letter-spacing-tight;
+    color: $charcoal-black;
   }
-  
+
   &-description {
     margin: 0 0 20px;
     color: $text-secondary;
+    font-size: $font-size-sm;
+    line-height: 1.55;
     max-width: 400px;
   }
 }
@@ -55,75 +90,86 @@
 .error-message {
   background-color: $error-bg;
   border: 1px solid $error-border;
+  border-left: 4px solid $error;
   border-radius: $radius-md;
   padding: 16px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   color: $error-text;
-  
+
   &-icon {
     flex-shrink: 0;
     margin-top: 2px;
   }
-  
+
   &-content {
     flex: 1;
-    
+
     h4 {
       margin: 0 0 4px;
-      font-weight: 600;
+      font-weight: $font-weight-bold;
       font-size: 0.875rem;
     }
-    
+
     p {
       margin: 0;
       font-size: 0.875rem;
       color: color.adjust($error-text, $lightness: -10%);
     }
   }
-  
+
   &-retry {
     margin-top: 12px;
-    background: none;
+    background: $white;
     border: 1px solid $error-border;
-    border-radius: $radius-sm;
-    padding: 4px 12px;
+    border-radius: $radius-pill;
+    padding: 4px 14px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: $font-weight-semibold;
     color: $error-text;
     cursor: pointer;
-    transition: all 0.2s;
-    
+    transition: background-color $transition-fast;
+
     &:hover {
       background: rgba($error, 0.1);
     }
   }
 }
 
-// Page Header
+// Page Header — the same heading treatment on every portal page.
 .page-header {
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  
+  gap: 16px;
+  flex-wrap: wrap;
+
+  > div:first-child {
+    min-width: 0;
+  }
+
   &-breadcrumbs {
-    font-size: 0.875rem;
-    color: $text-secondary;
-    margin-bottom: 8px;
+    @include caps-label;
+    color: $pmart-red;
+    margin-bottom: 6px;
   }
-  
+
   &-title {
+    @include heading-display(1.75rem);
     margin: 0;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: $text-primary;
+
+    @include mobile {
+      font-size: 1.4rem;
+    }
   }
-  
+
   &-subtitle {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
+    font-size: $font-size-sm;
     color: $text-secondary;
+    max-width: 640px;
   }
 }
 
@@ -134,15 +180,17 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  color: $text-secondary;
-  
+  color: $text-muted;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
   &--full {
     height: 100%;
     min-height: 200px;
   }
-  
+
   .spinner {
-    animation: spin 1s linear infinite;
+    animation: spin 0.9s linear infinite;
     margin-bottom: 12px;
     color: $pmart-red;
   }
@@ -157,13 +205,14 @@
 .dialog-text {
   margin: 0 0 24px;
   color: $text-secondary;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 // Input Styles
@@ -176,10 +225,50 @@
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: $text-secondary;
+        color: $text-muted;
         width: 18px;
         height: 18px;
         z-index: 1;
+        pointer-events: none;
+        transition: color $transition-fast;
+    }
+
+    &:focus-within .input-icon {
+        color: $pmart-red;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        padding: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: $text-muted;
+        cursor: pointer;
+        border-radius: $radius-sm;
+        transition: color $transition-fast, background-color $transition-fast;
+        z-index: 2;
+
+        &:hover {
+            color: $text-primary;
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        &:focus-visible {
+            outline: 2px solid $pmart-red;
+            outline-offset: 1px;
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
     }
 }
 
@@ -187,8 +276,16 @@
     padding-left: 38px;
 }
 
+.form-control.has-password-toggle {
+    padding-right: 40px;
+}
+
 .form-control.is-invalid {
     border-color: $error !important;
+
+    &:focus {
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+    }
 }
 
 .form-select.is-invalid {

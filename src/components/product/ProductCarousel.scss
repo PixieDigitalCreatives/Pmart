@@ -18,16 +18,12 @@
 
     .header-titles {
       .section-heading {
-        font-family: $font-family-display;
-        font-size: 20px;
-        font-weight: $font-weight-bold;
-        color: $charcoal-black;
-        letter-spacing: -0.01em;
+        @include heading-display(24px);
+        @include heading-accent;
         margin: 0;
 
         @include mobile {
-          font-size: 16px;
-          line-height: 1.25;
+          font-size: 18px;
         }
       }
 
@@ -35,6 +31,7 @@
         font-size: 13px;
         color: $text-muted;
         margin-top: 2px;
+        padding-left: 14px;
 
         @include mobile {
           font-size: 12px;
@@ -49,22 +46,8 @@
       flex-shrink: 0;
 
       .view-all-link {
-        font-size: 14px;
-        font-weight: $font-weight-bold;
-        color: $pmart-red;
-        text-transform: capitalize;
-        white-space: nowrap;
+        @include view-all-link;
         flex-shrink: 0;
-        transition: color $transition-fast;
-
-        @include mobile {
-          font-size: 12.5px;
-        }
-
-        &:hover {
-          color: $pmart-red-hover;
-          text-decoration: underline;
-        }
       }
 
       .arrow-nav-group {
@@ -82,6 +65,7 @@
           border-radius: 50%;
           border: 1px solid $border-color;
           background: $white;
+          box-shadow: $shadow-xs;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -90,8 +74,9 @@
           transition: all $transition-fast;
 
           &:hover {
-            background-color: $surface-secondary;
-            border-color: color.adjust($border-color, $lightness: -8%);
+            background-color: $charcoal-black;
+            border-color: $charcoal-black;
+            color: $white;
           }
         }
       }

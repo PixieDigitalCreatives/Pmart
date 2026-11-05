@@ -1,7 +1,7 @@
 .mobile-location-strip {
   display: none;
-  background-color: $surface-secondary;
-  border-bottom: 1px solid $border-color;
+  background: linear-gradient(90deg, $pmart-red-light 0%, $white 100%);
+  border-bottom: 1px solid $pmart-red-light-border;
   padding: 8px 14px;
   cursor: pointer;
 
@@ -24,12 +24,12 @@
       display: inline-flex;
       align-items: center;
       gap: 3px;
-      background: $pmart-red;
+      background: $brand-gradient;
       color: $white;
       font-size: 10px;
       font-weight: $font-weight-bold;
-      padding: 2px 6px;
-      border-radius: $radius-xs;
+      padding: 2px 7px;
+      border-radius: $radius-pill;
       letter-spacing: 0.02em;
     }
 

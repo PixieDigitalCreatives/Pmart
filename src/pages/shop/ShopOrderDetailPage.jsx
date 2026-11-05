@@ -9,7 +9,7 @@ import { ShopTrackRiderModal } from '@/components/shop/ShopTrackRiderModal';
 import { AssignRiderPanel } from '@/components/order/AssignRiderPanel';
 import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, paymentDisplay } from '@/types/orderTypes';
-import { ChevronLeft, Check, Navigation, User, MapPin, Package, AlertTriangle, Phone } from 'lucide-react';
+import { TbChevronLeft as ChevronLeft, TbCheck as Check, TbNavigation as Navigation, TbUser as User, TbMapPin as MapPin, TbPackage as Package, TbAlertTriangle as AlertTriangle, TbPhone as Phone } from 'react-icons/tb';
 import { Button, StatusBadge, Card, LoadingState, EmptyState, Modal, FormField, Input } from '@/components/ui';
 import './ShopOrderDetailPage.scss';
 

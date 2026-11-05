@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { productService } from '@/services/productService';
 import { useCart } from '@/context/CartContext';
 import { ProductCard } from '@/components/product/ProductCard';
-import { Percent, Tag } from 'lucide-react';
+import { TbPercentage as Percent, TbTag as Tag } from 'react-icons/tb';
 import { EmptyState, LoadingState, Button } from '@/components/ui';
 import './OffersPage.scss';
 

@@ -1,0 +1,12 @@
+// The page fills at least the window, so the footer sits at the bottom even when a page is short
+// (otherwise an empty band shows under the footer).
+.pmart-customer-layout {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+
+  .customer-main-content {
+    flex: 1 0 auto;
+  }
+}

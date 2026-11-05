@@ -4,7 +4,7 @@ import { useAuth, homeForRole } from '@/context/AuthContext';
 import { apiErrorMessage } from '@/services/apiClient';
 import { AuthShell } from '@/components/common/AuthShell';
 import { GoogleSignInButton } from '@/components/common/GoogleSignInButton';
-import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
+import { Button, Input, PasswordInput, FormField, ErrorMessage } from '@/components/ui';
 
 const isPhoneLike = (raw) => /^\+?[0-9]{10,15}$/.test(raw.trim().replace(/[\s\-().]/g, ''));
 
@@ -111,12 +111,11 @@ export const RegisterPage = () => {
           />
         </FormField>
         <FormField label="Password" htmlFor="auth-password" hint="At least 8 characters">
-          <Input id="auth-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
+          <PasswordInput id="auth-password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
         </FormField>
         <FormField label="Confirm password" htmlFor="auth-confirm-password">
-          <Input
+          <PasswordInput
             id="auth-confirm-password"
-            type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             autoComplete="new-password"

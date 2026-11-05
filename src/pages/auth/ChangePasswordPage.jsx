@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth, homeForRole } from '@/context/AuthContext';
 import { apiErrorMessage } from '@/services/apiClient';
 import { AuthShell } from '@/components/common/AuthShell';
-import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
+import { Button, Input, PasswordInput, FormField, ErrorMessage } from '@/components/ui';
 
 /** Used for the mandatory first-login change (riders, store owners) and voluntary changes. */
 export const ChangePasswordPage = () => {
@@ -50,13 +50,13 @@ export const ChangePasswordPage = () => {
       {error && <ErrorMessage message={error} />}
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
         <FormField label={forced ? 'Temporary password' : 'Current password'} htmlFor="cp-current">
-          <Input id="cp-current" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" disabled={loading} />
+          <PasswordInput id="cp-current" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" disabled={loading} />
         </FormField>
         <FormField label="New password" htmlFor="cp-new" hint="At least 8 characters">
-          <Input id="cp-new" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
+          <PasswordInput id="cp-new" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
         </FormField>
         <FormField label="Confirm new password" htmlFor="cp-confirm">
-          <Input id="cp-confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
+          <PasswordInput id="cp-confirm" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" disabled={loading} />
         </FormField>
         <Button type="submit" size="full" isLoading={loading} style={{ marginTop: '16px' }}>
           Update password

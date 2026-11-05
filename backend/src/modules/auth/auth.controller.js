@@ -31,10 +31,14 @@ const changePasswordSchema = z
   .object({ currentPassword: z.string().min(1, 'Current password is required'), newPassword: password, confirmPassword: z.string() })
   .refine((d) => d.newPassword === d.confirmPassword, { message: 'New passwords do not match', path: ['confirmPassword'] });
 
+const resetPasswordSchema = z
+  .object({ token: z.string().min(1, 'Reset token is required'), password, confirmPassword: z.string().optional() })
+  .refine((d) => d.confirmPassword === undefined || d.password === d.confirmPassword, { message: "Passwords don't match", path: ['confirmPassword'] });
+
 const REFRESH_COOKIE = 'refreshToken';
 
 function getCookieOptions() {
-  const sameSite = env.COOKIE_SAME_SITE || (env.NODE_ENV === 'production' ? 'none' : 'strict');
+  const sameSite = env.cookieSameSite;
   return {
     httpOnly: true,
     secure: env.NODE_ENV === 'production' || sameSite === 'none',
@@ -59,7 +63,7 @@ function sessionResponse(res, status, { user, accessToken, refreshToken }) {
 class AuthController {
   static async register(req, res) {
     const data = registerSchema.parse(req.body);
-    const result = await AuthService.registerCustomer(data);
+    const result = await AuthService.registerCustomer(data, req);
     logger.info(`Customer registered: ${result.user._id}`);
     sessionResponse(res, 201, result);
   }
@@ -67,16 +71,16 @@ class AuthController {
   static async login(req, res) {
     const data = loginSchema.parse(req.body);
     try {
-      sessionResponse(res, 200, await AuthService.login(data));
+      sessionResponse(res, 200, await AuthService.login(data, req));
     } catch (err) {
-      logger.warn(`Failed login from ${req.ip}`);
+      logger.warn(`Failed login for ${data.phone} from ${req.ip}`);
       throw err;
     }
   }
 
   static async googleLogin(req, res) {
     const { idToken } = googleSchema.parse(req.body);
-    sessionResponse(res, 200, await AuthService.googleLogin(idToken));
+    sessionResponse(res, 200, await AuthService.googleLogin(idToken, req));
   }
 
   static async completeProfile(req, res) {
@@ -91,16 +95,23 @@ class AuthController {
     res.json({ success: true, message: 'Account activated. You can now sign in.' });
   }
 
+  static async resetPassword(req, res) {
+    const { token, password: newPassword } = resetPasswordSchema.parse(req.body);
+    await AuthService.resetPasswordWithToken(token, newPassword);
+    res.json({ success: true, message: 'Password has been reset successfully. Please sign in with your new password.' });
+  }
+
   static async refresh(req, res) {
     const refreshToken = req.cookies && req.cookies[REFRESH_COOKIE];
     if (!refreshToken) throw unauthorized('No refresh token provided', 'REFRESH_MISSING');
-    const result = await AuthService.refresh(refreshToken);
+    const result = await AuthService.refresh(refreshToken, req);
     setRefreshCookie(res, result.refreshToken);
     res.json({ success: true, accessToken: result.accessToken, user: AuthService.toPublicUser(result.user) });
   }
 
   static async logout(req, res) {
-    await AuthService.logout(req.user._id);
+    const refreshToken = req.cookies && req.cookies[REFRESH_COOKIE];
+    await AuthService.logout(req.user._id, refreshToken);
     res.clearCookie(REFRESH_COOKIE, getCookieOptions());
     res.json({ success: true, message: 'Logged out' });
   }
@@ -111,9 +122,27 @@ class AuthController {
 
   static async changePassword(req, res) {
     const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
-    const result = await AuthService.changePassword(req.user._id, currentPassword, newPassword);
+    const result = await AuthService.changePassword(req.user._id, currentPassword, newPassword, req);
     setRefreshCookie(res, result.refreshToken);
     res.json({ success: true, message: 'Password changed', accessToken: result.accessToken, user: AuthService.toPublicUser(result.user) });
+  }
+
+  static async listSessions(req, res) {
+    const refreshToken = req.cookies && req.cookies[REFRESH_COOKIE];
+    const sessions = await AuthService.listSessions(req.user._id, refreshToken);
+    res.json({ success: true, data: sessions });
+  }
+
+  static async revokeOtherSessions(req, res) {
+    const refreshToken = req.cookies && req.cookies[REFRESH_COOKIE];
+    await AuthService.revokeOtherSessions(req.user._id, refreshToken);
+    res.json({ success: true, message: 'All other sessions have been logged out' });
+  }
+
+  static async revokeAllSessions(req, res) {
+    await AuthService.revokeAllSessions(req.user._id);
+    res.clearCookie(REFRESH_COOKIE, getCookieOptions());
+    res.json({ success: true, message: 'All sessions logged out' });
   }
 }
 

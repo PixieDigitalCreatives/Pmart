@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation as useRouteLocation, useSearchParams } from 'react-router-dom';
-import { Search, MapPin, ShoppingBag, User, Tag, Package, ChevronDown, X } from 'lucide-react';
+import { TbSearch as Search, TbMapPin as MapPin, TbShoppingCart as ShoppingCart, TbUser as User, TbTag as Tag, TbPackage as Package, TbChevronDown as ChevronDown, TbX as X } from 'react-icons/tb';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
 import { useAuth, homeForRole } from '@/context/AuthContext';
@@ -238,9 +238,9 @@ export const Header = () => {
             aria-label="View shopping cart"
           >
             <div className="cart-icon-container">
-              <ShoppingBag size={20} />
-              {totalQuantity > 0 && <span className="cart-badge">{totalQuantity}</span>}
+              <ShoppingCart size={20} />
             </div>
+            <span className="cart-badge">{totalQuantity}</span>
             <div className="cart-label-container">
               {totalQuantity > 0 ? (
                 <>
@@ -261,7 +261,7 @@ export const Header = () => {
             onClick={() => setIsCartOpen(true)}
             aria-label="Open Cart"
           >
-            <ShoppingBag size={22} />
+            <ShoppingCart size={22} />
             {totalQuantity > 0 && <span className="cart-badge">{totalQuantity}</span>}
           </Button>
         </div>

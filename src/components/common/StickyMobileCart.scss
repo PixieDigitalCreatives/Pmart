@@ -12,14 +12,14 @@
 
   .sticky-cart-btn {
     width: 100%;
-    background: $pmart-red;
+    background: $brand-gradient;
     color: $white;
     border-radius: $radius-xl;
     padding: 12px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 8px 20px $pmart-red-shadow;
+    box-shadow: $shadow-brand, inset 0 1px 0 rgba(255, 255, 255, 0.18);
     cursor: pointer;
     border: none;
     transition: transform $transition-fast;

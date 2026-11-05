@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { Plus, Minus, Package } from 'lucide-react';
+import { TbPlus as Plus, TbMinus as Minus, TbPhotoOff as ImageOff } from 'react-icons/tb';
 import { motion } from 'framer-motion';
+import { assetUrl } from '@/utils/format';
 import './ProductCard.scss';
 
 
 function getThumbnailUrl(url) {
   if (!url || typeof url !== 'string') return url;
+  if (url.startsWith('/api/')) return assetUrl(url);
   if (url.includes('images.unsplash.com')) {
     return url.replace(/w=\d+/, 'w=360').replace(/q=\d+/, 'q=75');
   }
@@ -54,8 +56,9 @@ export const ProductCard = ({ product }) => {
             className="product-img"
           />
         ) : (
-          <div className="product-img product-img-placeholder" aria-hidden="true">
-            <Package size={36} />
+          <div className="product-img product-img-placeholder" role="img" aria-label="Image Not Available">
+            <ImageOff size={30} />
+            <span className="placeholder-text">Image Not Available</span>
           </div>
         )}
 

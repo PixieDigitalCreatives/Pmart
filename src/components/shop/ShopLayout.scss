@@ -6,8 +6,7 @@
   // Sidebar
   .shop-sidebar {
     width: $sidebar-width;
-    background-color: #111318;
-    color: $white;
+    @include portal-sidebar;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -15,8 +14,7 @@
     bottom: 0;
     left: 0;
     z-index: 800;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    transition: transform $transition-fast;
+    transition: transform $transition-smooth;
 
     @include tablet-down {
       transform: translateX(-100%);
@@ -31,7 +29,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid $on-dark-line;
 
       .brand-link {
         display: flex;
@@ -41,6 +39,7 @@
         .shop-logo {
           height: 38px;
           width: auto;
+          @include logo-chip(4px);
         }
 
         .portal-tag {
@@ -63,7 +62,8 @@
       }
 
       .mobile-close-btn {
-        color: #9CA3AF;
+        @include ghost-icon-btn($on-dark-muted, $on-dark-fill, $white);
+        padding: 6px;
         display: none;
 
         @include tablet-down {
@@ -82,39 +82,11 @@
       @include custom-scrollbar;
 
       .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: $radius-md;
-        font-size: 13.5px;
-        font-weight: $font-weight-medium;
-        color: #9CA3AF;
-        text-decoration: none;
-        transition: all $transition-fast;
+        @include portal-nav-link;
 
-        &:hover {
-          color: $white;
-          background-color: rgba(255, 255, 255, 0.06);
-        }
-
-        &.active {
-          color: $white;
-          background-color: $pmart-red;
-          font-weight: $font-weight-semibold;
-
-          .link-icon {
-            color: $white;
-          }
-
-          .nav-badge {
-            background-color: $white;
-            color: $pmart-red;
-          }
-        }
-
-        .link-icon {
-          color: #9CA3AF;
+        &.active .nav-badge {
+          background-color: $white;
+          color: $pmart-red;
         }
 
         .nav-badge {
@@ -122,7 +94,7 @@
           font-size: 11px;
           font-weight: $font-weight-bold;
           background: rgba(242, 13, 24, 0.2);
-          color: #FF5A62;
+          color: $pmart-red-on-dark;
           padding: 2px 7px;
           border-radius: $radius-pill;
         }
@@ -131,23 +103,24 @@
 
     .sidebar-footer {
       padding: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid $on-dark-line;
 
       .customer-store-link {
         display: flex;
         align-items: center;
         gap: 8px;
         font-size: 12px;
-        color: #9CA3AF;
+        color: $on-dark-body;
         padding: 8px 12px;
         border-radius: $radius-md;
-        background: rgba(255, 255, 255, 0.04);
+        background: $on-dark-fill;
+        border: 1px solid $on-dark-line;
         margin-bottom: 14px;
         transition: all $transition-fast;
 
         &:hover {
           color: $white;
-          background: rgba(255, 255, 255, 0.08);
+          background: $on-dark-fill-hover;
         }
       }
 
@@ -160,8 +133,9 @@
           width: 34px;
           height: 34px;
           border-radius: 50%;
-          background: #2E333D;
+          background: $brand-gradient;
           color: $white;
+          box-shadow: 0 4px 12px rgba(242, 13, 24, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -178,19 +152,13 @@
 
           .user-role {
             font-size: 11px;
-            color: #9CA3AF;
+            color: $on-dark-muted;
           }
         }
 
         .logout-icon-btn {
-          color: #9CA3AF;
+          @include ghost-icon-btn($on-dark-muted, rgba(239, 68, 68, 0.14), $error-border);
           padding: 6px;
-          border-radius: $radius-sm;
-
-          &:hover {
-            color: $error;
-            background: rgba(239, 68, 68, 0.1);
-          }
         }
       }
     }
@@ -199,6 +167,8 @@
   // Workspace
   .shop-main-wrapper {
     flex: 1;
+    // Lets wide tables scroll inside their own wrapper instead of widening the whole page (as in AdminLayout).
+    min-width: 0;
     margin-left: $sidebar-width;
     display: flex;
     flex-direction: column;
@@ -209,8 +179,7 @@
 
     .shop-topbar {
       height: 64px;
-      background: $white;
-      border-bottom: 1px solid $border-color;
+      @include portal-topbar;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -231,8 +200,9 @@
         max-width: 440px;
 
         .hamburger-btn {
+          @include ghost-icon-btn($charcoal-black);
+          padding: 6px;
           display: none;
-          color: $charcoal-black;
 
           @include tablet-down {
             display: block;
@@ -255,9 +225,9 @@
             height: 38px;
             padding-left: 36px;
             padding-right: 14px;
-            background: $surface-secondary;
-            border: 1px solid $border-color;
-            border-radius: $radius-md;
+            background: $bg-light;
+            border: 1px solid $border-light;
+            border-radius: $radius-pill;
             font-size: 13px;
             color: $text-primary;
             outline: none;
@@ -281,8 +251,13 @@
           gap: 6px;
           background: $success-bg;
           border: 1px solid $success-border;
-          padding: 4px 10px;
+          padding: 5px 12px;
           border-radius: $radius-pill;
+          transition: box-shadow $transition-fast;
+
+          &:hover {
+            box-shadow: $shadow-sm;
+          }
 
           @include mobile {
             display: none;

@@ -6,7 +6,7 @@ import { orderService } from '@/services/orderService';
 import apiClient, { apiErrorMessage } from '@/services/apiClient';
 import { CODPaymentCard } from '@/components/order/CODPaymentCard';
 import { getFullAddressString } from '@/utils/addressUtils';
-import { MapPin, ArrowRight, ShoppingCart, AlertCircle, Home, Briefcase } from 'lucide-react';
+import { TbMapPin as MapPin, TbArrowRight as ArrowRight, TbShoppingCart as ShoppingCart, TbAlertCircle as AlertCircle, TbHome as Home, TbBriefcase as Briefcase } from 'react-icons/tb';
 import { Button, EmptyState } from '@/components/ui';
 import './CheckoutPage.scss';
 

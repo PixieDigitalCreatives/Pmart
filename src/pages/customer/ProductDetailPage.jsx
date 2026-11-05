@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { useCart } from '@/context/CartContext';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
-import { Plus, Minus, ShoppingBag, ArrowRight, ChevronRight, Share2, Check, Package, Store } from 'lucide-react';
+import { TbPlus as Plus, TbMinus as Minus, TbShoppingBag as ShoppingBag, TbArrowRight as ArrowRight, TbChevronRight as ChevronRight, TbShare as Share2, TbCheck as Check, TbPackage as Package, TbBuildingStore as Store, TbPhotoOff as ImageOff } from 'react-icons/tb';
+import { assetUrl } from '@/utils/format';
 import { Button, EmptyState, LoadingState } from '@/components/ui';
 import './ProductDetailPage.scss';
 
@@ -26,7 +27,7 @@ export const ProductDetailPage = () => {
       .then(async (p) => {
         if (cancelled) return;
         setProduct(p);
-        setSelectedImage(p.imageUrl || '');
+        setSelectedImage(p.imageUrl ? assetUrl(p.imageUrl) : '');
         const rel = await productService.getProducts({ category: p.categorySlug, limit: 12 });
         if (!cancelled) setRelated(rel.products.filter((r) => r._id !== p._id));
       })
@@ -51,7 +52,8 @@ export const ProductDetailPage = () => {
   const quantity = getItemQuantity(product._id);
   const outOfStock = product.stockCount <= 0;
   const storePaused = product.shop && product.shop.isAcceptingOrders === false;
-  const images = [product.imageUrl, ...(product.gallery || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  // Only the verified product photograph is shown (unverified gallery URLs are never displayed).
+  const images = [product.imageUrl].filter(Boolean).map(assetUrl);
   const specs = Object.entries(product.specifications || {});
   const nutrition = Object.entries(product.nutrition || {});
 
@@ -75,7 +77,14 @@ export const ProductDetailPage = () => {
         <div className="pdp-main-grid">
           <div className="pdp-gallery-column">
             <div className="main-image-display">
-              {selectedImage ? <img src={selectedImage} alt={product.name} className="hero-img" /> : <Package size={96} className="text-gray-400" aria-hidden="true" />}
+              {selectedImage ? (
+                <img src={selectedImage} alt={product.name} className="hero-img" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-gray-400" role="img" aria-label="Image Not Available">
+                  <ImageOff size={72} />
+                  <span className="text-sm font-medium">Image Not Available</span>
+                </div>
+              )}
               {product.discount > 0 && <div className="discount-tag">{product.discount}% OFF</div>}
             </div>
             {images.length > 1 && (

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { TbX as X } from 'react-icons/tb';
 import { Button } from './Button';
 
 export const Modal = ({ isOpen, onClose, title, children, className = '', hideClose = false }) => {

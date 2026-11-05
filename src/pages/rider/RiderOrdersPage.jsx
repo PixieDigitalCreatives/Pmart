@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package } from 'lucide-react';
+import { TbPackage as Package } from 'react-icons/tb';
 import { riderService } from '@/services/riderService';
 import { useRider } from '@/components/rider/RiderLayout';
 import { ActiveDeliveryCard } from '@/components/rider/ActiveDeliveryCard';

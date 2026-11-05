@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { TbCircleCheck as CheckCircle2, TbClock as Clock } from 'react-icons/tb';
 import { PAYMENT_STATUS, paymentDisplay } from '@/types/orderTypes';
 import './PaymentStatusBadge.scss';
 

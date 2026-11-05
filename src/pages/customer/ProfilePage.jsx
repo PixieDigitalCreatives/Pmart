@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { apiErrorMessage } from '@/services/apiClient';
-import { User, MapPin, Package, HelpCircle, LogOut, ChevronRight, Check, KeyRound } from 'lucide-react';
+import { TbUser as User, TbMapPin as MapPin, TbPackage as Package, TbHelpCircle as HelpCircle, TbLogout as LogOut, TbChevronRight as ChevronRight, TbCheck as Check, TbKey as KeyRound } from 'react-icons/tb';
 import { Button, FormField, Input, Card } from '@/components/ui';
 import './ProfilePage.scss';
 

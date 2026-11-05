@@ -1,19 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Upload,
-  FileSpreadsheet,
-  Download,
-  AlertCircle,
-  CheckCircle2,
-  X,
-  FileText,
-  AlertTriangle,
-  RefreshCw,
-  Layers,
-  ArrowRight
-} from 'lucide-react';
+import { TbUpload as Upload, TbFileSpreadsheet as FileSpreadsheet, TbDownload as Download, TbAlertCircle as AlertCircle, TbCircleCheck as CheckCircle2, TbX as X, TbFileText as FileText, TbAlertTriangle as AlertTriangle, TbRefresh as RefreshCw, TbStack2 as Layers, TbArrowRight as ArrowRight } from 'react-icons/tb';
 import { Button, LoadingState } from '@/components/ui';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';

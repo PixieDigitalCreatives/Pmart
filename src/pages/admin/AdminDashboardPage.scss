@@ -67,7 +67,7 @@
           align-items: center;
           justify-content: center;
 
-          &.purple { background: rgba(168, 85, 247, 0.12); color: #9333EA; }
+          &.purple { background: $info-bg; color: $info; }
           &.red { background: $pmart-red-light; color: $pmart-red; }
           &.green { background: $success-bg; color: $success; }
           &.blue { background: $info-bg; color: $info; }

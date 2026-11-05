@@ -78,7 +78,7 @@
       height: 44px;
       object-fit: cover;
       border-radius: $radius-md;
-      background: #FAFBFD;
+      background: $bg-light;
       border: 1px solid $border-light;
     }
 
@@ -167,38 +167,38 @@
         transition: all $transition-fast;
 
         &-visible {
-          color: #a7f3d0;
+          color: $success-border;
           border-color: rgba(52, 211, 153, 0.4);
           background: rgba(16, 185, 129, 0.12);
 
           &:hover {
             background: rgba(16, 185, 129, 0.25);
             border-color: #34d399;
-            color: #ecfdf5;
+            color: $success-bg;
           }
         }
 
         &-hide {
-          color: #e2e8f0;
+          color: $border-color;
           border-color: rgba(226, 232, 240, 0.3);
           background: rgba(255, 255, 255, 0.08);
 
           &:hover {
             background: rgba(255, 255, 255, 0.16);
-            border-color: #cbd5e1;
-            color: #ffffff;
+            border-color: $border-dark;
+            color: $white;
           }
         }
 
         &-stock {
-          color: #fde68a;
+          color: $warning-border;
           border-color: rgba(245, 158, 11, 0.4);
           background: rgba(245, 158, 11, 0.12);
 
           &:hover {
             background: rgba(245, 158, 11, 0.25);
             border-color: #fbbf24;
-            color: #fffbeb;
+            color: $warning-bg;
           }
         }
       }
@@ -209,17 +209,17 @@
         color: $white;
 
         &:hover {
-          background: #b91c1c;
-          border-color: #b91c1c;
+          background: $error-text;
+          border-color: $error-text;
         }
       }
 
       .clear-sel-btn {
-        color: #94a3b8;
+        color: $text-light;
         border-color: transparent;
 
         &:hover {
-          color: #ffffff;
+          color: $white;
           background: rgba(255, 255, 255, 0.1);
         }
       }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { TbAlertTriangle as AlertTriangle, TbRefresh as RefreshCcw } from 'react-icons/tb';
 import '../../styles/error-boundary.scss';
 import { Button } from '@/components/ui';
 

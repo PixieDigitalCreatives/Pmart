@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Sparkles } from 'lucide-react';
+import { TbShieldCheck as ShieldCheck, TbSparkles as Sparkles } from 'react-icons/tb';
 import '@/pages/auth/LoginPage.scss';
 
 /** Two-panel layout shared by sign-in, sign-up, activation and password pages. */

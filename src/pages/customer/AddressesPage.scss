@@ -107,14 +107,16 @@
         margin-top: auto;
 
         .set-default {
+          @include text-btn;
           font-size: 12px;
           font-weight: $font-weight-semibold;
-          color: $pmart-red;
           cursor: pointer;
+        }
 
-          &:hover {
-            text-decoration: underline;
-          }
+        .edit-btn {
+          @include text-btn($text-secondary, $surface-secondary);
+          font-size: 12px;
+          font-weight: $font-weight-semibold;
         }
 
         .delivering-here-tag {
@@ -127,13 +129,9 @@
         }
 
         .delete-btn {
-          color: $text-muted;
-          padding: 4px;
+          @include ghost-icon-btn($text-muted, $error-bg, $error);
+          padding: 6px;
           cursor: pointer;
-
-          &:hover {
-            color: $error;
-          }
         }
       }
     }

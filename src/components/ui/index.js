@@ -1,5 +1,6 @@
 export * from './Button';
 export * from './Input';
+export * from './PasswordInput';
 export * from './FormField';
 export * from './Select';
 export * from './Modal';

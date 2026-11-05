@@ -2,7 +2,8 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useLocation } from '@/context/LocationContext';
-import { ShoppingBag, Plus, Minus, Trash2, ArrowRight, MapPin, Package } from 'lucide-react';
+import { TbShoppingBag as ShoppingBag, TbPlus as Plus, TbMinus as Minus, TbTrash as Trash2, TbArrowRight as ArrowRight, TbMapPin as MapPin, TbPackage as Package } from 'react-icons/tb';
+import { assetUrl } from '@/utils/format';
 import { Button } from '@/components/ui';
 import { getFullAddressString } from '@/utils/addressUtils';
 import './CartPage.scss';
@@ -82,7 +83,7 @@ export const CartPage = () => {
                 {items.map((item) => (
                   <div key={item.id} className="cart-item-table-row">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="product-thumb" />
+                      <img src={assetUrl(item.imageUrl)} alt={item.name} className="product-thumb" />
                     ) : (
                       <div className="product-thumb flex items-center justify-center text-gray-400">
                         <Package size={22} />

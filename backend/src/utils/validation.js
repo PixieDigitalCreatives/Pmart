@@ -3,7 +3,7 @@
 const mongoose = require('mongoose');
 const { z } = require('zod');
 const { badRequest } = require('./http-error');
-const { normalizeMobileNumber, isValidMobile } = require('./auth');
+const { normalizeMobileNumber, isValidMobile, validatePasswordStrength } = require('./auth');
 
 const objectId = z.string().refine((v) => mongoose.isValidObjectId(v), 'Invalid id');
 
@@ -13,7 +13,11 @@ const phone = z
   .transform((v) => normalizeMobileNumber(v))
   .refine((v) => isValidMobile(v), 'Enter a valid mobile number');
 
-const password = z.string().min(8, 'Password must be at least 8 characters').max(128);
+const password = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128)
+  .refine((v) => validatePasswordStrength(v).valid, (v) => ({ message: validatePasswordStrength(v).message }));
 
 /** Throws a 400 unless the value is a valid ObjectId string. */
 function assertObjectId(value, label = 'id') {

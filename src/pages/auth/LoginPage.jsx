@@ -4,7 +4,7 @@ import { useAuth, homeForRole } from '@/context/AuthContext';
 import { apiErrorMessage } from '@/services/apiClient';
 import { AuthShell } from '@/components/common/AuthShell';
 import { GoogleSignInButton } from '@/components/common/GoogleSignInButton';
-import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
+import { Button, Input, PasswordInput, FormField, ErrorMessage } from '@/components/ui';
 
 const isPhoneLike = (raw) => /^\+?[0-9]{10,15}$/.test(raw.trim().replace(/[\s\-().]/g, ''));
 
@@ -91,9 +91,8 @@ export const LoginPage = () => {
           />
         </FormField>
         <FormField label="Password" htmlFor="auth-password">
-          <Input
+          <PasswordInput
             id="auth-password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"

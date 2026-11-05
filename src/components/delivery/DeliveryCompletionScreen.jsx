@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Banknote, PackageCheck, ArrowRight } from 'lucide-react';
+import { TbCircleCheck as CheckCircle2, TbCash as Banknote, TbPackageExport as PackageCheck, TbArrowRight as ArrowRight } from 'react-icons/tb';
 import './DeliveryCompletionScreen.scss';
 import { Button } from '@/components/ui';
 

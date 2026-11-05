@@ -37,6 +37,8 @@ app.use(
   })
 );
 app.use(limiter({ windowMs: 15 * 60 * 1000, max: 600, message: 'Too many requests. Please try again later.' }));
+// CSV imports carry the whole file (up to 8 MB of text) in the JSON body.
+app.use('/api/inventory/imports', express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 
@@ -86,6 +88,10 @@ app.use('/api/admin', noStore, require('./modules/admin/admin.route'));
 app.use('/api/rider', noStore, require('./modules/rider/rider.route'));
 app.use('/api/addresses', noStore, require('./modules/address/address.route'));
 app.use('/api/routing', require('./modules/routing/routing.route'));
+app.use('/api/inventory', noStore, require('./modules/inventory/inventory.route'));
+app.use('/api/billing', noStore, require('./modules/billing/billing.route'));
+app.use('/api/reports', noStore, require('./modules/reports/report.route'));
+app.get('/api/product-images/:id', require('./modules/inventory/inventory.controller').servePublicImage);
 app.use('/api', require('./modules/catalog/catalog.route'));
 
 app.use('/api', notFoundHandler);

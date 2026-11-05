@@ -1,10 +1,10 @@
 'use strict';
 
 const { Server } = require('socket.io');
-const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { env } = require('./env');
 const { logger } = require('../utils/logger');
+const { verifyAccessToken } = require('../utils/jwt');
 
 let io = null;
 
@@ -33,9 +33,12 @@ function initSocket(server) {
     const token = socket.handshake.auth && socket.handshake.auth.token;
     if (!token) return next(new Error('Authentication error: Token missing'));
     try {
-      const decoded = jwt.verify(token, env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('role permissions isActive').lean();
+      const decoded = verifyAccessToken(token);
+      const user = await User.findById(decoded.id).select('role permissions isActive tokenVersion').lean();
       if (!user || !user.isActive) return next(new Error('Authentication error: User invalid or inactive'));
+      if (decoded.ver !== undefined && user.tokenVersion !== undefined && decoded.ver !== user.tokenVersion) {
+        return next(new Error('Authentication error: Token revoked'));
+      }
       socket.user = { _id: String(user._id), role: user.role, permissions: user.permissions || [] };
       next();
     } catch {

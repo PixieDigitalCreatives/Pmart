@@ -1,7 +1,6 @@
 'use strict';
 
-const jwt = require('jsonwebtoken');
-const { env } = require('../config/env');
+const { verifyAccessToken } = require('../utils/jwt');
 const { User, UserRole } = require('../modules/auth/auth.model');
 
 const PASSWORD_CHANGE_EXEMPT = new Set(['/api/auth/password', '/api/auth/logout', '/api/auth/me']);
@@ -23,7 +22,7 @@ const protect = async (req, res, next) => {
 
   let decoded;
   try {
-    decoded = jwt.verify(token, env.JWT_SECRET);
+    decoded = verifyAccessToken(token);
   } catch {
     return res.status(401).json({ success: false, code: 'TOKEN_INVALID', message: 'Not authorized, token failed' });
   }
@@ -34,6 +33,9 @@ const protect = async (req, res, next) => {
   }
   if (!user.isActive) {
     return res.status(401).json({ success: false, code: 'ACCOUNT_DEACTIVATED', message: 'User account is deactivated' });
+  }
+  if (decoded.ver !== undefined && user.tokenVersion !== undefined && decoded.ver !== user.tokenVersion) {
+    return res.status(401).json({ success: false, code: 'TOKEN_REVOKED', message: 'Session expired or password changed. Please sign in again.' });
   }
 
   const path = req.originalUrl.split('?')[0].replace(/\/$/, '');
@@ -65,4 +67,12 @@ const authorizePermission = (permission) => (req, res, next) => {
   next();
 };
 
-module.exports = { protect, authorize, authorizePermission, hasPermission };
+/** Allows ADMIN, or an EMPLOYEE that holds at least one of the given permissions. */
+const authorizeAny = (...permissions) => (req, res, next) => {
+  if (!permissions.some((p) => hasPermission(req.user, p))) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', message: `Missing permission: ${permissions.join(' or ')}` });
+  }
+  next();
+};
+
+module.exports = { protect, authorize, authorizePermission, authorizeAny, hasPermission };

@@ -7,7 +7,7 @@ PMart delivers groceries from nearby darkstores. One Node/Express + MongoDB back
 | Storefront | `/` | Customers: browse, cart, cash-on-delivery checkout, live tracking, order history |
 | Store portal | `/shop` | Store owners: accept → pack → ready → assign rider, products, analytics, store hours |
 | Rider app | `/rider` | Riders: go online, pick up, deliver, collect cash, confirm with the customer's delivery code |
-| Admin console | `/admin` | Admins and staff (permission-based): stores, catalog, people, orders, live deliveries, payments, reports, settings |
+| Admin console | `/admin` | Admins and staff (permission-based): stores, catalog, people, orders, live deliveries, payments, reports, settings, plus in-store inventory and billing (barcode scanning, CSV import, restock, stock ledger, product-photo verification, invoices, payments, reports) — see `docs/PMart_INVENTORY_BILLING.md` |
 
 The database starts **empty** — there is no demo or seed data. Everything is created through the admin console.
 
@@ -39,9 +39,13 @@ settings on both the web app and the backend.
 |---|---|---|
 | root | `npm run dev` / `npm run build` / `npm run lint` | Vite dev server / production build / oxlint |
 | backend | `npm run dev` / `npm start` | API with nodemon / without |
-| backend | `npm test` | 80 Jest tests against an in-memory MongoDB replica set |
+| backend | `npm test` | 129 Jest tests against an in-memory MongoDB replica set |
 | backend | `npm run db:init` | Create collections, sync indexes, create settings (safe to re-run) |
 | backend | `npm run create-admin` | Create the first administrator (`--force` adds another when one already exists) |
+| backend | `npm run db:backup -- [folder]` | Export every collection as Extended JSON (default `backups/<db>-<timestamp>/`) |
+| backend | `npm run inventory:import -- <file.csv> [--dry-run]` | Import the 17-column inventory CSV (duplicates by product code are never overwritten) |
+| backend | `npm run inventory:rollback-import -- <batchId>` | Remove the products an import created, unless they have been used since |
+| backend | `npm run images:find-candidates -- [--limit N]` | Look products up by barcode in Open Food/Beauty/Products Facts; finds are stored as unverified candidates |
 
 ## How an order flows
 ```mermaid

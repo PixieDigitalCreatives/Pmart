@@ -31,7 +31,7 @@
     padding: 18px 20px;
     border-radius: $radius-lg;
     border: 2px solid $pmart-red;
-    background: #fffafa;
+    background: $pmart-red-light;
     cursor: pointer;
     transition: all $transition-fast;
     position: relative;
@@ -93,8 +93,8 @@
         }
 
         .recommended-pill {
-          background-color: #dcfce7;
-          color: #15803d;
+          background-color: $leaf-green-light;
+          color: $leaf-green;
           font-size: 11px;
           font-weight: $font-weight-bold;
           padding: 2px 7px;
@@ -121,7 +121,7 @@
         color: $text-muted;
 
         .shield {
-          color: #16a34a;
+          color: $leaf-green;
           flex-shrink: 0;
         }
 

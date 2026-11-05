@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bike } from 'lucide-react';
+import { TbMotorbike as Bike } from 'react-icons/tb';
 import { orderService } from '@/services/orderService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { Button, Select } from '@/components/ui';

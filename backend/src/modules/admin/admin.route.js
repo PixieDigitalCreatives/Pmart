@@ -10,7 +10,7 @@ const { limiter } = require('../../middleware/rate-limit');
 
 const router = Router();
 
-const mutationLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 300, message: 'Too many administrative actions. Please slow down.' });
+const mutationLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 300, key: 'user', message: 'Too many administrative actions. Please slow down.' });
 
 router.use(protect, authorize(UserRole.ADMIN, UserRole.EMPLOYEE));
 router.use((req, res, next) => (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) ? mutationLimiter(req, res, next) : next()));
@@ -50,6 +50,10 @@ router.get('/employees', can('employees.manage'), AdminController.getEmployees);
 router.post('/employees', can('employees.manage'), AdminController.createEmployee);
 router.put('/employees/:id', can('employees.manage'), AdminController.updateEmployee);
 router.post('/employees/:id/activation-link', can('employees.manage'), AdminController.regenerateActivation);
+
+// Users management (Reset link & Unlock)
+router.post('/users/:id/reset-link', authorize(UserRole.ADMIN), AdminController.createPasswordResetLink);
+router.post('/users/:id/unlock', authorize(UserRole.ADMIN), AdminController.unlockUser);
 
 // Settings
 router.get('/settings', can('settings.read'), AdminController.getSettings);

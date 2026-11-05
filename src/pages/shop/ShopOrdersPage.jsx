@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { orderService } from '@/services/orderService';
 import { openSocket } from '@/services/socket';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE, paymentDisplay } from '@/types/orderTypes';
-import { Search, Eye, PackageSearch } from 'lucide-react';
+import { TbSearch as Search, TbEye as Eye, TbPackages as PackageSearch } from 'react-icons/tb';
 import { PageHeader, StatusBadge, Button, EmptyState, Input, LoadingState } from '@/components/ui';
 import './ShopOrdersPage.scss';
 import { plural } from '@/utils/plural';

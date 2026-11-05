@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileBarChart, ShieldAlert, FileText, Download } from 'lucide-react';
+import { TbReportAnalytics as FileBarChart, TbShieldExclamation as ShieldAlert, TbFileText as FileText, TbDownload as Download } from 'react-icons/tb';
 import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useToast } from '@/context/ToastContext';

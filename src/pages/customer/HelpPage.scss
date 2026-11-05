@@ -2,7 +2,7 @@
   padding: 24px 0 48px;
 
   .help-hero-card {
-    background: linear-gradient(135deg, #111318 0%, #1E232B 100%);
+    @include brand-surface(10% 0%);
     border-radius: $radius-2xl;
     padding: 40px;
     text-align: center;
@@ -31,7 +31,7 @@
 
       .hero-subtitle {
         font-size: 14px;
-        color: #D1D5DB;
+        color: $border-dark;
         margin-bottom: 24px;
       }
 
@@ -160,17 +160,51 @@
             width: 100%;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 4px;
             padding: 16px 20px;
             text-align: left;
             background: $white;
             cursor: pointer;
+            list-style: none;
             transition: background-color $transition-fast;
 
-            &:hover {
-              background-color: #FAFBFD;
+            &::-webkit-details-marker {
+              display: none;
             }
 
+            > svg {
+              color: $pmart-red;
+            }
+
+            // Chevron drawn in CSS so the summary needs no extra markup; it turns when the item is open.
+            &::after {
+              content: '';
+              margin-left: auto;
+              flex-shrink: 0;
+              width: 8px;
+              height: 8px;
+              border-right: 2px solid $text-muted;
+              border-bottom: 2px solid $text-muted;
+              transform: rotate(45deg);
+              transition: transform $transition-fast, border-color $transition-fast;
+            }
+
+            &:hover {
+              background-color: $pmart-red-light;
+            }
+          }
+
+          &[open] > .faq-question-btn {
+            background-color: $bg-light;
+
+            &::after {
+              transform: rotate(-135deg);
+              border-color: $pmart-red;
+            }
+          }
+
+          .faq-question-btn {
             .question-text {
               font-size: 14px;
               font-weight: $font-weight-semibold;
@@ -190,7 +224,7 @@
 
           .faq-answer-panel {
             padding: 0 20px 16px;
-            background: #FAFBFD;
+            background: $bg-light;
             font-size: 13.5px;
             color: $text-secondary;
             line-height: 1.6;

@@ -20,8 +20,8 @@
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.5px;
-        color: #b91c1c;
-        background: #fee2e2;
+        color: $error-text;
+        background: $error-bg;
         padding: 2px 8px;
         border-radius: $radius-pill;
       }
@@ -78,8 +78,8 @@
         .store-geo-tag {
           font-size: 10px;
           font-family: monospace;
-          color: #4b5563;
-          background: #f3f4f6;
+          color: $text-secondary;
+          background: $surface-secondary;
           padding: 2px 6px;
           border-radius: 4px;
           display: inline-block;

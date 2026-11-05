@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { TbX as X, TbPlus as Plus, TbMinus as Minus, TbTrash as Trash2, TbShoppingBag as ShoppingBag, TbArrowRight as ArrowRight, TbShieldCheck as ShieldCheck, TbBolt as Zap, TbPhotoOff as ImageOff } from 'react-icons/tb';
+import { assetUrl } from '@/utils/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import './CartDrawer.scss';
 import { Button } from '@/components/ui';
@@ -111,7 +112,13 @@ export const CartDrawer = () => {
               <div className="cart-items-scroll">
                 {items.map((item) => (
                   <div key={item._id || item.id} className="cart-item-row">
-                    <img src={item.imageUrl || item.image} alt={item.name} className="item-thumb" />
+                    {item.imageUrl ? (
+                      <img src={assetUrl(item.imageUrl)} alt={item.name} className="item-thumb" />
+                    ) : (
+                      <div className="item-thumb" role="img" aria-label="Image Not Available" title="Image Not Available" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}>
+                        <ImageOff size={20} />
+                      </div>
+                    )}
 
                     <div className="item-details">
                       <div className="item-name">{item.name}</div>

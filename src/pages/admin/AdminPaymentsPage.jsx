@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard } from 'lucide-react';
+import { TbCreditCard as CreditCard } from 'react-icons/tb';
 import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useToast } from '@/context/ToastContext';

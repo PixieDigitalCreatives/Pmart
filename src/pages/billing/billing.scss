@@ -1,0 +1,134 @@
+// Invoice document shown on screen and printed (A4 or 80 mm receipt).
+
+.invoice-paper {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-xl;
+  padding: 24px;
+  max-width: 860px;
+  font-size: $font-size-sm;
+  color: $text-primary;
+
+  &--receipt {
+    max-width: 320px;
+    padding: 12px;
+    font-size: 12px;
+
+    .hide-receipt {
+      display: none;
+    }
+
+    .invoice-head {
+      flex-direction: column;
+    }
+
+    .invoice-meta {
+      text-align: left;
+    }
+  }
+}
+
+.invoice-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid $border-color;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+}
+
+.invoice-seller {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-extrabold;
+}
+
+.invoice-meta {
+  text-align: right;
+}
+
+.invoice-title {
+  font-weight: $font-weight-extrabold;
+  letter-spacing: 0.04em;
+}
+
+.invoice-billto {
+  margin-bottom: 10px;
+}
+
+.invoice-lines {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+
+  th {
+    text-align: left;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    color: $text-secondary;
+    border-bottom: 1px solid $border-color;
+    padding: 6px 4px;
+  }
+
+  td {
+    padding: 6px 4px;
+    border-bottom: 1px solid $border-light;
+    vertical-align: top;
+  }
+
+  th.num,
+  td.num {
+    text-align: right;
+  }
+}
+
+.invoice-totals {
+  max-width: 320px;
+  margin-left: auto;
+}
+
+.invoice-payments,
+.invoice-note {
+  margin-top: 12px;
+  font-size: $font-size-xs;
+  display: grid;
+  gap: 2px;
+}
+
+.invoice-footer {
+  margin-top: 16px;
+  text-align: center;
+  font-style: italic;
+  color: $text-muted;
+}
+
+@media print {
+  .admin-sidebar,
+  .admin-topbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .admin-main-container,
+  .admin-content-view {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-paper {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+  }
+
+  .invoice-paper--receipt {
+    width: 72mm;
+  }
+}
+
+// Delete invoice (admin): a neutral secondary button that turns the error colour on hover, as on the Products list.
+.btn.invoice-delete-btn:hover:not(:disabled) {
+  color: $error-text;
+  border-color: $error-border;
+  background: $error-bg;
+}

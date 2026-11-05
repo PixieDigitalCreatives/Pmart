@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Users, Bike, Shield, Plus, Search, KeyRound, Link as LinkIcon } from 'lucide-react';
+import { TbUsers as Users, TbMotorbike as Bike, TbShield as Shield, TbPlus as Plus, TbSearch as Search, TbKey as KeyRound, TbLink as LinkIcon } from 'react-icons/tb';
 import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { RiderFormModal } from '@/components/admin/RiderFormModal';
 import { StaffFormModal, ActivationLink } from '@/components/admin/StaffFormModal';
-import { PageHeader, StatusBadge, Button, EmptyState, Input, Modal, FormField, LoadingState } from '@/components/ui';
+import { PageHeader, StatusBadge, Button, EmptyState, Input, PasswordInput, Modal, FormField, LoadingState } from '@/components/ui';
 
 const RIDER_TONE = { AVAILABLE: 'success', BUSY: 'warning', OFFLINE: 'neutral' };
 const RIDER_LABEL = { AVAILABLE: 'Online', BUSY: 'Delivering', OFFLINE: 'Offline' };
@@ -231,7 +231,7 @@ const RidersTab = ({ canManage }) => {
 
       <Modal isOpen={Boolean(resetFor)} onClose={() => setResetFor(null)} title={`Reset password for ${resetFor?.name || ''}`}>
         <FormField label="Temporary password" htmlFor="reset-pass" hint="The rider must change it at next sign-in">
-          <Input id="reset-pass" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+          <PasswordInput id="reset-pass" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
         </FormField>
         <div className="actions-row" style={{ justifyContent: 'flex-end' }}>
           <Button variant="secondary" onClick={() => setResetFor(null)}>

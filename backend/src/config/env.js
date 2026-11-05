@@ -41,46 +41,69 @@ const envSchema = z.object({
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   MAPTILER_API_KEY: z.string().optional(),
   MARG_INTEGRATION_ENABLED: z.string().default('false').transform((v) => v === 'true'),
-  OSRM_CACHE_TTL: z.string().default('3600').transform(Number)
+  OSRM_CACHE_TTL: z.string().default('3600').transform(Number),
+  // Barcode lookups in Open Food/Beauty/Products Facts for product details and candidate photos.
+  PRODUCT_LOOKUP_ENABLED: z.string().default('true').transform((v) => v !== 'false'),
+  // Those services ask for an identifying User-Agent with a contact address.
+  PRODUCT_LOOKUP_USER_AGENT: z.string().default('PMart-Inventory/1.0 (store inventory; contact: admin@pmart.local)')
 });
 
 const parsed = envSchema.safeParse(process.env);
 
-if (!parsed.success) {
-  logger.error(`Invalid environment variables: ${JSON.stringify(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`))}`);
+function exitWithIssues(issues) {
+  logger.error(`Invalid environment variables: ${JSON.stringify(issues)}`);
   process.exit(1);
+}
+
+if (!parsed.success) {
+  exitWithIssues(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`));
 }
 
 const env = parsed.data;
 
 env.allowedOrigins = env.ALLOWED_ORIGINS
-  ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean)
   : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+// Production accepts only exact origins. The API answers credentialed CORS requests, so a wildcard such as
+// https://*.vercel.app would let any site on that shared host read responses for a signed-in user.
+if (env.NODE_ENV === 'production') {
+  const issues = [];
+  if (!env.ALLOWED_ORIGINS) issues.push('ALLOWED_ORIGINS: required in production (the web app origin, e.g. https://pmart.example.com)');
+  env.allowedOrigins
+    .filter((o) => o.includes('*'))
+    .forEach((o) => issues.push(`ALLOWED_ORIGINS: wildcard "${o}" is not allowed in production; list each origin exactly`));
+  env.allowedOrigins
+    .filter((o) => !o.includes('*') && !/^https:\/\/[^/\s]+$/i.test(o))
+    .forEach((o) => issues.push(`ALLOWED_ORIGINS: "${o}" must be an https origin without a path`));
+  if (issues.length) exitWithIssues(issues);
+}
+
+// Default to a first-party cookie: the web app reaches the API through a same-site proxy (Vercel rewrite).
+env.cookieSameSite = env.COOKIE_SAME_SITE || 'strict';
+if (env.NODE_ENV === 'production' && env.cookieSameSite === 'none') {
+  logger.warn('COOKIE_SAME_SITE=none: the refresh cookie is sent on cross-site requests. Use strict with a same-site proxy unless the web app must call the API on another site.');
+}
 
 // localhost or any 127.x.x.x loopback address (separate loopback hosts give separate browser sessions in testing).
 const LOCAL_DEV_ORIGIN = /^http:\/\/(localhost|127(\.\d{1,3}){3})(:\d+)?$/;
 
 /**
- * Whether a browser Origin may call the API. Outside production any localhost port is accepted
- * so the Vite dev server and previews work without listing every port in ALLOWED_ORIGINS.
+ * Whether a browser Origin may call the API. Production: exact ALLOWED_ORIGINS only.
+ * Outside production any localhost port is accepted, and ALLOWED_ORIGINS may use `*` patterns.
  */
 env.isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  if (env.allowedOrigins.includes('*') || env.allowedOrigins.includes(origin)) return true;
-  if (env.NODE_ENV !== 'production' && LOCAL_DEV_ORIGIN.test(origin)) return true;
+  if (env.allowedOrigins.includes(origin)) return true;
+  if (env.NODE_ENV === 'production') return false;
+  if (env.allowedOrigins.includes('*') || LOCAL_DEV_ORIGIN.test(origin)) return true;
 
-  // Wildcard patterns in ALLOWED_ORIGINS (e.g. https://*.vercel.app)
   for (const pattern of env.allowedOrigins) {
     if (pattern.includes('*')) {
-      const escaped = pattern.replace(/[.+?^()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-      if (new RegExp('^' + escaped + '$', 'i').test(origin)) return true;
+      const escaped = pattern.replace(/[.+?^()|[\]\\]/g, '\\$&').replace(/\*/g, '[a-z0-9-]*');
+      if (new RegExp(`^${escaped}$`, 'i').test(origin)) return true;
     }
   }
-
-  // Allow Vercel and Netlify preview and production deployments
-  if (/^https:\/\/([a-z0-9-]+\.)*vercel\.app(:[0-9]+)?$/i.test(origin)) return true;
-  if (/^https:\/\/([a-z0-9-]+\.)*netlify\.app(:[0-9]+)?$/i.test(origin)) return true;
-
   return false;
 };
 

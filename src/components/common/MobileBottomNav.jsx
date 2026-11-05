@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, LayoutGrid, Search, Package, User } from 'lucide-react';
+import { TbHome as Home, TbLayoutGrid as LayoutGrid, TbSearch as Search, TbPackage as Package, TbUser as User } from 'react-icons/tb';
 import './MobileBottomNav.scss';
 
 export const MobileBottomNav = () => {

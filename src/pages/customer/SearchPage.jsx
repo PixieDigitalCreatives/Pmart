@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';
 import { ProductCard } from '@/components/product/ProductCard';
-import { SlidersHorizontal, SearchX } from 'lucide-react';
+import { TbAdjustmentsHorizontal as SlidersHorizontal, TbSearchOff as SearchX } from 'react-icons/tb';
 import { Button, Select, EmptyState, LoadingState } from '@/components/ui';
 import './SearchPage.scss';
 import { plural } from '@/utils/plural';

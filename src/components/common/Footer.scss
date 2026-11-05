@@ -1,24 +1,56 @@
+// Footer: charcoal with red waves rising from the bottom corners (the storefront mockup of 2026-11-05).
+// CustomerLayout keeps it at the bottom of the window on short pages.
 .pmart-footer {
-  background: $white;
-  border-top: 1px solid $border-color;
+  position: relative;
+  overflow: hidden;
   margin-top: 48px;
+  background: linear-gradient(160deg, #15171D 0%, $charcoal-black 55%, #1A1013 100%);
+  color: $white;
+
+  // Red waves: two soft ellipses clipped by the footer's bottom corners.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+  }
+
+  &::before {
+    left: -12%;
+    bottom: -62%;
+    width: 46%;
+    height: 90%;
+    background: radial-gradient(ellipse at 40% 30%, rgba(242, 13, 24, 0.55) 0%, rgba(150, 8, 16, 0.35) 45%, rgba(150, 8, 16, 0) 72%);
+  }
+
+  &::after {
+    right: -14%;
+    bottom: -58%;
+    width: 44%;
+    height: 95%;
+    background: radial-gradient(ellipse at 60% 30%, rgba(242, 13, 24, 0.6) 0%, rgba(150, 8, 16, 0.35) 45%, rgba(150, 8, 16, 0) 72%);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 
   @include mobile {
     margin-bottom: $mobile-bottom-nav-height; // space for bottom nav
   }
 
-
-
   .footer-main {
-    padding: 48px 0 32px;
+    padding: 40px 0 44px;
 
     @include mobile {
-      padding: 32px 0 24px;
+      padding: 32px 0 28px;
     }
 
     .footer-cols-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1.2fr;
+      grid-template-columns: 1.6fr 1fr 1fr 1.1fr;
       gap: 40px;
 
       @include tablet {
@@ -34,7 +66,8 @@
       .footer-brand-col {
         .footer-logo-link {
           display: inline-block;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
+          @include logo-chip(6px);
 
           .footer-logo {
             height: 44px;
@@ -43,55 +76,71 @@
         }
 
         .brand-tagline {
-          font-size: 13.5px;
-          color: $text-secondary;
+          font-size: 15px;
+          color: $on-dark-body;
           line-height: 1.6;
           max-width: 320px;
           margin-bottom: 18px;
         }
 
         .brand-legal-badge {
+          display: inline-flex;
           font-size: 12px;
-          color: $text-muted;
+          color: $on-dark-muted;
+          padding: 5px 10px;
+          border-radius: $radius-pill;
+          background: $on-dark-fill;
+          border: 1px solid $on-dark-line;
         }
       }
 
       .footer-links-col {
+        min-width: 0;
+
         .col-heading {
-          font-size: 14px;
+          font-family: $font-family-display;
+          font-size: 18px;
           font-weight: $font-weight-bold;
-          color: $charcoal-black;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 16px;
+          color: $on-dark-strong;
+          margin-bottom: 14px;
         }
 
         .links-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
 
-          li a {
-            font-size: 13.5px;
-            color: $text-secondary;
-            transition: color $transition-fast;
+          &.with-icons {
+            gap: 12px;
 
-            &:hover {
-              color: $pmart-red;
+            li a {
+              display: inline-flex;
+              align-items: center;
+              gap: 12px;
+
+              svg {
+                flex-shrink: 0;
+                color: $on-dark-body;
+                transition: color $transition-fast;
+              }
+
+              &:hover svg {
+                color: $pmart-red-on-dark;
+              }
             }
           }
 
-          &.ecosystem-links {
-            .partner-link {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              color: $charcoal-black;
-              font-weight: $font-weight-medium;
+          li a {
+            font-size: 15px;
+            color: $on-dark-body;
+            overflow-wrap: anywhere;
+            transition: color $transition-fast;
 
-              &:hover {
-                color: $pmart-red;
-              }
+            &:hover {
+              color: $white;
+              text-decoration: underline;
+              text-decoration-color: $pmart-red;
+              text-underline-offset: 3px;
             }
           }
         }

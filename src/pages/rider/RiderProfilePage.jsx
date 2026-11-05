@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Bike, KeyRound, Check } from 'lucide-react';
+import { TbLogout as LogOut, TbMotorbike as Bike, TbKey as KeyRound, TbCheck as Check } from 'react-icons/tb';
 import { useAuth } from '@/context/AuthContext';
 import { useRider } from '@/components/rider/RiderLayout';
 import { riderService } from '@/services/riderService';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Power } from 'lucide-react';
+import { TbCircleCheck as CheckCircle2, TbPower as Power } from 'react-icons/tb';
 import { riderService } from '@/services/riderService';
 import { useRider } from '@/components/rider/RiderLayout';
 import { ActiveDeliveryCard } from '@/components/rider/ActiveDeliveryCard';

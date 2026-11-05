@@ -1,0 +1,62 @@
+.image-review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.image-review-product {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  > div:last-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.candidate-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.candidate {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border: 1px dashed $warning-border;
+  border-radius: $radius-md;
+  background: $warning-bg;
+
+  &.is-approved {
+    border-style: solid;
+    border-color: $success-border;
+    background: $success-bg;
+  }
+}
+
+.candidate-img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $radius-sm;
+  flex-shrink: 0;
+
+  &--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+}
+
+.candidate-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

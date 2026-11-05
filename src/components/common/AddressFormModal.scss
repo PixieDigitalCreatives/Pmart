@@ -58,7 +58,7 @@
     
     .error-alert {
       background: rgba(220, 38, 38, 0.1);
-      color: #b91c1c;
+      color: $error-text;
       padding: 12px;
       border-radius: 8px;
       display: flex;
@@ -79,9 +79,9 @@
         justify-content: center;
         gap: 8px;
         padding: 12px;
-        background: #fdf2f2;
+        background: $error-bg;
         color: $pmart-red;
-        border: 1px solid #fbd5d8;
+        border: 1px solid $pmart-red-light-border;
         border-radius: 8px;
         font-weight: 500;
         cursor: pointer;
@@ -203,7 +203,7 @@
             cursor: pointer;
 
             &.active {
-              background: #fdf2f2;
+              background: $error-bg;
               border-color: $pmart-red;
               color: $pmart-red;
             }
@@ -273,7 +273,7 @@
     padding: 10px 15px;
     
     .search-icon {
-      color: #666;
+      color: $text-muted;
       margin-right: 10px;
     }
     
@@ -286,7 +286,7 @@
     }
     
     .loading-icon {
-      color: #999;
+      color: $text-light;
     }
   }
 
@@ -305,12 +305,12 @@
     .search-result-item {
       display: flex;
       padding: 12px 15px;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid $border-light;
       cursor: pointer;
       align-items: flex-start;
       
       &:hover {
-        background-color: #fafafa;
+        background-color: $bg-light;
       }
       
       &:last-child {
@@ -318,7 +318,7 @@
       }
       
       .pin-icon {
-        color: #999;
+        color: $text-light;
         margin-right: 10px;
         margin-top: 2px;
         flex-shrink: 0;
@@ -328,12 +328,12 @@
         strong {
           display: block;
           font-size: 14px;
-          color: #333;
+          color: $text-primary;
           margin-bottom: 2px;
         }
         p {
           font-size: 12px;
-          color: #777;
+          color: $text-muted;
           margin: 0;
         }
       }

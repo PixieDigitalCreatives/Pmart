@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '@/services/adminService';
 import { apiErrorMessage } from '@/services/apiClient';
-import { Modal, FormField, Input, Select, Button } from '@/components/ui';
+import { Modal, FormField, Input, PasswordInput, Select, Button } from '@/components/ui';
 
 const VEHICLES = ['Bike', 'Scooter', 'Electric Bike', 'Bicycle'];
 const EMPTY = { name: '', phone: '', vehicleType: 'Bike', vehicleNumber: '', licenseNumber: '', password: '', confirmPassword: '' };
@@ -75,10 +75,10 @@ export const RiderFormModal = ({ isOpen, rider, onClose, onSaved }) => {
         {!editing && (
           <div className="form-grid">
             <FormField label="Temporary password *" htmlFor="rider-pass" hint="At least 8 characters">
-              <Input id="rider-pass" type="password" value={form.password} onChange={set('password')} autoComplete="new-password" />
+              <PasswordInput id="rider-pass" value={form.password} onChange={set('password')} autoComplete="new-password" />
             </FormField>
             <FormField label="Confirm password *" htmlFor="rider-pass2">
-              <Input id="rider-pass2" type="password" value={form.confirmPassword} onChange={set('confirmPassword')} autoComplete="new-password" />
+              <PasswordInput id="rider-pass2" value={form.confirmPassword} onChange={set('confirmPassword')} autoComplete="new-password" />
             </FormField>
           </div>
         )}

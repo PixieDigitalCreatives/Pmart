@@ -96,7 +96,7 @@
       .phone-link {
         font-size: 12.5px;
         font-weight: $font-weight-semibold;
-        color: #2563eb;
+        color: $info;
         text-decoration: none;
 
         &:hover {
@@ -108,7 +108,7 @@
 
   .track-map-wrapper {
     padding: 16px;
-    background-color: #fafbfc;
+    background-color: $bg-light;
   }
 
   .track-modal-footer {

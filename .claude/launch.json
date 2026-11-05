@@ -5,7 +5,11 @@
       "name": "pmart-web",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["vite", "--port", "6173", "--strictPort"],
-      "env": { "PMART_API_TARGET": "http://localhost:5003" },
+      "env": {
+        "PMART_API_TARGET": "http://localhost:5007",
+        "VITE_API_BASE_URL": "/api",
+        "VITE_SOCKET_URL": "http://localhost:6173"
+      },
       "port": 6173
     },
     {

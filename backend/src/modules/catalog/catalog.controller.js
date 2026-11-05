@@ -1,11 +1,17 @@
 'use strict';
 
-const { Category, Product, slugify } = require('./catalog.model');
+const { Category, Product, ImageStatus, slugify } = require('./catalog.model');
 const { Shop } = require('../shop/shop.model');
 const { Order } = require('../order/order.model');
 const { UserRole } = require('../auth/auth.model');
+const { Settings } = require('../admin/settings.model');
+const { InventoryTransaction, MovementType, RefType } = require('../inventory/inventory.model');
+const { adjustStock } = require('../inventory/inventory.service');
+const { ProductImage, ImageOrigin } = require('../images/image.model');
 const { hasPermission } = require('../../middleware/auth.middleware');
 const { recordAudit, AuditAction } = require('../admin/audit.model');
+const { runInTransaction } = require('../../utils/transaction');
+const { scanVariants } = require('../../utils/barcode');
 const { escapeRegExp } = require('../../utils/regex');
 const { z, assertObjectId, parsePagination, parseSearch } = require('../../utils/validation');
 const { notFound, conflict, forbidden, badRequest } = require('../../utils/http-error');
@@ -26,25 +32,46 @@ const SORTS = {
 const urlOrEmpty = z.string().trim().url('Must be a valid URL').or(z.literal(''));
 const stringMap = z.record(z.string().trim().min(1).max(60), z.string().trim().max(200));
 
+const amount = (label) => z.number().finite().min(0, `${label} cannot be negative`).max(10000000);
+const optionalText = (max) => z.string().trim().max(max).optional().or(z.literal(''));
+
+// Images are not set through this schema: photos go through the verification workflow (modules/images).
 const productSchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(150),
-  category: z.string().min(1, 'Category is required'),
+  category: z.string().optional().or(z.literal('')),
   shop: z.string().optional(),
-  subcategory: z.string().trim().max(60).optional().or(z.literal('')),
-  brand: z.string().trim().max(80).optional().or(z.literal('')),
-  sku: z.string().trim().max(64).optional().or(z.literal('')),
+  subcategory: optionalText(60),
+  brand: optionalText(80),
+  sku: optionalText(64),
   tags: z.array(z.string().trim().toLowerCase().min(1).max(40)).max(20).optional(),
-  description: z.string().trim().max(4000).optional().or(z.literal('')),
-  unit: z.string().trim().min(1, 'Unit is required').max(40),
-  price: z.number().min(0, 'Price cannot be negative').max(1000000),
-  mrp: z.number().min(0).max(1000000).optional().nullable(),
-  stockCount: z.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative').max(1000000),
-  imageUrl: urlOrEmpty.optional(),
-  gallery: z.array(z.string().trim().url()).max(10).optional(),
+  description: optionalText(4000),
+  unit: z.string().trim().max(40).optional().default(''),
+  code: optionalText(64),
+  barcode: optionalText(64),
+  barcodes: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
+  company: optionalText(120),
+  manufacturer: optionalText(120),
+  rackNo: optionalText(40),
+  deal: amount('Deal').optional(),
+  free: amount('Free quantity').optional(),
+  purDeal: amount('Purchase deal').optional(),
+  purFree: amount('Purchase free quantity').optional(),
+  cost: amount('Cost price').optional(),
+  purRate: amount('Purchase rate').optional(),
+  rate: amount('Selling rate').optional().nullable(),
+  // Legacy name for the selling price; treated as the selling rate when `rate` is not sent.
+  price: amount('Price').optional(),
+  mrp: amount('MRP').optional().nullable(),
+  taxRate: z.number().finite().min(0).max(100).optional().nullable(),
+  hsn: optionalText(16),
+  stockCount: z.number().finite().min(0, 'Stock cannot be negative').max(10000000).optional(),
   specifications: stringMap.optional(),
   nutrition: stringMap.optional(),
   isActive: z.boolean().optional()
 });
+
+/** Fields whose changes are written to the audit log with their old and new values. */
+const PRICE_FIELDS = ['rate', 'price', 'mrp', 'cost', 'purRate', 'taxRate'];
 
 const categorySchema = z.object({
   name: z.string().trim().min(1, 'Category name is required').max(80),
@@ -63,6 +90,24 @@ function isShopOwner(user) {
 /** Catalog managers are ADMIN, EMPLOYEE with catalog.manage, or a SHOP_OWNER (own store only). */
 function assertCatalogManager(user) {
   if (!isShopOwner(user) && !hasPermission(user, 'catalog.manage')) throw forbidden('Missing permission: catalog.manage');
+}
+
+/** Product lists and details may also be read by staff with inventory.read (e.g. store managers). */
+function assertCatalogReader(user) {
+  if (!isShopOwner(user) && !hasPermission(user, 'catalog.manage') && !hasPermission(user, 'inventory.read')) {
+    throw forbidden('Missing permission: inventory.read');
+  }
+}
+
+function assertCanDelete(user) {
+  if (!isShopOwner(user) && !hasPermission(user, 'catalog.delete')) throw forbidden('Missing permission: catalog.delete');
+}
+
+/** Stock edits outside restocks/invoices are adjustments: store owners for their store, or inventory.adjust. */
+function assertCanAdjust(user) {
+  if (!isShopOwner(user) && !hasPermission(user, 'inventory.adjust')) {
+    throw forbidden('Stock can only be changed by a restock, an invoice or a stock adjustment (inventory.adjust)', 'STOCK_LOCKED');
+  }
 }
 
 let cachedActiveShopIds = null;
@@ -127,13 +172,43 @@ async function uniqueSlug(Model, base, excludeId) {
 
 function productPayload(data) {
   const out = { ...data };
-  ['subcategory', 'brand', 'sku', 'description', 'imageUrl'].forEach((field) => {
+  ['subcategory', 'sku', 'description', 'hsn', 'code'].forEach((field) => {
     if (out[field] === '') out[field] = undefined;
   });
   if (out.mrp === null) out.mrp = undefined;
+  if (out.taxRate === null) out.taxRate = undefined;
+  // `price` is the legacy selling-price field: it becomes the selling rate, from which price is derived.
+  if (out.rate === undefined && out.price !== undefined) out.rate = out.price;
+  if (out.rate === null) out.rate = undefined;
+  delete out.price;
   delete out.category;
   delete out.shop;
+  delete out.stockCount;
   return out;
+}
+
+/** New codes must not clash with an existing code, ignoring case and surrounding spaces. */
+async function assertCodeFree(shopId, code, excludeId) {
+  if (!code) return;
+  const filter = { shop: shopId, codeKey: code.trim().toUpperCase() };
+  if (excludeId) filter._id = { $ne: excludeId };
+  if (await Product.exists(filter)) throw conflict(`Product code ${code} is already used in this store`, 'CODE_TAKEN');
+}
+
+/** Other products that scan with the same barcode(s), returned as warnings (barcodes may be shared). */
+async function barcodeWarnings(product) {
+  const codes = (product.barcodes || []).flatMap(scanVariants);
+  if (!codes.length) return [];
+  const others = await Product.find({ _id: { $ne: product._id }, barcodes: { $in: codes } }).select('name code barcode').limit(5).lean();
+  return others.map((o) => `Barcode also used by ${o.name}${o.code ? ` (code ${o.code})` : ''}`);
+}
+
+async function resolveCategory(id) {
+  if (!id) return null;
+  assertObjectId(id, 'category id');
+  const category = await Category.findById(id);
+  if (!category) throw notFound('Category not found');
+  return category;
 }
 
 function normalizeBulkProduct(raw) {
@@ -144,6 +219,13 @@ function normalizeBulkProduct(raw) {
   if (out.mrp !== undefined && out.mrp !== '') out.mrp = Number(out.mrp);
   else if (out.mrp === '') out.mrp = undefined;
   if (out.stockCount !== undefined && out.stockCount !== '') out.stockCount = Number(out.stockCount);
+  ['rate', 'cost', 'purRate', 'deal', 'free', 'purDeal', 'purFree', 'taxRate'].forEach((field) => {
+    if (out[field] === '') delete out[field];
+    else if (out[field] !== undefined) out[field] = Number(out[field]);
+  });
+  ['code', 'barcode', 'company', 'manufacturer', 'rackNo', 'unit', 'hsn'].forEach((field) => {
+    if (out[field] !== undefined && out[field] !== null) out[field] = String(out[field]);
+  });
 
   if (typeof out.isActive === 'string') {
     const s = out.isActive.trim().toLowerCase();
@@ -188,6 +270,78 @@ function normalizeBulkProduct(raw) {
 
   return out;
 }
+
+/** Writes OPENING stock-ledger rows for newly created products that start with stock. */
+async function recordOpeningStock(products, user, reason, session) {
+  const rows = products
+    .filter((p) => p.stockCount)
+    .map((p) => ({
+      shop: p.shop,
+      product: p._id,
+      productName: p.name,
+      productCode: p.code,
+      type: MovementType.OPENING,
+      quantity: p.stockCount,
+      stockBefore: 0,
+      stockAfter: p.stockCount,
+      unitCost: p.cost,
+      refType: RefType.PRODUCT,
+      refId: p._id,
+      reason,
+      user: user._id,
+      dedupeKey: `OPEN:${p._id}`
+    }));
+  if (rows.length) await InventoryTransaction.insertMany(rows, { session });
+}
+
+/** Image URLs in a bulk upload become PENDING candidates; they are never shown until someone verifies them. */
+async function addUploadedImageCandidates(created, candidates, user) {
+  const urlBySlug = new Map();
+  candidates.forEach((c) => {
+    const url = String(c.raw?.imageUrl || '').trim();
+    if (/^https:\/\/\S+$/i.test(url)) urlBySlug.set(`${c.shopId}|${c.data.name}`, url);
+  });
+  const docs = created
+    .filter((p) => urlBySlug.has(`${p.shop}|${p.name}`))
+    .map((p) => ({ product: p._id, shop: p.shop, origin: ImageOrigin.URL, matchedBy: 'MANUAL', remoteUrl: urlBySlug.get(`${p.shop}|${p.name}`), uploadedBy: user._id }));
+  if (!docs.length) return;
+  await ProductImage.insertMany(docs);
+  await Product.updateMany({ _id: { $in: docs.map((d) => d.product) }, 'image.status': ImageStatus.NOT_AVAILABLE }, { $set: { 'image.status': ImageStatus.PENDING } });
+}
+
+/** Search and filter options shared by the managed product list. */
+function managedProductFilter(query) {
+  const filter = {};
+  const search = parseSearch(query.search);
+  if (search) {
+    const rx = { $regex: escapeRegExp(search), $options: 'i' };
+    const codePrefix = { codeKey: { $regex: `^${escapeRegExp(search.toUpperCase())}` } };
+    const exact = scanVariants(search);
+    const byField = {
+      name: [{ name: rx }],
+      code: [codePrefix],
+      barcode: [{ barcodes: { $in: exact } }],
+      company: [{ company: rx }],
+      manufacturer: [{ manufacturer: rx }]
+    };
+    filter.$or = byField[query.field] || [{ name: rx }, codePrefix, { barcodes: { $in: exact } }, { sku: rx }, { brand: rx }, { company: rx }, { manufacturer: rx }];
+  }
+  if (query.status === 'active' || query.online === 'listed') filter.isActive = true;
+  if (query.status === 'inactive' || query.online === 'hidden') filter.isActive = false;
+  if (Object.values(ImageStatus).includes(query.image)) filter['image.status'] = query.image;
+  return filter;
+}
+
+const MANAGED_SORTS = {
+  newest: { createdAt: -1, _id: -1 },
+  name: { name: 1, _id: 1 },
+  code: { code: 1, _id: 1 },
+  stock: { stockCount: 1, _id: 1 },
+  '-stock': { stockCount: -1, _id: 1 },
+  price: { price: 1, _id: 1 },
+  '-price': { price: -1, _id: 1 },
+  updated: { updatedAt: -1, _id: -1 }
+};
 
 class CatalogController {
   // ---------- Categories (public) ----------
@@ -387,10 +541,9 @@ class CatalogController {
   // ---------- Catalog management ----------
 
   static async getManagedProducts(req, res) {
-    assertCatalogManager(req.user);
+    assertCatalogReader(req.user);
     const { page, limit, skip } = parsePagination(req.query, { defaultLimit: 50, maxLimit: 100 });
-    const search = parseSearch(req.query.search);
-    const filter = {};
+    const filter = managedProductFilter(req.query);
 
     if (isShopOwner(req.user)) {
       const shop = await Shop.findOne({ owner: req.user._id }).select('_id');
@@ -403,50 +556,65 @@ class CatalogController {
       const category = await Category.findOne({ slug: String(req.query.category) }).select('_id');
       if (category) filter.category = category._id;
     }
-    if (req.query.status === 'active') filter.isActive = true;
-    if (req.query.status === 'inactive') filter.isActive = false;
-    if (req.query.lowStock === 'true') filter.stockCount = { $lte: Number(req.query.threshold) || 10 };
-    if (search) {
-      const rx = { $regex: escapeRegExp(search), $options: 'i' };
-      filter.$or = [{ name: rx }, { sku: rx }, { brand: rx }];
-    }
+    const threshold = Number(req.query.threshold) || (await Settings.getSingleton()).lowStockThreshold;
+    const stock = req.query.lowStock === 'true' ? 'low' : req.query.stock;
+    if (stock === 'low') filter.stockCount = { $gt: 0, $lte: threshold };
+    if (stock === 'out') filter.stockCount = { $lte: 0 };
+    if (stock === 'in') filter.stockCount = { $gt: 0 };
 
+    const sort = MANAGED_SORTS[req.query.sort] || MANAGED_SORTS.newest;
     const [products, totalCount] = await Promise.all([
-      Product.find(filter).populate('category', 'name slug').populate('shop', 'name').sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Product.find(filter).select('-importSource.raw -specifications -nutrition -description').populate('category', 'name slug').populate('shop', 'name').sort(sort).skip(skip).limit(limit),
       Product.countDocuments(filter)
     ]);
-    res.json({ success: true, data: { products, totalCount, page, totalPages: Math.ceil(totalCount / limit) } });
+    res.json({ success: true, data: { products, totalCount, page, totalPages: Math.ceil(totalCount / limit), lowStockThreshold: threshold } });
   }
 
   static async getManagedProduct(req, res) {
-    assertCatalogManager(req.user);
+    assertCatalogReader(req.user);
     const product = await loadManagedProduct(req.user, req.params.id);
     await product.populate([{ path: 'category', select: 'name slug' }, { path: 'shop', select: 'name' }]);
-    res.json({ success: true, data: product });
+    res.json({ success: true, data: product, warnings: await barcodeWarnings(product) });
   }
 
+  /** Creates a product. Opening stock is written to the stock ledger in the same transaction. */
   static async createProduct(req, res) {
     assertCatalogManager(req.user);
     const data = productSchema.parse(req.body);
-    assertObjectId(data.category, 'category id');
-    const category = await Category.findById(data.category);
-    if (!category) throw notFound('Category not found');
+    const category = await resolveCategory(data.category);
     const shopId = await resolveProductShop(req.user, data.shop);
 
     if (data.sku && (await Product.exists({ shop: shopId, sku: data.sku }))) {
       throw conflict('A product with this SKU already exists in this store', 'SKU_TAKEN');
     }
+    await assertCodeFree(shopId, data.code);
 
-    const product = await Product.create({
-      ...productPayload(data),
-      shop: shopId,
-      category: category._id,
-      categorySlug: category.slug,
-      slug: await uniqueSlug(Product, slugify(data.name))
+    const stock = Math.round((data.stockCount || 0) * 1000) / 1000;
+    const slugBase = slugify(data.code ? `${data.name} ${data.code}` : data.name);
+    const slug = await uniqueSlug(Product, slugBase);
+    const product = await runInTransaction(async (session) => {
+      const [created] = await Product.create(
+        [
+          {
+            ...productPayload(data),
+            isActive: data.isActive ?? Boolean(category),
+            shop: shopId,
+            category: category ? category._id : undefined,
+            categorySlug: category ? category.slug : undefined,
+            stockCount: stock,
+            stockValue: Math.round(Math.max(stock, 0) * (data.cost || 0) * 100) / 100,
+            image: { status: ImageStatus.NOT_AVAILABLE },
+            slug
+          }
+        ],
+        { session }
+      );
+      await recordOpeningStock([created], req.user, 'Opening stock entered on the product form', session);
+      return created;
     });
-    await recordAudit(req, AuditAction.CREATE, 'Product', product._id, { name: product.name, sku: product.sku });
+    await recordAudit(req, AuditAction.CREATE, 'Product', product._id, { name: product.name, code: product.code, barcode: product.barcode, openingStock: stock });
     memoryCache.delByPrefix('catalog:');
-    res.status(201).json({ success: true, data: product });
+    res.status(201).json({ success: true, data: product, warnings: await barcodeWarnings(product) });
   }
 
   static async bulkCreateProducts(req, res) {
@@ -509,6 +677,7 @@ class CatalogController {
         const normalized = normalizeBulkProduct(raw);
         const data = productSchema.parse(normalized);
 
+        if (!data.category) throw badRequest('Category is required', 'CATEGORY_REQUIRED');
         let category = categoryMap.get(String(data.category)) || categoryMap.get(String(data.category).toLowerCase().trim());
         if (!category && /^[0-9a-fA-F]{24}$/.test(String(data.category))) {
           category = categoryMap.get(String(data.category));
@@ -601,6 +770,7 @@ class CatalogController {
 
       docsToInsert.push({
         ...productPayload(c.data),
+        stockCount: c.data.stockCount || 0,
         shop: c.shopId,
         category: c.category._id,
         categorySlug: c.category.slug,
@@ -632,6 +802,8 @@ class CatalogController {
       }
 
       if (created.length > 0) {
+        await recordOpeningStock(created, req.user, 'Opening stock from bulk upload');
+        await addUploadedImageCandidates(created, uniqueCandidates, req.user);
         await recordAudit(req, AuditAction.CREATE, 'Product', null, {
           bulk: true,
           count: created.length
@@ -659,24 +831,51 @@ class CatalogController {
     const product = await loadManagedProduct(req.user, req.params.id);
     const data = productSchema.partial().parse(req.body);
 
-    if (data.category) {
-      assertObjectId(data.category, 'category id');
-      const category = await Category.findById(data.category);
-      if (!category) throw notFound('Category not found');
-      product.category = category._id;
-      product.categorySlug = category.slug;
+    if (data.category !== undefined) {
+      const category = await resolveCategory(data.category);
+      product.category = category ? category._id : undefined;
+      product.categorySlug = category ? category.slug : undefined;
     }
     if (data.shop && !isShopOwner(req.user)) product.shop = await resolveProductShop(req.user, data.shop);
     if (data.sku && data.sku !== product.sku && (await Product.exists({ shop: product.shop, sku: data.sku, _id: { $ne: product._id } }))) {
       throw conflict('A product with this SKU already exists in this store', 'SKU_TAKEN');
     }
+    if (data.code && data.code !== product.code) await assertCodeFree(product.shop, data.code, product._id);
+
+    const before = Object.fromEntries(PRICE_FIELDS.map((f) => [f, product[f]]));
+    const stockChange = data.stockCount !== undefined && Math.round(data.stockCount * 1000) / 1000 !== product.stockCount;
+    if (stockChange) assertCanAdjust(req.user);
 
     // Only keys present in the request are applied; '' clears an optional field.
     product.set(productPayload(data));
+    if (data.cost !== undefined) product.stockValue = Math.round(Math.max(product.stockCount, 0) * product.cost * 100) / 100;
     await product.save();
-    await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, { fields: Object.keys(data) });
+
+    if (stockChange) {
+      await runInTransaction((session) =>
+        adjustStock(session, {
+          productId: product._id,
+          mode: 'SET',
+          quantity: data.stockCount,
+          reason: 'Stock edited on the product form',
+          user: req.user,
+          idempotencyKey: `form:${product._id}:${Date.now()}`
+        })
+      );
+    }
+
+    const priceChanges = {};
+    PRICE_FIELDS.forEach((f) => {
+      if ((before[f] ?? null) !== (product[f] ?? null)) priceChanges[f] = { from: before[f] ?? null, to: product[f] ?? null };
+    });
+    await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, {
+      fields: Object.keys(data),
+      ...(Object.keys(priceChanges).length ? { priceChanges } : {}),
+      ...(stockChange ? { stockSetTo: data.stockCount } : {})
+    });
     memoryCache.delByPrefix('catalog:');
-    res.json({ success: true, data: product });
+    const fresh = await Product.findById(product._id);
+    res.json({ success: true, data: fresh, warnings: await barcodeWarnings(fresh) });
   }
 
   static async updateProductStatus(req, res) {
@@ -690,18 +889,19 @@ class CatalogController {
     res.json({ success: true, data: product });
   }
 
-  /** Permanently remove a product from the products collection on delete. */
+  /** Permanently removes a product. Invoices and the stock ledger keep their own copies of its details. */
   static async archiveProduct(req, res) {
-    assertCatalogManager(req.user);
+    assertCanDelete(req.user);
     const product = await loadManagedProduct(req.user, req.params.id);
     await Product.deleteOne({ _id: product._id });
-    await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku });
+    await ProductImage.deleteMany({ product: product._id });
+    await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku, code: product.code, barcode: product.barcode, stock: product.stockCount });
     memoryCache.delByPrefix('catalog:');
     res.json({ success: true, message: 'Product removed from products' });
   }
 
   static async bulkDeleteProducts(req, res) {
-    assertCatalogManager(req.user);
+    assertCanDelete(req.user);
     const { ids } = z
       .object({
         ids: z.array(z.string().min(1)).min(1, 'At least one product id is required').max(100, 'Maximum 100 products per bulk delete')
@@ -715,7 +915,8 @@ class CatalogController {
       try {
         const product = await loadManagedProduct(req.user, id);
         await Product.deleteOne({ _id: product._id });
-        await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku, bulk: true });
+        await ProductImage.deleteMany({ product: product._id });
+        await recordAudit(req, AuditAction.DELETE, 'Product', product._id, { name: product.name, sku: product.sku, code: product.code, bulk: true });
         deletedCount += 1;
       } catch (err) {
         errors.push({ id, message: err.message || 'Could not delete product' });
@@ -743,12 +944,13 @@ class CatalogController {
       .object({
         ids: z.array(z.string().min(1)).min(1, 'At least one product id is required').max(200, 'Maximum 200 products per bulk update'),
         isActive: z.boolean().optional(),
-        stockCount: z.number().int().min(0, 'Stock count must be at least 0').optional()
+        stockCount: z.number().finite().min(0, 'Stock count must be at least 0').optional()
       })
       .refine((data) => data.isActive !== undefined || data.stockCount !== undefined, {
         message: 'At least one field to update (isActive or stockCount) must be provided'
       })
       .parse(req.body);
+    if (stockCount !== undefined) assertCanAdjust(req.user);
 
     let updatedCount = 0;
     const errors = [];
@@ -760,12 +962,14 @@ class CatalogController {
         if (isActive !== undefined) {
           product.isActive = isActive;
           updates.isActive = isActive;
+          await product.save();
         }
-        if (stockCount !== undefined) {
-          product.stockCount = stockCount;
+        if (stockCount !== undefined && product.stockCount !== stockCount) {
+          await runInTransaction((session) =>
+            adjustStock(session, { productId: product._id, mode: 'SET', quantity: stockCount, reason: 'Bulk stock update', user: req.user, idempotencyKey: `bulk:${product._id}:${Date.now()}` })
+          );
           updates.stockCount = stockCount;
         }
-        await product.save();
         await recordAudit(req, AuditAction.UPDATE, 'Product', product._id, { ...updates, bulk: true });
         updatedCount += 1;
       } catch (err) {

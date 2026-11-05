@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Navigation, MapPin } from 'lucide-react';
+import { TbX as X, TbNavigation as Navigation, TbMapPin as MapPin } from 'react-icons/tb';
 import { LiveTrackingMap } from '@/components/tracking/LiveTrackingMap';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { ORDER_STATUS_LABELS } from '@/types/orderTypes';

@@ -96,6 +96,27 @@ describe('staff and permissions', () => {
     expect(login.body.user).toMatchObject({ role: 'EMPLOYEE', permissions: ['orders.read'] });
   });
 
+  it('does not hand a staff manager the activation link of an employee with more permissions', async () => {
+    const admin = await createUser('ADMIN');
+    const manager = await createUser('EMPLOYEE', { permissions: ['employees.manage', 'orders.read'] });
+    const strong = await api().post('/api/admin/employees').set(auth(admin)).send({ name: 'Finance', phone: '9988776601', permissions: ['settings.manage', 'orders.read'] });
+    const weak = await api().post('/api/admin/employees').set(auth(admin)).send({ name: 'Reader', phone: '9988776602', permissions: ['orders.read'] });
+
+    const denied = await api().post(`/api/admin/employees/${strong.body.data.id}/activation-link`).set(auth(manager));
+    expect(denied.status).toBe(403);
+    expect(denied.body.code).toBe('PERMISSION_ESCALATION');
+    expect(denied.body.data).toBeUndefined();
+    // The admin's original link still works (it was not replaced).
+    expect((await api().post('/api/auth/activate').send({ token: strong.body.data.setupToken, password: 'FinPass1234' })).status).toBe(200);
+
+    const allowed = await api().post(`/api/admin/employees/${weak.body.data.id}/activation-link`).set(auth(manager));
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.data.setupToken).toBeTruthy();
+    // An admin may regenerate any pending link.
+    const third = await api().post('/api/admin/employees').set(auth(admin)).send({ name: 'Ops', phone: '9988776603', permissions: ['settings.manage'] });
+    expect((await api().post(`/api/admin/employees/${third.body.data.id}/activation-link`).set(auth(admin))).status).toBe(200);
+  });
+
   it('applies permissions to admin routes', async () => {
     const reader = await createUser('EMPLOYEE', { permissions: ['orders.read'] });
     expect((await api().get('/api/admin/orders').set(auth(reader))).status).toBe(200);

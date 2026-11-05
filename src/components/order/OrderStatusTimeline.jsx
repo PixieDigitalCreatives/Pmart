@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, CircleDot } from 'lucide-react';
+import { TbCheck as Check, TbCircleDot as CircleDot } from 'react-icons/tb';
 import { ORDER_PROGRESSION_STAGES, ORDER_STATUS, getCustomerOrderStatus } from '@/types/orderTypes';
 import './OrderStatusTimeline.scss';
 

@@ -1,25 +1,49 @@
 'use strict';
 
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
-const { env } = require('../../config/env');
 const { User, UserRole, AuthProvider } = require('./auth.model');
-const { hashPassword, verifyPassword, hashToken } = require('../../utils/auth');
+const { Session } = require('./session.model');
+const { signAccessToken } = require('../../utils/jwt');
+const { hashPassword, verifyPassword, hashToken, DUMMY_PASSWORD_HASH, validatePasswordStrength } = require('../../utils/auth');
 const { getFirebaseAuth } = require('../../config/firebase-admin');
 const { HttpError, unauthorized, conflict, badRequest, notFound } = require('../../utils/http-error');
 
 const INVALID_CREDENTIALS = 'Invalid mobile number or password';
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const SESSION_TTL_MS = 7 * 24 * 3600 * 1000; // 7 days
 
 class AuthService {
-  static signAccessToken(userId) {
-    return jwt.sign({ id: String(userId) }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
+  static signAccessToken(userId, tokenVersion = 1) {
+    return signAccessToken(userId, tokenVersion);
   }
 
-  /** Issues a new access/refresh pair and stores only the refresh token's hash. */
-  static async issueSession(user) {
-    const accessToken = this.signAccessToken(user._id);
+  /** Issues a new access/refresh pair and stores the session with family tracking. */
+  static async issueSession(user, req = null, existingFamily = null) {
+    const tokenVersion = user.tokenVersion || 1;
+    const accessToken = this.signAccessToken(user._id, tokenVersion);
     const refreshToken = crypto.randomBytes(40).toString('hex');
-    await User.updateOne({ _id: user._id }, { $set: { refreshTokenHash: hashToken(refreshToken), lastLoginAt: new Date() } });
+    const hashedRefresh = hashToken(refreshToken);
+    const family = existingFamily || crypto.randomUUID();
+
+    try {
+      await Session.create({
+        user: user._id,
+        refreshTokenHash: hashedRefresh,
+        family,
+        userAgent: req?.headers ? req.headers['user-agent'] || '' : '',
+        ip: req?.ip || '',
+        expiresAt: new Date(Date.now() + SESSION_TTL_MS)
+      });
+    } catch {
+      // Non-fatal if session creation encounters transient issue, user record is authoritative backup
+    }
+
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { refreshTokenHash: hashedRefresh, lastLoginAt: new Date() } }
+    );
+
     return { accessToken, refreshToken };
   }
 
@@ -38,30 +62,73 @@ class AuthService {
     };
   }
 
-  static async registerCustomer({ name, phone, password }) {
+  static async registerCustomer({ name, phone, password }, req = null) {
     if (await User.exists({ phone })) {
       throw conflict('This mobile number is already registered. Please sign in.', 'PHONE_TAKEN');
     }
+    const check = validatePasswordStrength(password, phone);
+    if (!check.valid) {
+      throw badRequest(check.message, 'WEAK_PASSWORD');
+    }
+
     const user = await User.create({
       name,
       phone,
       passwordHash: await hashPassword(password),
       role: UserRole.CUSTOMER,
       authProvider: AuthProvider.PHONE,
-      profileComplete: true
+      profileComplete: true,
+      tokenVersion: 1
     });
-    return { user, ...(await this.issueSession(user)) };
+    return { user, ...(await this.issueSession(user, req)) };
   }
 
-  static async login({ phone, password }) {
+  static async login({ phone, password }, req = null) {
     const user = await User.findOne({ phone }).select('+passwordHash');
-    if (!user || !user.passwordHash) throw unauthorized(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
-    if (!(await verifyPassword(password, user.passwordHash))) throw unauthorized(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
+    
+    // Constant-time compare if user does not exist
+    if (!user || !user.passwordHash) {
+      await verifyPassword(password, DUMMY_PASSWORD_HASH);
+      throw unauthorized(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
+    }
+
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingMins = Math.max(1, Math.ceil((user.lockedUntil - Date.now()) / 60000));
+      throw unauthorized(
+        `Account temporarily locked due to too many failed attempts. Try again in ${remainingMins} minute(s).`,
+        'ACCOUNT_LOCKED'
+      );
+    }
+
+    const isMatch = await verifyPassword(password, user.passwordHash);
+    if (!isMatch) {
+      user.failedLogins = (user.failedLogins || 0) + 1;
+      if (user.failedLogins >= MAX_FAILED_ATTEMPTS) {
+        user.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+        await user.save();
+        throw unauthorized(
+          'Account temporarily locked due to too many failed attempts. Try again in 15 minutes.',
+          'ACCOUNT_LOCKED'
+        );
+      }
+      await user.save();
+      throw unauthorized(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
+    }
+
     if (!user.isActive) throw unauthorized('This account has been deactivated', 'ACCOUNT_DEACTIVATED');
-    return { user, ...(await this.issueSession(user)) };
+
+    // Reset lockout counters on success
+    if (user.failedLogins > 0 || user.lockedUntil) {
+      user.failedLogins = 0;
+      user.lockedUntil = null;
+      await user.save();
+    }
+
+    return { user, ...(await this.issueSession(user, req)) };
   }
 
-  static async googleLogin(idToken) {
+  static async googleLogin(idToken, req = null) {
     const firebaseAuth = getFirebaseAuth();
     if (!firebaseAuth) {
       throw new HttpError(503, 'Google sign-in is not configured on this server', 'GOOGLE_NOT_CONFIGURED');
@@ -79,7 +146,6 @@ class AuthService {
 
     let user = await User.findOne({ googleId: uid });
     if (!user && email && decoded.email_verified) {
-      // Link Google to an existing account only when Google has verified the email.
       user = await User.findOne({ email });
       if (user) {
         user.googleId = uid;
@@ -96,19 +162,22 @@ class AuthService {
         name: name || '',
         role: UserRole.CUSTOMER,
         authProvider: AuthProvider.GOOGLE,
-        profileComplete: false
+        profileComplete: false,
+        tokenVersion: 1
       });
     }
 
     if (!user.isActive) throw unauthorized('This account has been deactivated', 'ACCOUNT_DEACTIVATED');
-    return { user, ...(await this.issueSession(user)) };
+    return { user, ...(await this.issueSession(user, req)) };
   }
 
-  /** Google sign-ups finish registration by adding their mobile number and a password. */
   static async completeProfile(userId, { name, phone, password }) {
     if (await User.exists({ phone, _id: { $ne: userId } })) {
       throw conflict('This mobile number is already associated with another account', 'PHONE_TAKEN');
     }
+    const check = validatePasswordStrength(password, phone);
+    if (!check.valid) throw badRequest(check.message, 'WEAK_PASSWORD');
+
     const user = await User.findById(userId);
     if (!user) throw notFound('User not found');
     user.name = name;
@@ -119,28 +188,51 @@ class AuthService {
     return user;
   }
 
-  /** Account activation for staff/riders/shop owners invited with a one-time setup link. */
   static async activateAccount(token, password) {
     const user = await User.findOne({ setupTokenHash: hashToken(token) }).select('+setupTokenExpires');
     if (!user || !user.setupTokenExpires || user.setupTokenExpires < new Date()) {
       throw badRequest('This setup link is invalid or has expired', 'SETUP_TOKEN_INVALID');
     }
+    const check = validatePasswordStrength(password, user.phone);
+    if (!check.valid) throw badRequest(check.message, 'WEAK_PASSWORD');
+
     user.passwordHash = await hashPassword(password);
     user.setupTokenHash = undefined;
     user.setupTokenExpires = undefined;
     user.mustChangePassword = false;
     user.profileComplete = true;
+    user.tokenVersion = (user.tokenVersion || 1) + 1;
     await user.save();
     return user;
   }
 
-  static async refresh(refreshToken) {
-    const user = await User.findOne({ refreshTokenHash: hashToken(refreshToken) });
+  static async refresh(refreshToken, req = null) {
+    const hashed = hashToken(refreshToken);
+    const session = await Session.findOne({ refreshTokenHash: hashed });
+
+    if (session) {
+      if (session.isRevoked) {
+        // Token reuse / theft detected: revoke all sessions in this family immediately!
+        await Session.updateMany({ family: session.family }, { isRevoked: true });
+        throw unauthorized('Session revoked due to token reuse detection', 'REFRESH_REVOKED');
+      }
+
+      session.isRevoked = true;
+      await session.save();
+
+      const user = await User.findById(session.user);
+      if (!user || !user.isActive) throw unauthorized('Invalid refresh token', 'REFRESH_INVALID');
+
+      return { user, ...(await this.issueSession(user, req, session.family)) };
+    }
+
+    // Fallback to User.refreshTokenHash for backwards compatibility
+    const user = await User.findOne({ refreshTokenHash: hashed });
     if (!user || !user.isActive) throw unauthorized('Invalid refresh token', 'REFRESH_INVALID');
-    return { user, ...(await this.issueSession(user)) };
+    return { user, ...(await this.issueSession(user, req)) };
   }
 
-  static async changePassword(userId, currentPassword, newPassword) {
+  static async changePassword(userId, currentPassword, newPassword, req = null) {
     const user = await User.findById(userId).select('+passwordHash');
     if (!user) throw notFound('User not found');
     if (!user.passwordHash || !(await verifyPassword(currentPassword, user.passwordHash))) {
@@ -149,15 +241,95 @@ class AuthService {
     if (currentPassword === newPassword) {
       throw badRequest('New password must be different from the current password', 'PASSWORD_REUSED');
     }
+    const check = validatePasswordStrength(newPassword, user.phone);
+    if (!check.valid) throw badRequest(check.message, 'WEAK_PASSWORD');
+
     user.passwordHash = await hashPassword(newPassword);
     user.mustChangePassword = false;
+    user.passwordChangedAt = new Date();
+    user.tokenVersion = (user.tokenVersion || 1) + 1;
     await user.save();
-    // Rotating the session invalidates every other device's refresh token.
-    return { user, ...(await this.issueSession(user)) };
+
+    // Revoke all existing sessions
+    await Session.updateMany({ user: userId }, { isRevoked: true });
+
+    return { user, ...(await this.issueSession(user, req)) };
   }
 
-  static async logout(userId) {
+  static async logout(userId, refreshToken = null) {
+    if (refreshToken) {
+      await Session.updateOne({ refreshTokenHash: hashToken(refreshToken) }, { isRevoked: true });
+    }
     await User.updateOne({ _id: userId }, { $unset: { refreshTokenHash: 1 } });
+  }
+
+  static async listSessions(userId, currentRefreshToken = null) {
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+    const sessions = await Session.find({
+      user: userId,
+      isRevoked: false,
+      expiresAt: { $gt: new Date() }
+    })
+      .sort({ lastActiveAt: -1 })
+      .lean();
+
+    return sessions.map((s) => ({
+      id: String(s._id),
+      userAgent: s.userAgent,
+      ip: s.ip,
+      lastActiveAt: s.lastActiveAt,
+      createdAt: s.createdAt,
+      isCurrent: Boolean(currentHash && s.refreshTokenHash === currentHash)
+    }));
+  }
+
+  static async revokeOtherSessions(userId, currentRefreshToken = null) {
+    const currentHash = currentRefreshToken ? hashToken(currentRefreshToken) : null;
+    const filter = { user: userId, isRevoked: false };
+    if (currentHash) {
+      filter.refreshTokenHash = { $ne: currentHash };
+    }
+    await Session.updateMany(filter, { isRevoked: true });
+  }
+
+  static async revokeAllSessions(userId) {
+    await Session.updateMany({ user: userId }, { isRevoked: true });
+    await User.updateOne(
+      { _id: userId },
+      { $inc: { tokenVersion: 1 }, $unset: { refreshTokenHash: 1 } }
+    );
+  }
+
+  /** Creates a single-use password reset token for any role (admin-issued or self-service). */
+  static async createPasswordResetToken(userId, ttlMinutes = 60) {
+    const user = await User.findById(userId);
+    if (!user) throw notFound('User not found');
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetTokenHash = hashToken(token);
+    user.resetTokenExpires = new Date(Date.now() + ttlMinutes * 60 * 1000);
+    await user.save();
+    return { token, expiresAt: user.resetTokenExpires };
+  }
+
+  static async resetPasswordWithToken(token, newPassword) {
+    const user = await User.findOne({ resetTokenHash: hashToken(token) }).select('+passwordHash +resetTokenExpires');
+    if (!user || !user.resetTokenExpires || user.resetTokenExpires < new Date()) {
+      throw badRequest('This password reset link is invalid or has expired', 'RESET_TOKEN_INVALID');
+    }
+    const check = validatePasswordStrength(newPassword, user.phone);
+    if (!check.valid) throw badRequest(check.message, 'WEAK_PASSWORD');
+
+    user.passwordHash = await hashPassword(newPassword);
+    user.resetTokenHash = undefined;
+    user.resetTokenExpires = undefined;
+    user.failedLogins = 0;
+    user.lockedUntil = null;
+    user.tokenVersion = (user.tokenVersion || 1) + 1;
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    await Session.updateMany({ user: user._id }, { isRevoked: true });
+    return user;
   }
 
   /** Creates a one-time setup token; returns the plain token (only its hash is stored). */

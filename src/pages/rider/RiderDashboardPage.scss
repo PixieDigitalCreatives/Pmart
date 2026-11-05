@@ -6,11 +6,8 @@
     margin-bottom: 20px;
 
     .stat-card {
-      background: $white;
-      border: 1px solid $border-color;
-      border-radius: $radius-xl;
+      @include stat-card-surface;
       padding: 16px;
-      box-shadow: $shadow-xs;
 
       .stat-label {
         font-size: 10px;
@@ -154,7 +151,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #FAFBFD;
+        background: $bg-light;
         border: 1px solid $border-light;
         border-radius: $radius-lg;
         padding: 12px 14px;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, ShieldCheck } from 'lucide-react';
+import { TbCopy as Copy, TbCheck as Check, TbShieldCheck as ShieldCheck } from 'react-icons/tb';
 import './DeliveryOTP.scss';
 import { Button } from '@/components/ui';
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { TbChartBar as BarChart3 } from 'react-icons/tb';
 import { shopService } from '@/services/shopService';
 import { PageHeader, LoadingState, EmptyState } from '@/components/ui';
 import { plural } from '@/utils/plural';

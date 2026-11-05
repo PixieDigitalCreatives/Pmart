@@ -21,7 +21,7 @@
 
   // Hero ETA Banner
   .order-eta-hero {
-    background: linear-gradient(135deg, #111318 0%, #1E232B 100%);
+    @include brand-surface(10% 0%);
     border-radius: $radius-2xl;
     padding: 32px 36px;
     display: flex;
@@ -46,7 +46,7 @@
         font-family: monospace;
         font-size: 12px;
         font-weight: $font-weight-bold;
-        color: #FF5A62;
+        color: $pmart-red-on-dark;
         letter-spacing: 0.05em;
         background: rgba(242, 13, 24, 0.2);
         padding: 3px 8px;
@@ -70,7 +70,7 @@
 
       .eta-subtext {
         font-size: 13.5px;
-        color: #D1D5DB;
+        color: $border-dark;
         line-height: 1.5;
       }
     }
@@ -196,7 +196,7 @@
 
             .rider-rating {
               font-size: 11.5px;
-              color: #D97706;
+              color: $warning-strong;
               font-weight: $font-weight-bold;
               margin-top: 2px;
             }
@@ -225,7 +225,7 @@
 
         .map-view-box {
           height: 220px;
-          background: #EEF2F6;
+          background: $surface-secondary;
           position: relative;
           overflow: hidden;
 
@@ -308,7 +308,7 @@
           align-items: center;
           gap: 6px;
           padding: 10px 16px;
-          background: #FAFBFD;
+          background: $bg-light;
           border-top: 1px solid $border-light;
           font-size: 12.5px;
           color: $text-secondary;
@@ -350,7 +350,7 @@
               height: 44px;
               border-radius: $radius-sm;
               object-fit: cover;
-              background: #FAFBFD;
+              background: $bg-light;
               border: 1px solid $border-light;
             }
 
@@ -495,13 +495,13 @@
           font-size: 11.5px;
 
           &.status-pending {
-            background-color: #fef3c7;
-            color: #b45309;
+            background-color: $warning-bg;
+            color: $warning-strong;
           }
 
           &.status-collected {
-            background-color: #dcfce7;
-            color: #15803d;
+            background-color: $leaf-green-light;
+            color: $leaf-green;
           }
         }
       }
@@ -510,8 +510,8 @@
 
   // Rider Arrived Notification Card
   .rider-arrived-alert-card {
-    background: #ffffff;
-    border: 2px solid #22c55e;
+    background: $white;
+    border: 2px solid $success;
     border-radius: $radius-xl;
     padding: 24px;
     margin-bottom: 28px;
@@ -531,8 +531,8 @@
         width: 50px;
         height: 50px;
         border-radius: 50%;
-        background-color: #dcfce7;
-        color: #16a34a;
+        background-color: $leaf-green-light;
+        color: $leaf-green;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -545,8 +545,8 @@
           font-size: 10.5px;
           font-weight: 800;
           letter-spacing: 0.06em;
-          color: #15803d;
-          background-color: #dcfce7;
+          color: $leaf-green;
+          background-color: $leaf-green-light;
           padding: 3px 8px;
           border-radius: $radius-pill;
           margin-bottom: 4px;
@@ -572,8 +572,8 @@
     }
 
     .cash-payment-readiness-box {
-      background: #fffbeb;
-      border: 1px solid #fef3c7;
+      background: $warning-bg;
+      border: 1px solid $warning-bg;
       border-radius: $radius-lg;
       padding: 16px;
       margin-bottom: 14px;
@@ -587,8 +587,8 @@
           width: 44px;
           height: 44px;
           border-radius: $radius-md;
-          background: #fde68a;
-          color: #b45309;
+          background: $warning-border;
+          color: $warning-strong;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -598,7 +598,7 @@
         .cash-callout-title {
           font-size: 16px;
           font-weight: 700;
-          color: #92400e;
+          color: $warning-text;
           margin-bottom: 4px;
 
           .highlight-amount {
@@ -613,15 +613,15 @@
           align-items: center;
           gap: 8px;
           font-size: 12.5px;
-          color: #78350f;
+          color: $warning-text;
           flex-wrap: wrap;
 
           .text-amber {
-            color: #b45309;
+            color: $warning-strong;
           }
 
           .text-green {
-            color: #15803d;
+            color: $leaf-green;
           }
         }
       }
@@ -638,7 +638,7 @@
       border-radius: $radius-md;
 
       .key-icon {
-        color: #d97706;
+        color: $warning-strong;
         flex-shrink: 0;
       }
     }
@@ -649,7 +649,7 @@
     align-items: center;
     gap: 8px;
     background: rgba(255, 255, 255, 0.1);
-    color: #f3f4f6;
+    color: $surface-secondary;
     padding: 6px 12px;
     border-radius: $radius-pill;
     font-size: 12.5px;
@@ -696,16 +696,16 @@
         align-items: center;
         justify-content: space-between;
         padding: 12px 16px;
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
+        background: $bg-light;
+        border: 1px solid $border-color;
         border-radius: $radius-lg;
         cursor: pointer;
         transition: all $transition-fast;
         margin-bottom: 16px;
 
         &:hover {
-          background: #F1F5F9;
-          border-color: #CBD5E1;
+          background: $surface-secondary;
+          border-color: $border-dark;
         }
 
         .trigger-left {
@@ -762,14 +762,14 @@
           align-items: center;
           gap: 14px;
           padding: 10px 14px;
-          background: #FFFFFF;
-          border: 1px solid #F1F5F9;
+          background: $white;
+          border: 1px solid $surface-secondary;
           border-radius: $radius-lg;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
           transition: border-color $transition-fast, box-shadow $transition-fast;
 
           &:hover {
-            border-color: #E2E8F0;
+            border-color: $border-color;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
           }
 
@@ -779,8 +779,8 @@
             min-width: 52px;
             max-width: 52px;
             border-radius: $radius-md;
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
+            background: $bg-light;
+            border: 1px solid $border-color;
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -866,11 +866,11 @@
         }
 
         .payment-status-badge-container {
-          background: #F8FAFC;
+          background: $bg-light;
           border-radius: $radius-lg;
           padding: 12px 16px;
           margin-top: 12px;
-          border: 1px solid #E2E8F0;
+          border: 1px solid $border-color;
 
           .cod-details-row {
             display: flex;
@@ -882,7 +882,7 @@
             gap: 8px;
 
             .cod-title {
-              color: #475569;
+              color: $text-secondary;
             }
 
             .cod-amount {
@@ -895,13 +895,13 @@
               font-size: 11.5px;
 
               &.status-pending {
-                background: #FEF3C7;
-                color: #92400E;
+                background: $warning-bg;
+                color: $warning-text;
               }
 
               &.status-collected {
-                background: #DCFCE7;
-                color: #15803D;
+                background: $leaf-green-light;
+                color: $leaf-green;
               }
             }
           }

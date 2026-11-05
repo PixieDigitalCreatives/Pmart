@@ -51,13 +51,13 @@
       }
 
       &.variant-warning {
-        background-color: rgba(#d97706, 0.12);
-        color: #d97706;
+        background-color: rgba($warning-strong, 0.12);
+        color: $warning-strong;
       }
 
       &.variant-primary {
-        background-color: rgba(#2563eb, 0.1);
-        color: #2563eb;
+        background-color: rgba($info, 0.1);
+        color: $info;
       }
     }
 

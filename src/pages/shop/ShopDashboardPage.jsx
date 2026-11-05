@@ -5,7 +5,7 @@ import { orderService } from '@/services/orderService';
 import { openSocket } from '@/services/socket';
 import { useMyShop } from '@/components/shop/ShopLayout';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
-import { ChevronRight, Eye, PackageOpen, AlertTriangle, Plus } from 'lucide-react';
+import { TbChevronRight as ChevronRight, TbEye as Eye, TbBox as PackageOpen, TbAlertTriangle as AlertTriangle, TbPlus as Plus } from 'react-icons/tb';
 import { PageHeader, Button, StatusBadge, Card, LoadingState, EmptyState } from '@/components/ui';
 import './ShopDashboardPage.scss';
 

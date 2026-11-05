@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Bike } from 'lucide-react';
+import { TbPhone as Phone, TbMotorbike as Bike } from 'react-icons/tb';
 import { ORDER_STATUS_LABELS } from '@/types/orderTypes';
 import './RiderInfoCard.scss';
 

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, homeForRole } from '@/context/AuthContext';
 
 /**
- * Restricts a route to the given roles and (for staff) an optional permission.
+ * Restricts a route to the given roles and (for staff) an optional permission; an array means any one of them.
  * Also routes users through mandatory steps: initial password change and Google sign-up completion.
  */
 export const RoleGuard = ({ allowedRoles = [], permission, children }) => {
@@ -28,7 +28,8 @@ export const RoleGuard = ({ allowedRoles = [], permission, children }) => {
     return <Navigate to={homeForRole(role)} replace />;
   }
 
-  if (permission && (role === 'ADMIN' || role === 'EMPLOYEE') && !can(permission)) {
+  const permitted = Array.isArray(permission) ? permission.some(can) : can(permission);
+  if (permission && (role === 'ADMIN' || role === 'EMPLOYEE') && !permitted) {
     return <Navigate to="/admin" replace state={{ denied: permission }} />;
   }
 

@@ -309,7 +309,7 @@
       padding: 10px 14px;
       border-radius: $radius-lg;
       background-color: rgba(220, 38, 38, 0.06);
-      color: #b91c1c;
+      color: $error-text;
       font-size: 12.5px;
 
       svg {
@@ -335,7 +335,7 @@
       transition: background-color $transition-fast;
 
       &:hover {
-        background-color: #fdf2f2;
+        background-color: $error-bg;
       }
     }
   }

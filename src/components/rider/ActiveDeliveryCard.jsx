@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Navigation, Phone, ArrowRight } from 'lucide-react';
+import { TbNavigation as Navigation, TbPhone as Phone, TbArrowRight as ArrowRight } from 'react-icons/tb';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
 import { getFullAddressString } from '@/utils/addressUtils';
 import { Button, StatusBadge } from '@/components/ui';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HelpCircle, PhoneCall, Mail, Package, KeyRound, Banknote, MapPin } from 'lucide-react';
+import { TbHelpCircle as HelpCircle, TbPhoneCall as PhoneCall, TbMail as Mail, TbPackage as Package, TbKey as KeyRound, TbCash as Banknote, TbMapPin as MapPin } from 'react-icons/tb';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui';
 import './HelpPage.scss';

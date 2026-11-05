@@ -18,15 +18,17 @@ The file is always read from `backend/.env`, whatever the working directory; rea
 | `JWT_EXPIRES_IN` | no | `1h` | Access-token lifetime |
 | `REFRESH_TOKEN_TTL_DAYS` | no | `7` | Refresh-cookie lifetime |
 | `OTP_LENGTH` | no | `4` | Delivery code length, `4` or `6`. The apps read it from `/api/settings/public` |
-| `ALLOWED_ORIGINS` | production | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated browser origins for CORS and Socket.IO. Outside production any localhost / 127.x.x.x port is also allowed |
-| `COOKIE_SAME_SITE` | no | `none` (prod) / `strict` (dev) | Sign-in cookie SameSite: `strict`, `lax` or `none`. With the recommended Vercel rewrite (browser only talks to the Vercel domain) use `strict`. `none` is only for a browser calling the API on another site directly, which breaks wherever third-party cookies are blocked (Safari, and `*.vercel.app` / `*.onrender.com` are always different sites) |
-| `TRUST_PROXY` | no | `1` | Number of reverse proxies in front of the API, used to find the client IP for rate limits. Render alone = `1`; Vercel rewrite → Render = `2` |
+| `ALLOWED_ORIGINS` | **production** | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated browser origins for CORS and Socket.IO (a trailing `/` is ignored). **Production:** required, exact `https://` origins only — the API refuses to start if it is missing or contains `*` or an `http://` origin, and no `*.vercel.app` / `*.netlify.app` origin is accepted unless listed exactly (since 2026-11-05; see DECISIONS §15). Outside production any localhost / 127.x.x.x port is also allowed, and one-label `*` patterns work (e.g. `https://pmart-*.example.com`) |
+| `COOKIE_SAME_SITE` | no | `strict` | Sign-in cookie SameSite: `strict`, `lax` or `none`. The default became `strict` everywhere on 2026-11-05 (it used to be `none` in production when unset). With the recommended Vercel rewrite (browser only talks to the Vercel domain) keep `strict`. `none` is only for a browser calling the API on another site directly; the API logs a warning at start-up in production, and it breaks wherever third-party cookies are blocked (Safari, and `*.vercel.app` / `*.onrender.com` are always different sites) |
+| `TRUST_PROXY` | no | `1` | Number of reverse proxies in front of the API, used to find the client IP for rate limits. Render alone = `1`; Vercel rewrite → Render = `2`. With `2`, a client calling the Render URL directly can choose its own IP (`X-Forwarded-For`), so limits that protect accounts and money are keyed on the phone number or signed-in user instead (SECURITY.md) |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | no | — | Firebase Admin service account. All three are needed for Google sign-in; without them `/auth/google` returns 503 and the web app hides the Google button |
 | `MAPTILER_API_KEY` | no | — | Server-side reverse geocoding for `/addresses/reverse-geocode` (503 without it; the web app falls back to its own key) |
 | `OSRM_CACHE_TTL` | no | `3600` | Seconds to cache road routes |
 | `MARG_INTEGRATION_ENABLED` | no | `false` | MARG ERP stub — blocked (no API specification), keep `false` |
+| `PRODUCT_LOOKUP_ENABLED` | no | `true` | `false` turns off barcode lookups in Open Food / Beauty / Products Facts (product details for unknown barcodes and candidate photos) |
+| `PRODUCT_LOOKUP_USER_AGENT` | no | `PMart-Inventory/1.0 (store inventory; contact: admin@pmart.local)` | User-Agent for those lookups. The services ask for an app name and a **real contact e-mail** — set one in production |
 | `LOG_LEVEL` | no | `info` | Winston log level |
-| `RATE_LIMIT_IN_DEV` | no | — | `true` enables rate limits in development/test (they are always on in production) |
+| `RATE_LIMIT_IN_DEV` | no | — | `true` enables rate limits in development/test (they are always on in production). Read on every request, so tests can switch it on for one test |
 | `ADMIN_PASSWORD` | no | — | Only read by `npm run create-admin`; prompts when unset |
 | `PMART_SKIP_DOTENV` | no | — | `1` skips reading `backend/.env` (used by tests) |
 

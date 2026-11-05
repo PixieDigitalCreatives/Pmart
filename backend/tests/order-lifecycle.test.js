@@ -4,6 +4,7 @@ const { startDb, stopDb, clearDb, api, auth, createUser, createRider, createShop
 const { Product } = require('../src/modules/catalog/catalog.model');
 const { Order } = require('../src/modules/order/order.model');
 const { RiderProfile } = require('../src/modules/rider/rider.model');
+const { AuditLog } = require('../src/modules/admin/audit.model');
 
 beforeAll(startDb);
 afterAll(stopDb);
@@ -166,6 +167,30 @@ describe('guards', () => {
     expect((await api().get(`/api/orders/${id}`).set(auth(reader))).status).toBe(200);
     expect((await setStatus(reader, id, 'ACCEPTED')).status).toBe(403);
     expect((await setStatus(manager, id, 'ACCEPTED')).status).toBe(200);
+  });
+
+  it('makes staff give a reason for payment-status overrides, audits them, and never refunds uncollected cash', async () => {
+    const m = await marketplace();
+    const id = (await placeOrder(m.customer, m.address, [[m.product, 1]])).body.data._id;
+    const manager = await createUser('EMPLOYEE', { permissions: ['orders.read', 'orders.manage'] });
+    const pay = (body) => api().put(`/api/orders/${id}/payment-status`).set(auth(manager)).send(body);
+
+    expect((await pay({ paymentStatus: 'FAILED' })).body.code).toBe('REASON_REQUIRED');
+    const refund = await pay({ paymentStatus: 'REFUNDED', reason: 'Customer asked' });
+    expect(refund.status).toBe(409);
+    expect(refund.body.code).toBe('INVALID_PAYMENT_TRANSITION');
+
+    const failed = await pay({ paymentStatus: 'FAILED', reason: 'Customer refused to pay at the door' });
+    expect(failed.status).toBe(200);
+    expect(failed.body.data.paymentStatus).toBe('FAILED');
+    expect(failed.body.data.statusHistory.at(-1).note).toBe('Payment marked FAILED: Customer refused to pay at the door');
+
+    const audit = await AuditLog.findOne({ resource: 'OrderPayment', resourceId: id }).lean();
+    expect(audit).toMatchObject({
+      action: 'UPDATE',
+      user: manager._id,
+      details: { before: { paymentStatus: 'PENDING' }, after: { paymentStatus: 'FAILED' }, reason: 'Customer refused to pay at the door' }
+    });
   });
 });
 

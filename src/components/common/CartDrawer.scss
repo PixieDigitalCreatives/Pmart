@@ -30,6 +30,7 @@
     }
 
     .close-drawer-btn {
+      @include ghost-icon-btn($text-muted);
       color: $text-muted;
       padding: 6px;
       border-radius: 50%;
@@ -197,6 +198,8 @@
         box-shadow: 0 2px 6px $pmart-red-shadow;
 
         .qty-btn {
+          background: transparent;
+          border-color: transparent;
           color: $white;
           padding: 4px 6px;
           display: flex;
@@ -206,6 +209,7 @@
 
           &:hover {
             background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
           }
         }
 

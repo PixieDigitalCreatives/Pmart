@@ -1,14 +1,5 @@
 import React from 'react';
-import {
-  Loader2,
-  Navigation,
-  MapPin,
-  CheckCircle2,
-  AlertCircle,
-  WifiOff,
-  XCircle,
-  KeyRound
-} from 'lucide-react';
+import { TbLoader2 as Loader2, TbNavigation as Navigation, TbMapPin as MapPin, TbCircleCheck as CheckCircle2, TbAlertCircle as AlertCircle, TbWifiOff as WifiOff, TbCircleX as XCircle, TbKey as KeyRound } from 'react-icons/tb';
 import './TrackingStatus.scss';
 import { Button } from '@/components/ui';
 

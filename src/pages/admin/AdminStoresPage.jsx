@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Store, Plus, Edit, MapPin } from 'lucide-react';
+import { TbBuildingStore as Store, TbPlus as Plus, TbEdit as Edit, TbMapPin as MapPin } from 'react-icons/tb';
 import { adminService } from '@/services/adminService';
 import { locationService } from '@/services/locationService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useToast } from '@/context/ToastContext';
-import { PageHeader, Button, StatusBadge, EmptyState, LoadingState, Modal, FormField, Input } from '@/components/ui';
+import { PageHeader, Button, StatusBadge, EmptyState, LoadingState, Modal, FormField, Input, PasswordInput } from '@/components/ui';
 import { plural } from '@/utils/plural';
 
 const EMPTY = {
@@ -189,7 +189,7 @@ const StoreFormModal = ({ store, isOpen, onClose, onSaved }) => {
                 <Input id="st-owner-phone" type="tel" value={form.ownerPhone} onChange={set('ownerPhone')} />
               </FormField>
               <FormField label="Temporary password *" htmlFor="st-owner-pass" hint="At least 8 characters">
-                <Input id="st-owner-pass" type="password" value={form.ownerPassword} onChange={set('ownerPassword')} autoComplete="new-password" />
+                <PasswordInput id="st-owner-pass" value={form.ownerPassword} onChange={set('ownerPassword')} autoComplete="new-password" />
               </FormField>
             </div>
           </>

@@ -1,6 +1,7 @@
 // Utility classes used across portal pages. Values map to the PMart design tokens.
 @use 'variables' as *;
 @use 'breakpoints' as *;
+@use 'mixins' as *;
 
 // Keys are strings so fractional steps produce escaped selectors such as .mt-0\.5
 $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4': 16px, '5': 20px, '6': 24px, '8': 32px, '10': 40px, '12': 48px);
@@ -81,7 +82,7 @@ $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4':
 .text-2xl { font-size: $font-size-xl; }
 .text-3xl { font-size: $font-size-2xl; }
 .font-extrabold { font-weight: $font-weight-extrabold; }
-.font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.font-mono { font-family: $font-family-mono; }
 .text-left { text-align: left; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
@@ -123,8 +124,8 @@ $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4':
 .rounded-md { border-radius: $radius-md; }
 .rounded-lg { border-radius: $radius-lg; }
 .rounded-xl { border-radius: $radius-xl; }
-.shadow-sm { box-shadow: 0 1px 2px rgba(17, 19, 24, 0.06); }
-.shadow-md { box-shadow: 0 4px 12px rgba(17, 19, 24, 0.08); }
+.shadow-sm { box-shadow: $shadow-sm; }
+.shadow-md { box-shadow: $shadow-md; }
 .opacity-75 { opacity: 0.75; }
 .cursor-pointer { cursor: pointer; }
 .outline-none { outline: none; }
@@ -142,6 +143,7 @@ $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4':
   padding: 12px 14px;
   border-radius: $radius-md;
   font-size: $font-size-sm;
+  line-height: 1.5;
   border: 1px solid transparent;
 
   &.alert-success { background: $success-bg; color: $success-text; border-color: $success-border; }
@@ -156,22 +158,57 @@ $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4':
   gap: 16px;
 }
 
+// KPI tile: white card with the brand's red accent bar along the top edge.
 .kpi-tile {
-  background: $white;
-  border: 1px solid $border-color;
-  border-radius: $radius-xl;
+  @include stat-card-surface;
   padding: 16px;
 
-  .kpi-tile-label { font-size: $font-size-xs; font-weight: $font-weight-semibold; color: $text-muted; text-transform: uppercase; letter-spacing: 0.02em; }
-  .kpi-tile-value { font-size: $font-size-xl; font-weight: $font-weight-extrabold; color: $text-primary; margin-top: 6px; }
+  .kpi-tile-label { font-size: $font-size-xs; font-weight: $font-weight-bold; color: $text-muted; text-transform: uppercase; letter-spacing: $letter-spacing-caps; }
+  .kpi-tile-value { font-family: $font-family-display; font-size: $font-size-xl; font-weight: $font-weight-extrabold; letter-spacing: $letter-spacing-tight; color: $charcoal-black; margin-top: 6px; }
   .kpi-tile-hint { font-size: $font-size-xs; color: $text-muted; margin-top: 4px; }
 }
 
+// Tabs: a segmented control. The page passes dark (active) / secondary (inactive) Buttons.
 .tab-bar {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  max-width: 100%;
+  gap: 4px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+  padding: 4px;
+  background: $surface-secondary;
+  border: 1px solid $border-light;
+  border-radius: $radius-lg;
+
+  .btn {
+    border-color: transparent;
+    box-shadow: none;
+    border-radius: $radius-md;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: $text-secondary;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.7);
+      color: $charcoal-black;
+      border-color: transparent;
+    }
+  }
+
+  .btn-dark {
+    background: $white;
+    color: $charcoal-black;
+    box-shadow: $shadow-sm;
+
+    svg { color: $pmart-red; }
+
+    &:hover:not(:disabled) {
+      background: $white;
+      box-shadow: $shadow-sm;
+    }
+  }
 }
 
 .form-grid {
@@ -199,6 +236,8 @@ $space: ('0': 0, '0\\.5': 2px, '1': 4px, '1\\.5': 6px, '2': 8px, '3': 12px, '4':
   padding: 0;
   font: inherit;
   color: $pmart-red;
+  font-weight: $font-weight-semibold;
   text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
 }

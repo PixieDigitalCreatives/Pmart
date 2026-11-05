@@ -7,6 +7,6 @@ const { limiter } = require('../../middleware/rate-limit');
 
 const router = Router();
 
-router.get('/', protect, limiter({ windowMs: 60 * 1000, max: 30, message: 'Too many route requests' }), getRoute);
+router.get('/', protect, limiter({ windowMs: 60 * 1000, max: 30, key: 'user', message: 'Too many route requests' }), getRoute);
 
 module.exports = router;

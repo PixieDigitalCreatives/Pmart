@@ -32,9 +32,9 @@
   gap: 12px;
 
   &.type-success {
-    border-left: 4px solid #16a34a;
+    border-left: 4px solid $leaf-green;
     .toast-icon.success {
-      color: #16a34a;
+      color: $leaf-green;
     }
   }
 
@@ -46,16 +46,16 @@
   }
 
   &.type-warning {
-    border-left: 4px solid #d97706;
+    border-left: 4px solid $warning-strong;
     .toast-icon.warning {
-      color: #d97706;
+      color: $warning-strong;
     }
   }
 
   &.type-info {
-    border-left: 4px solid #2563eb;
+    border-left: 4px solid $info;
     .toast-icon.info {
-      color: #2563eb;
+      color: $info;
     }
   }
 

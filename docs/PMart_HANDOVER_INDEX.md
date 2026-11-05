@@ -4,9 +4,13 @@ _Updated 2026-10-13 after the database rebuild and the removal of all mock/demo/
 
 ### Current documentation
 1. [Developer Handover Report](PMart_DEVELOPER_HANDOVER_REPORT.md) — architecture, how to run it, how orders flow. **Start here.**
-2. [Database Reference](PMart_DATABASE_REFERENCE.md) — the 11 MongoDB collections, fields, indexes and rules.
+   [UI Design System](PMart_UI_DESIGN_SYSTEM.md) — tokens, brand surface, shared components and layout rules for every portal (2026-11-04 redesign).
+2. [Database Reference](PMart_DATABASE_REFERENCE.md) — the 20 MongoDB collections, fields, indexes and rules.
+   [Inventory & Billing](PMart_INVENTORY_BILLING.md) — CSV import (results), barcode scanning, product photos,
+   restock, invoices, payments, reports, permissions, rollback plan (2026-11-04).
 3. [API Reference](PMart_API_REFERENCE.md) — every endpoint, who may call it, the order state machine, sockets.
 4. [Environment Reference](PMart_ENVIRONMENT_REFERENCE.md) — backend and web-app variables.
+   [Security & Compliance Audit](PMart_SECURITY_COMPLIANCE_AUDIT.md) — 2026-11-05 findings (F1–F19), India-law gaps and the proposed security/compliance plan (M0–M12, not yet agreed).
    [Deployment](PMart_DEPLOYMENT.md) — Render (API) + Vercel (web app) step by step.
 5. [Feature Status Matrix](PMart_FEATURE_STATUS_MATRIX.md) — what is verified, how, and what is not.
 6. [Remaining Work](PMart_REMAINING_WORK.md) — prioritised next steps (rotate the MapTiler key first).
@@ -17,5 +21,5 @@ _Updated 2026-10-13 after the database rebuild and the removal of all mock/demo/
 
 ### Historical (pre-rebuild, kept for reference)
 [Final Implementation Report](PMart_FINAL_IMPLEMENTATION_REPORT.md), [Security Audit](PMart_SECURITY_AUDIT.md),
-[Security Findings](PMart_SECURITY_FINDINGS.md), [UI Consistency Audit](PMart_UI_CONSISTENCY_AUDIT.md),
+[Security Findings](PMart_SECURITY_FINDINGS.md), [UI Consistency Audit](PMart_UI_CONSISTENCY_AUDIT.md) (superseded by the UI Design System),
 [Database Performance Audit](PMART_DATABASE_PERFORMANCE_AUDIT.md). Each starts with a note explaining what changed.

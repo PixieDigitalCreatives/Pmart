@@ -40,18 +40,240 @@
   overflow: hidden;
 }
 
-// Card Style
-@mixin pmart-card($padding: 16px) {
+// The one brand surface: charcoal with a PMart-red glow and a faint dot grid. Used by the home hero, footer,
+// portal sidebars, rider header and the sign-in panel so they all share the same colour treatment.
+// $glow sets where the red light sits (a CSS position such as "12% 0%").
+@mixin brand-surface($glow: 12% 0%) {
+  background:
+    radial-gradient(ellipse 60% 70% at #{$glow}, $brand-surface-glow 0%, rgba(242, 13, 24, 0) 70%),
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 22px 22px,
+    $brand-surface-base;
+  color: $on-dark-strong;
+}
+
+// Frosted white bar for sticky headers and top bars.
+@mixin glass-surface {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: saturate(1.6) blur(14px);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+}
+
+// White tile behind the logo on dark surfaces (the "Mart" wordmark is charcoal and would vanish otherwise).
+@mixin logo-chip($pad: 6px) {
   background: $white;
-  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  padding: $pad;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+// Section and page headings: display face, tight tracking, charcoal.
+@mixin heading-display($size: $font-size-lg) {
+  font-family: $font-family-display;
+  font-size: $size;
+  font-weight: $font-weight-extrabold;
+  letter-spacing: $letter-spacing-tight;
+  color: $charcoal-black;
+  line-height: 1.25;
+}
+
+// Small red bar in front of a section heading (the same accent on every section).
+@mixin heading-accent {
+  position: relative;
+  padding-left: 14px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 4px;
+    height: 0.9em;
+    border-radius: $radius-pill;
+    background: $brand-gradient;
+    transform: translateY(-50%);
+  }
+}
+
+// Small uppercase label (eyebrows, table heads, KPI labels).
+@mixin caps-label {
+  font-size: 11px;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-caps;
+  text-transform: uppercase;
+  color: $text-muted;
+}
+
+// "View all" style link: red text on a red-light pill.
+@mixin pill-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: $radius-pill;
+  background: $pmart-red-light;
+  color: $pmart-red;
+  font-size: 13px;
+  font-weight: $font-weight-bold;
+  white-space: nowrap;
+  transition: background-color $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: $pmart-red-soft;
+    color: $pmart-red-hover;
+    text-decoration: none;
+  }
+}
+
+// Icon-only control built on <Button> (which defaults to .btn-primary): drops the red fill, border and hover glow.
+@mixin ghost-icon-btn($color: $text-secondary, $hover-bg: $surface-secondary, $hover-color: $charcoal-black) {
+  background: transparent;
+  border-color: transparent;
+  color: $color;
+  border-radius: $radius-md;
+
+  &:hover:not(:disabled) {
+    background: $hover-bg;
+    border-color: transparent;
+    color: $hover-color;
+    box-shadow: none;
+  }
+}
+
+// "View all" link next to a section heading: bold red text whose arrow nudges right on hover.
+@mixin view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: $font-weight-bold;
+  color: $pmart-red;
+  white-space: nowrap;
+
+  svg {
+    transition: transform $transition-fast;
+  }
+
+  &:hover {
+    color: $pmart-red-hover;
+    text-decoration: none;
+
+    svg {
+      transform: translateX(3px);
+    }
+  }
+
+  @include mobile {
+    font-size: 13px;
+  }
+}
+
+// Inline text action built on <Button> ("Change", "Clear cart", "Share"): no fill, soft tint on hover.
+@mixin text-btn($color: $pmart-red, $hover-bg: $pmart-red-light) {
+  background: transparent;
+  border-color: transparent;
+  color: $color;
+  padding: 4px 10px;
+  border-radius: $radius-pill;
+
+  &:hover:not(:disabled) {
+    background: $hover-bg;
+    border-color: transparent;
+    color: $color;
+    box-shadow: none;
+    text-decoration: none;
+  }
+}
+
+// Portal chrome shared by the admin console, store portal and rider app.
+@mixin portal-sidebar {
+  @include brand-surface(0% 0%);
+  border-right: 1px solid $charcoal-border;
+  box-shadow: 4px 0 24px rgba(17, 19, 24, 0.12);
+}
+
+@mixin portal-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: $radius-md;
+  font-size: 13.5px;
+  font-weight: $font-weight-medium;
+  color: $on-dark-muted;
+  text-decoration: none;
+  transition: background-color $transition-fast, color $transition-fast, box-shadow $transition-base;
+
+  .link-icon {
+    color: $on-dark-muted;
+    transition: color $transition-fast;
+  }
+
+  &:hover {
+    color: $white;
+    background-color: $on-dark-fill;
+
+    .link-icon {
+      color: $white;
+    }
+  }
+
+  &.active {
+    color: $white;
+    background: $brand-gradient;
+    font-weight: $font-weight-semibold;
+    box-shadow: 0 6px 16px rgba(242, 13, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
+    .link-icon {
+      color: $white;
+    }
+  }
+}
+
+@mixin portal-topbar {
+  @include glass-surface;
+  border-bottom: 1px solid $border-light;
+  box-shadow: 0 1px 0 rgba(17, 19, 24, 0.02);
+}
+
+// Stat / KPI card: white card with the brand's red accent bar along the top edge (admin, store and rider).
+@mixin stat-card-surface {
+  position: relative;
+  overflow: hidden;
+  background: $white;
+  border: 1px solid $border-light;
   border-radius: $radius-xl;
-  padding: $padding;
   box-shadow: $shadow-sm;
-  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+  transition: box-shadow $transition-base, border-color $transition-fast;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 3px;
+    background: $brand-gradient;
+    opacity: 0.85;
+  }
 
   &:hover {
     box-shadow: $shadow-card-hover;
-    border-color: color.adjust($border-color, $lightness: -6%);
+    border-color: $border-color;
+  }
+}
+
+// Card Style
+@mixin pmart-card($padding: 16px) {
+  background: $white;
+  border: 1px solid $border-light;
+  border-radius: $radius-xl;
+  padding: $padding;
+  box-shadow: $shadow-sm;
+  transition: transform $transition-fast, box-shadow $transition-base, border-color $transition-fast;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+    border-color: $border-color;
   }
 }
 
@@ -68,14 +290,21 @@
   border-radius: $radius-md;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all $transition-fast;
+  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast,
+    box-shadow $transition-base, transform $transition-fast;
   text-decoration: none;
   line-height: 1.25;
+  letter-spacing: -0.005em;
   user-select: none;
   white-space: nowrap;
 
+  &:focus-visible {
+    outline: none;
+    box-shadow: $focus-ring;
+  }
+
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: not-allowed;
     pointer-events: none;
   }
@@ -90,7 +319,7 @@
   &:hover:not(:disabled) {
     background-color: $pmart-red-hover;
     border-color: $pmart-red-hover;
-    box-shadow: 0 4px 12px $pmart-red-shadow;
+    box-shadow: $shadow-brand;
   }
 
   &:active:not(:disabled) {
@@ -104,10 +333,11 @@
   background-color: $white;
   color: $text-primary;
   border-color: $border-color;
+  box-shadow: $shadow-xs;
 
   &:hover:not(:disabled) {
-    background-color: $surface-secondary;
-    border-color: color.adjust($border-color, $lightness: -10%);
+    background-color: $bg-light;
+    border-color: $border-dark;
   }
 
   &:active:not(:disabled) {
@@ -119,10 +349,11 @@
   @include btn-base;
   background-color: $white;
   color: $pmart-red;
-  border-color: $pmart-red;
+  border-color: $pmart-red-light-border;
 
   &:hover:not(:disabled) {
     background-color: $pmart-red-light;
+    border-color: $pmart-red;
   }
 }
 
@@ -134,6 +365,7 @@
 
   &:hover:not(:disabled) {
     background-color: color.adjust($charcoal-black, $lightness: 8%);
+    box-shadow: $shadow-md;
   }
 }
 

@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/context/LocationContext';
 import { AddressFormModal } from '@/components/common/AddressFormModal';
-import {
-  MapPin,
-  Home,
-  Briefcase,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  MapPinOff
-} from 'lucide-react';
+import { TbMapPin as MapPin, TbHome as Home, TbBriefcase as Briefcase, TbPlus as Plus, TbTrash as Trash2, TbCircleCheck as CheckCircle2, TbMapPinOff as MapPinOff } from 'react-icons/tb';
 import { PageHeader, Button, EmptyState } from '@/components/ui';
 import { getFullAddressString } from '@/utils/addressUtils';
 import './AddressesPage.scss';

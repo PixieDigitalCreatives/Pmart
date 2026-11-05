@@ -77,7 +77,7 @@
         transition: background-color $transition-fast;
 
         &.filled {
-          background-color: #16a34a;
+          background-color: $leaf-green;
         }
       }
     }
@@ -116,8 +116,8 @@
     // Step state variations
     &.is-done {
       .circle-node {
-        border-color: #16a34a;
-        background-color: #16a34a;
+        border-color: $leaf-green;
+        background-color: $leaf-green;
         color: $white;
       }
 

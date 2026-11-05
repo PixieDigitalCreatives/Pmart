@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, ChevronRight } from 'lucide-react';
+import { TbShoppingBag as ShoppingBag, TbChevronRight as ChevronRight } from 'react-icons/tb';
 import { motion, AnimatePresence } from 'framer-motion';
 import './StickyMobileCart.scss';
 import { Button } from '@/components/ui';

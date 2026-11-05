@@ -8,8 +8,9 @@ const { limiter } = require('../../middleware/rate-limit');
 
 const router = Router();
 
-const checkoutLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many checkout attempts. Please try again later.' });
-const otpLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 15, message: 'Too many delivery-code attempts. Please try again later.' });
+// Keyed on the signed-in user, not the IP (client IPs can be forged when the API is called directly).
+const checkoutLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 20, key: 'user', message: 'Too many checkout attempts. Please try again later.' });
+const otpLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 15, key: 'user', message: 'Too many delivery-code attempts. Please try again later.' });
 
 router.use(protect);
 

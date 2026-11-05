@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminService } from '@/services/adminService';
 import { openSocket } from '@/services/socket';
 import { useAuth } from '@/context/AuthContext';
-import { AlertTriangle, Store, ShoppingBag, Package, Users } from 'lucide-react';
+import { TbAlertTriangle as AlertTriangle, TbBuildingStore as Store, TbShoppingBag as ShoppingBag, TbPackage as Package, TbUsers as Users } from 'react-icons/tb';
 import { PageHeader, LoadingState, Card, Button } from '@/components/ui';
 import { plural } from '@/utils/plural';
 

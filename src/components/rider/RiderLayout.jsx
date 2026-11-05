@@ -1,6 +1,6 @@
 import React, { useEffect, useState, createContext, useContext, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Package, Clock, User } from 'lucide-react';
+import { TbHome as Home, TbPackage as Package, TbClock as Clock, TbUser as User } from 'react-icons/tb';
 import { riderService } from '@/services/riderService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { openSocket } from '@/services/socket';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { TbCircleCheck as CheckCircle2, TbAlertCircle as AlertCircle, TbAlertTriangle as AlertTriangle, TbInfoCircle as Info, TbX as X } from 'react-icons/tb';
 import './ToastContainer.scss';
 import { Button } from '@/components/ui';
 

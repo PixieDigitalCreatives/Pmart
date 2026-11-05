@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { categoryService } from '@/services/categoryService';
 import { productService } from '@/services/productService';
 import { ProductCard } from '@/components/product/ProductCard';
-import { ChevronRight, PackageOpen } from 'lucide-react';
+import { TbChevronRight as ChevronRight, TbBox as PackageOpen } from 'react-icons/tb';
 import { Select, Button, EmptyState, LoadingState } from '@/components/ui';
 import './CategoryPage.scss';
 

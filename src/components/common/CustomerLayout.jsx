@@ -7,6 +7,8 @@ import { StickyMobileCart } from '@/components/common/StickyMobileCart';
 import { CartDrawer } from '@/components/common/CartDrawer';
 import { LocationModal } from '@/components/common/LocationModal';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import './CustomerLayout.scss';
+
 export const CustomerLayout = ({ children }) => {
   return (
     <div className="pmart-customer-layout">

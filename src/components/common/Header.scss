@@ -1,10 +1,10 @@
 .pmart-header {
-  background: $white;
-  border-bottom: 1px solid $border-color;
+  @include glass-surface;
+  border-bottom: 1px solid $border-light;
   position: sticky;
   top: 0;
   z-index: 900;
-  box-shadow: $shadow-xs;
+  box-shadow: 0 1px 0 rgba(17, 19, 24, 0.02), 0 6px 18px rgba(17, 19, 24, 0.04);
 
   .header-container {
     max-width: $container-max-width;
@@ -30,6 +30,10 @@
     gap: 20px;
     flex-shrink: 0;
 
+    @include tablet {
+      gap: 12px;
+    }
+
     .brand-logo-link {
       display: flex;
       align-items: center;
@@ -50,17 +54,19 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 12px;
-      border-radius: $radius-lg;
-      border: 1px solid transparent;
-      background: $surface-secondary;
+      padding: 7px 14px 7px 12px;
+      border-radius: $radius-pill;
+      border: 1px solid $border-color;
+      background: $white;
+      box-shadow: $shadow-xs;
       text-align: left;
       cursor: pointer;
       transition: all $transition-fast;
 
       &:hover {
-        background: color.adjust($surface-secondary, $lightness: -3%);
-        border-color: $border-color;
+        background: $pmart-red-light;
+        border-color: $pmart-red-light-border;
+        box-shadow: $shadow-xs;
       }
 
       @include mobile {
@@ -71,6 +77,12 @@
         color: $pmart-red;
         display: flex;
         align-items: center;
+        justify-content: center;
+
+        svg {
+          width: 22px;
+          height: 22px;
+        }
       }
 
       .location-text {
@@ -84,9 +96,9 @@
           gap: 4px;
 
           .bold-time {
-            font-weight: $font-weight-extrabold;
+            font-size: 13px;
+            font-weight: $font-weight-bold;
             color: $pmart-red;
-            letter-spacing: 0.02em;
           }
 
           .dot {
@@ -103,13 +115,17 @@
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: $font-weight-semibold;
           color: $charcoal-black;
 
           .address-line {
             max-width: 170px;
             @include text-truncate;
+
+            @include tablet {
+              max-width: 110px;
+            }
           }
 
           .chevron-icon {
@@ -123,6 +139,7 @@
   // Center Search
   .header-search {
     flex: 1;
+    min-width: 0;
     max-width: 580px;
 
     .search-form {
@@ -132,19 +149,25 @@
 
       .search-icon {
         position: absolute;
-        left: 14px;
-        color: $text-muted;
+        left: 18px;
+        z-index: 2;
+        color: $charcoal-black;
         pointer-events: none;
+
+        @include mobile {
+          left: 14px;
+        }
       }
 
       .search-input {
         width: 100%;
-        height: 44px;
-        padding-left: 42px;
+        height: 48px;
+        padding-left: 48px;
         padding-right: 36px;
-        background-color: $bg-light;
-        border: 1px solid $border-color;
-        border-radius: $radius-lg;
+        background-color: $surface-secondary;
+        border: 1px solid transparent;
+        border-radius: $radius-pill;
+        box-shadow: none;
         font-size: 14px;
         color: $text-primary;
         transition: all $transition-fast;
@@ -162,9 +185,9 @@
         }
 
         @include mobile {
-          height: 38px;
+          height: 40px;
           font-size: 13px;
-          padding-left: 36px;
+          padding-left: 42px;
         }
       }
 
@@ -172,6 +195,8 @@
         position: absolute;
         right: 12px;
         color: $text-muted;
+        background: transparent;
+        border-color: transparent;
         padding: 4px;
         display: flex;
         align-items: center;
@@ -181,6 +206,7 @@
         &:hover {
           color: $charcoal-black;
           background: $surface-secondary;
+          box-shadow: none;
         }
       }
     }
@@ -190,7 +216,7 @@
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 
     @include mobile {
       display: none;
@@ -200,16 +226,30 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 14px;
-      font-weight: $font-weight-medium;
-      color: $text-secondary;
+      font-size: 15px;
+      font-weight: $font-weight-semibold;
+      color: $charcoal-black;
       padding: 8px 12px;
-      border-radius: $radius-md;
+      border-radius: $radius-pill;
+
+      svg {
+        width: 21px;
+        height: 21px;
+      }
       transition: all $transition-fast;
 
       &:hover {
-        color: $charcoal-black;
-        background-color: $surface-secondary;
+        color: $pmart-red;
+        background-color: $pmart-red-light;
+      }
+
+      // Tablets: icon-only so logo, location, search and cart fit on one row.
+      @include tablet {
+        padding: 8px;
+
+        span {
+          display: none;
+        }
       }
     }
 
@@ -221,40 +261,64 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 10px;
-        border-radius: $radius-md;
-        font-size: 14px;
-        font-weight: $font-weight-medium;
+        padding: 7px 14px 7px 10px;
+        border-radius: $radius-pill;
+        border-color: $border-color;
+        background-color: $white;
+        font-size: 15px;
+        font-weight: $font-weight-semibold;
         color: $charcoal-black;
         transition: background-color $transition-fast;
 
         &:hover {
-          background-color: $surface-secondary;
+          background-color: $bg-light;
+          border-color: $border-color;
+          box-shadow: none;
         }
 
         .avatar-img-wrapper {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: $surface-secondary;
-          border: 1px solid $border-color;
+          width: 26px;
+          height: 26px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: $charcoal-black;
+          color: $pmart-red;
+
+          svg {
+            width: 22px;
+            height: 22px;
+          }
         }
 
         .user-name {
           max-width: 90px;
           @include text-truncate;
+
+          @include tablet {
+            display: none;
+          }
         }
       }
 
       .login-link-btn {
         @include btn-secondary;
-        padding: 8px 16px;
-        font-size: 13px;
+        padding: 9px 16px;
+        font-size: 14px;
         gap: 6px;
+        border-radius: $radius-pill;
+
+        svg {
+          color: $pmart-red;
+        }
+
+        // Tablets: icon only, so the search keeps a usable width.
+        @include tablet {
+          padding: 9px 11px;
+
+          span {
+            display: none;
+          }
+        }
       }
 
       .profile-menu {
@@ -264,10 +328,11 @@
         width: 220px;
         background: $white;
         border: 1px solid $border-color;
-        border-radius: $radius-lg;
+        border-radius: $radius-xl;
         padding: 8px;
-        box-shadow: $shadow-lg;
+        box-shadow: $shadow-xl;
         z-index: 1000;
+        animation: pmart-pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
 
         .user-profile-header {
           padding: 8px 10px;
@@ -295,12 +360,18 @@
           padding: 8px 10px;
           font-size: 13px;
           color: $text-primary;
+          background: transparent;
+          border-color: transparent;
+          justify-content: flex-start;
+          font-weight: $font-weight-medium;
           border-radius: $radius-sm;
           text-decoration: none;
           transition: background-color $transition-fast;
 
           &:hover {
-            background-color: $surface-secondary;
+            background-color: $pmart-red-light;
+            color: $pmart-red-active;
+            box-shadow: none;
           }
 
           &.logout-btn {
@@ -322,38 +393,27 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background-color: $surface-secondary;
-      border: 1px solid $border-color;
-      border-radius: $radius-lg;
-      padding: 8px 16px;
+      position: relative;
+      background-color: $charcoal-black;
+      border: 1px solid $charcoal-black;
+      color: $white;
+      border-radius: $radius-pill;
+      padding: 10px 22px 10px 20px;
+
+      @include tablet {
+        padding: 10px 14px;
+      }
+
       cursor: pointer;
       transition: all $transition-fast;
 
       &:hover {
-        background-color: color.adjust($surface-secondary, $lightness: -3%);
-        border-color: color.adjust($border-color, $lightness: -6%);
+        background-color: $charcoal-surface;
+        border-color: $charcoal-surface;
+        box-shadow: $shadow-md;
       }
 
       &.has-items {
-        background-color: $pmart-red;
-        border-color: $pmart-red;
-        color: $white;
-
-        &:hover {
-          background-color: $pmart-red-hover;
-          border-color: $pmart-red-hover;
-          box-shadow: 0 4px 14px $pmart-red-shadow;
-        }
-
-        .cart-icon-container {
-          color: $white;
-
-          .cart-badge {
-            background-color: $white;
-            color: $pmart-red;
-          }
-        }
-
         .cart-label-container {
           .cart-items-count {
             color: rgba(255, 255, 255, 0.9);
@@ -366,23 +426,28 @@
       }
 
       .cart-icon-container {
-        position: relative;
         display: flex;
         align-items: center;
-        color: $charcoal-black;
+        color: $white;
+      }
 
-        .cart-badge {
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background-color: $pmart-red;
-          color: $white;
-          font-size: 11px;
-          font-weight: $font-weight-bold;
-          padding: 2px 6px;
-          border-radius: $radius-pill;
-          line-height: 1;
-        }
+      .cart-badge {
+        position: absolute;
+        top: -7px;
+        right: -4px;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $pmart-red;
+        color: $white;
+        font-size: 11px;
+        font-weight: $font-weight-bold;
+        border-radius: $radius-pill;
+        border: 2px solid $white;
+        line-height: 1;
       }
 
       .cart-label-container {
@@ -391,10 +456,15 @@
         text-align: left;
         line-height: 1.2;
 
+        // Tablets: icon and count badge only, so the search keeps a usable width.
+        @include tablet {
+          display: none;
+        }
+
         .my-cart-text {
-          font-size: 13.5px;
+          font-size: 15px;
           font-weight: $font-weight-semibold;
-          color: $charcoal-black;
+          color: $white;
         }
 
         .cart-items-count {
@@ -423,7 +493,10 @@
     .cart-mobile-btn {
       position: relative;
       color: $charcoal-black;
-      padding: 6px;
+      background: $bg-light;
+      border: 1px solid $border-light;
+      border-radius: $radius-pill;
+      padding: 8px;
       display: flex;
       align-items: center;
 

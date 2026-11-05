@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { AuthShell } from '@/components/common/AuthShell';
-import { Button, Input, FormField, ErrorMessage } from '@/components/ui';
+import { Button, Input, PasswordInput, FormField, ErrorMessage } from '@/components/ui';
 
 /** Staff accounts are activated through a one-time link created by an admin. */
 export const ActivateAccountPage = () => {
@@ -53,10 +53,10 @@ export const ActivateAccountPage = () => {
       ) : (
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
           <FormField label="New password" htmlFor="activate-password" hint="At least 8 characters">
-            <Input id="activate-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading || !token} />
+            <PasswordInput id="activate-password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" disabled={loading || !token} />
           </FormField>
           <FormField label="Confirm password" htmlFor="activate-confirm">
-            <Input id="activate-confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" disabled={loading || !token} />
+            <PasswordInput id="activate-confirm" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" disabled={loading || !token} />
           </FormField>
           <Button type="submit" size="full" isLoading={loading} disabled={!token} style={{ marginTop: '16px' }}>
             Activate account

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, CheckCircle2, AlertCircle, KeyRound, Loader2, RotateCcw } from 'lucide-react';
+import { TbShieldCheck as ShieldCheck, TbCircleCheck as CheckCircle2, TbAlertCircle as AlertCircle, TbKey as KeyRound, TbLoader2 as Loader2, TbRotate2 as RotateCcw } from 'react-icons/tb';
 import { deliveryService } from '@/services/deliveryService';
 import { useCart } from '@/context/CartContext';
 import './DeliveryVerificationSection.scss';

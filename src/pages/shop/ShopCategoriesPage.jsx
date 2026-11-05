@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { categoryService } from '@/services/categoryService';
 import { apiErrorMessage } from '@/services/apiClient';
-import { Plus, Edit, Trash2, Eye, EyeOff, Layers } from 'lucide-react';
+import { TbPlus as Plus, TbEdit as Edit, TbTrash as Trash2, TbEye as Eye, TbEyeOff as EyeOff, TbStack2 as Layers } from 'react-icons/tb';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { useToast } from '@/context/ToastContext';
 import { PageHeader, Button, Modal, FormField, Input, StatusBadge, LoadingState, EmptyState } from '@/components/ui';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Navigation } from 'lucide-react';
+import { TbClock as Clock, TbNavigation as Navigation } from 'react-icons/tb';
 import './ETAIndicator.scss';
 
 export const ETAIndicator = ({

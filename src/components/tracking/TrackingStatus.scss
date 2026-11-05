@@ -9,42 +9,42 @@
   margin-bottom: 16px;
 
   &.state-active {
-    background-color: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1e40af;
+    background-color: $info-bg;
+    border: 1px solid $info-border;
+    color: $info-text;
 
     .status-icon-wrap {
-      color: #2563eb;
+      color: $info;
     }
   }
 
   &.state-success {
-    background-color: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    color: #166534;
+    background-color: $success-bg;
+    border: 1px solid $success-border;
+    color: $success-text;
 
     .status-icon-wrap {
-      color: #16a34a;
+      color: $leaf-green;
     }
   }
 
   &.state-warning {
-    background-color: #fffbeb;
-    border: 1px solid #fde68a;
-    color: #92400e;
+    background-color: $warning-bg;
+    border: 1px solid $warning-border;
+    color: $warning-text;
 
     .status-icon-wrap {
-      color: #d97706;
+      color: $warning-strong;
     }
   }
 
   &.state-error {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    background-color: $error-bg;
+    border: 1px solid $error-border;
+    color: $error-text;
 
     .status-icon-wrap {
-      color: #dc2626;
+      color: $error;
     }
   }
 
@@ -76,8 +76,8 @@
 
   .retry-btn {
     background: $white;
-    border: 1px solid #fca5a5;
-    color: #b91c1c;
+    border: 1px solid $error-border;
+    color: $error-text;
     padding: 3px 8px;
     font-size: 11px;
     border-radius: $radius-xs;
@@ -85,7 +85,7 @@
     font-weight: $font-weight-bold;
 
     &:hover {
-      background-color: #fee2e2;
+      background-color: $error-bg;
     }
   }
 }

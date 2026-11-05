@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { orderService } from '@/services/orderService';
-import { Bike, Phone } from 'lucide-react';
+import { TbMotorbike as Bike, TbPhone as Phone } from 'react-icons/tb';
 import { PageHeader, Card, StatusBadge, EmptyState, LoadingState } from '@/components/ui';
 
 const TONE = { AVAILABLE: 'success', BUSY: 'warning', OFFLINE: 'neutral' };

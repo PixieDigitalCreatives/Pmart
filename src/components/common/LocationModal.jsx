@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/context/LocationContext';
-import { X, Search, Navigation, Home, Briefcase, MapPin, Check, Loader2, AlertCircle } from 'lucide-react';
+import { TbX as X, TbSearch as Search, TbNavigation as Navigation, TbHome as Home, TbBriefcase as Briefcase, TbMapPin as MapPin, TbCheck as Check, TbLoader2 as Loader2, TbAlertCircle as AlertCircle } from 'react-icons/tb';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AddressFormModal } from './AddressFormModal';
 import './LocationModal.scss';

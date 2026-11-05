@@ -57,6 +57,18 @@ import { AdminReportsPage } from '@/pages/admin/AdminReportsPage';
 import { AdminPaymentsPage } from '@/pages/admin/AdminPaymentsPage';
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
+// Inventory and in-store billing (staff)
+import { InventoryImportPage } from '@/pages/inventory/InventoryImportPage';
+import { RestockPage } from '@/pages/inventory/RestockPage';
+import { StockLedgerPage } from '@/pages/inventory/StockLedgerPage';
+import { ImageReviewPage } from '@/pages/inventory/ImageReviewPage';
+import { InventoryReportsPage } from '@/pages/inventory/InventoryReportsPage';
+import { BillingDashboardPage } from '@/pages/billing/BillingDashboardPage';
+import { CreateInvoicePage } from '@/pages/billing/CreateInvoicePage';
+import { InvoicesPage } from '@/pages/billing/InvoicesPage';
+import { InvoiceDetailPage } from '@/pages/billing/InvoiceDetailPage';
+import { BillingPaymentsPage } from '@/pages/billing/BillingPaymentsPage';
+
 const STAFF = ['ADMIN', 'EMPLOYEE'];
 
 const customer = (page) => <CustomerLayout>{page}</CustomerLayout>;
@@ -135,9 +147,19 @@ export const AppRoutes = () => (
     <Route path="/admin/orders/:id" element={staff(<OrderManagePage backTo="/admin/orders" />, 'orders.read')} />
     <Route path="/admin/users" element={staff(<AdminUsersPage />)} />
     <Route path="/admin/stores" element={staff(<AdminStoresPage />, 'shops.manage')} />
-    <Route path="/admin/products" element={staff(<ShopProductsPage basePath="/admin/products" />, 'catalog.manage')} />
+    <Route path="/admin/products" element={staff(<ShopProductsPage basePath="/admin/products" />, ['catalog.manage', 'inventory.read'])} />
     <Route path="/admin/products/new" element={staff(<ShopProductNewPage basePath="/admin/products" />, 'catalog.manage')} />
-    <Route path="/admin/products/:id" element={staff(<ShopProductNewPage basePath="/admin/products" />, 'catalog.manage')} />
+    <Route path="/admin/products/:id" element={staff(<ShopProductNewPage basePath="/admin/products" />, ['catalog.manage', 'inventory.read'])} />
+    <Route path="/admin/inventory/import" element={staff(<InventoryImportPage />, 'catalog.import')} />
+    <Route path="/admin/inventory/restock" element={staff(<RestockPage />, 'inventory.restock')} />
+    <Route path="/admin/inventory/ledger" element={staff(<StockLedgerPage />, 'inventory.read')} />
+    <Route path="/admin/inventory/images" element={staff(<ImageReviewPage />, ['inventory.read', 'images.verify'])} />
+    <Route path="/admin/inventory/reports" element={staff(<InventoryReportsPage />, 'reports.read')} />
+    <Route path="/admin/billing" element={staff(<BillingDashboardPage />, ['invoices.read', 'payments.read'])} />
+    <Route path="/admin/billing/new" element={staff(<CreateInvoicePage />, 'invoices.create')} />
+    <Route path="/admin/billing/invoices" element={staff(<InvoicesPage />, 'invoices.read')} />
+    <Route path="/admin/billing/invoices/:id" element={staff(<InvoiceDetailPage />, 'invoices.read')} />
+    <Route path="/admin/billing/payments" element={staff(<BillingPaymentsPage />, 'payments.read')} />
     <Route path="/admin/categories" element={staff(<ShopCategoriesPage />, 'catalog.manage')} />
     <Route path="/admin/payments" element={staff(<AdminPaymentsPage />, 'reports.read')} />
     <Route path="/admin/reports" element={staff(<AdminReportsPage />, 'reports.read')} />

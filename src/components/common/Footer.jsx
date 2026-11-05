@@ -2,7 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { categoryService } from '@/services/categoryService';
 import { useCart } from '@/context/CartContext';
+import { TbPackage, TbMapPin, TbUser, TbTag, TbHelpCircle, TbMail, TbPhone, TbHeartHandshake } from 'react-icons/tb';
 import './Footer.scss';
+
+const ACCOUNT_LINKS = [
+  { to: '/orders', label: 'My Orders', icon: TbPackage },
+  { to: '/addresses', label: 'Saved Addresses', icon: TbMapPin },
+  { to: '/profile', label: 'Profile', icon: TbUser },
+  { to: '/offers', label: 'Deals', icon: TbTag },
+  { to: '/help', label: 'Help', icon: TbHelpCircle }
+];
 
 export const Footer = () => {
   const { settings } = useCart();
@@ -44,22 +53,44 @@ export const Footer = () => {
             )}
 
             <div className="footer-links-col">
-              <h5 className="col-heading">Your account</h5>
-              <ul className="links-list">
-                <li><Link to="/orders">My orders</Link></li>
-                <li><Link to="/addresses">Saved addresses</Link></li>
-                <li><Link to="/profile">Profile</Link></li>
-                <li><Link to="/offers">Deals</Link></li>
-                <li><Link to="/help">Help</Link></li>
+              <h5 className="col-heading">Your Account</h5>
+              <ul className="links-list with-icons">
+                {ACCOUNT_LINKS.map(({ to, label, icon: Icon }) => (
+                  <li key={to}>
+                    <Link to={to}>
+                      <Icon size={20} aria-hidden="true" />
+                      <span>{label}</span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
             <div className="footer-links-col">
               <h5 className="col-heading">Contact</h5>
-              <ul className="links-list">
-                {settings.supportPhone && <li><a href={`tel:${settings.supportPhone}`}>{settings.supportPhone}</a></li>}
-                {settings.supportEmail && <li><a href={`mailto:${settings.supportEmail}`}>{settings.supportEmail}</a></li>}
-                <li><Link to="/login">Partner &amp; staff sign-in</Link></li>
+              <ul className="links-list with-icons">
+                {settings.supportEmail && (
+                  <li>
+                    <a href={`mailto:${settings.supportEmail}`}>
+                      <TbMail size={20} aria-hidden="true" />
+                      <span>{settings.supportEmail}</span>
+                    </a>
+                  </li>
+                )}
+                {settings.supportPhone && (
+                  <li>
+                    <a href={`tel:${settings.supportPhone}`}>
+                      <TbPhone size={20} aria-hidden="true" />
+                      <span>{settings.supportPhone}</span>
+                    </a>
+                  </li>
+                )}
+                <li>
+                  <Link to="/login">
+                    <TbHeartHandshake size={20} aria-hidden="true" />
+                    <span>Partner &amp; Staff Sign-in</span>
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>

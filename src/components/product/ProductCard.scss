@@ -1,6 +1,6 @@
 .pmart-product-card {
   background: $white;
-  border: 1px solid $border-color;
+  border: 1px solid $border-light;
   border-radius: $radius-xl;
   overflow: hidden;
   display: flex;
@@ -8,13 +8,13 @@
   height: 100%;
   position: relative;
   cursor: pointer;
-  box-shadow: $shadow-xs;
-  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+  box-shadow: $shadow-sm;
+  transition: transform $transition-base, box-shadow $transition-base, border-color $transition-fast;
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     box-shadow: $shadow-card-hover;
-    border-color: color.adjust($border-color, $lightness: -8%);
+    border-color: $pmart-red-light-border;
   }
 
   // Media
@@ -22,7 +22,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
-    background-color: #FAFBFD;
+    background: linear-gradient(180deg, $bg-light 0%, $white 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,11 +42,23 @@
 
     .product-img-placeholder {
       display: flex;
+      flex-direction: column;
+      gap: 6px;
       align-items: center;
       justify-content: center;
       width: 100%;
       height: 100%;
       color: $text-light;
+      border-radius: $radius-lg;
+      background:
+        radial-gradient(rgba(17, 19, 24, 0.05) 1px, transparent 1px) 0 0 / 14px 14px;
+
+      .placeholder-text {
+        font-size: 11px;
+        font-weight: $font-weight-semibold;
+        color: $text-muted;
+        letter-spacing: 0.01em;
+      }
     }
 
     .card-eta-badge {
@@ -71,14 +83,15 @@
       position: absolute;
       top: 8px;
       left: 8px;
-      background-color: $pmart-red;
+      background: $brand-gradient;
       color: $white;
       font-size: 10px;
       font-weight: $font-weight-extrabold;
       padding: 3px 6px;
-      border-radius: $radius-xs;
+      border-radius: $radius-pill;
       line-height: 1;
       letter-spacing: 0.02em;
+      box-shadow: 0 2px 6px rgba(242, 13, 24, 0.3);
     }
   }
 
@@ -121,8 +134,8 @@
       margin-bottom: 8px;
 
       .star-icon {
-        color: #F59E0B;
-        fill: #F59E0B;
+        color: $warning;
+        fill: $warning;
       }
 
       .rating-val {
@@ -151,9 +164,11 @@
         flex-direction: column;
 
         .selling-price {
+          font-family: $font-family-display;
           font-size: 15px;
-          font-weight: $font-weight-bold;
+          font-weight: $font-weight-extrabold;
           color: $charcoal-black;
+          letter-spacing: -0.01em;
         }
 
         .mrp-price {
@@ -169,10 +184,10 @@
           align-items: center;
           gap: 4px;
           padding: 6px 14px;
-          background: $white;
-          border: 1px solid $pmart-red;
+          background: $pmart-red-light;
+          border: 1px solid $pmart-red-light-border;
           color: $pmart-red;
-          border-radius: $radius-md;
+          border-radius: $radius-pill;
           font-size: 12.5px;
           font-weight: $font-weight-bold;
           cursor: pointer;
@@ -180,8 +195,9 @@
 
           &:hover {
             background-color: $pmart-red;
+            border-color: $pmart-red;
             color: $white;
-            box-shadow: 0 2px 8px $pmart-red-shadow;
+            box-shadow: 0 4px 12px $pmart-red-shadow;
           }
 
           @include mobile {
@@ -193,11 +209,11 @@
         .quantity-stepper {
           display: flex;
           align-items: center;
-          background-color: $pmart-red;
+          background: $brand-gradient;
           color: $white;
-          border-radius: $radius-md;
+          border-radius: $radius-pill;
           padding: 2px 4px;
-          box-shadow: 0 2px 8px $pmart-red-shadow;
+          box-shadow: 0 4px 12px $pmart-red-shadow;
 
           .step-btn {
             color: $white;
@@ -205,7 +221,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: $radius-xs;
+            border-radius: $radius-pill;
 
             &:hover {
               background-color: rgba(255, 255, 255, 0.2);

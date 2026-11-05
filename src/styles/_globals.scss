@@ -29,6 +29,17 @@
   }
 }
 
+// Keyboard focus: one visible ring everywhere (mouse clicks don't show it).
+:focus-visible {
+  outline: 2px solid rgba(242, 13, 24, 0.55);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: $pmart-red-soft;
+  color: $charcoal-black;
+}
+
 // Button Classes
 .btn {
   @include btn-base;
@@ -71,12 +82,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all $transition-fast;
+  transition: background-color $transition-fast, color $transition-fast, border-color $transition-fast;
 
   &:hover {
-    background: $surface-secondary;
+    background: $bg-light;
     color: $charcoal-black;
-    border-color: color.adjust($border-color, $lightness: -8%);
+    border-color: $border-dark;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: $focus-ring;
   }
 }
 
@@ -84,20 +100,21 @@
   width: 100%;
 }
 
-// Badge Classes
+// Badge Classes — soft pills with the brand's semantic tints.
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 4px 9px;
   font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
-  border-radius: $radius-sm;
+  border-radius: $radius-pill;
   line-height: 1;
+  white-space: nowrap;
 
   &.badge-primary {
     background-color: $pmart-red-light;
-    color: $pmart-red;
+    color: $pmart-red-active;
     border: 1px solid $pmart-red-light-border;
   }
 
@@ -144,7 +161,7 @@
   label {
     display: block;
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     color: $text-primary;
     margin-bottom: 6px;
   }
@@ -152,13 +169,14 @@
   .form-hint {
     font-size: $font-size-xs;
     color: $text-muted;
-    margin-top: 4px;
+    margin-top: 5px;
   }
 
   .form-error {
     font-size: $font-size-xs;
-    color: $error;
-    margin-top: 4px;
+    font-weight: $font-weight-medium;
+    color: $error-text;
+    margin-top: 5px;
   }
 }
 
@@ -171,22 +189,28 @@
   background-color: $white;
   border: 1px solid $border-color;
   border-radius: $radius-md;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  box-shadow: $shadow-xs;
+  transition: border-color $transition-fast, box-shadow $transition-fast, background-color $transition-fast;
   outline: none;
 
   &::placeholder {
     color: $text-light;
   }
 
+  &:hover:not(:disabled):not(:focus) {
+    border-color: $border-dark;
+  }
+
   &:focus {
     border-color: $pmart-red;
-    box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.12);
+    box-shadow: $focus-ring;
   }
 
   &:disabled {
     background-color: $surface-secondary;
     cursor: not-allowed;
     color: $text-muted;
+    box-shadow: none;
   }
 }
 
@@ -207,13 +231,19 @@ textarea.form-control {
   resize: vertical;
 }
 
+input[type='checkbox'], input[type='radio'] {
+  accent-color: $pmart-red;
+}
+
 // Table Styling
 .pmart-table-wrapper {
   background: $white;
-  border: 1px solid $border-color;
+  border: 1px solid $border-light;
   border-radius: $radius-xl;
-  overflow: hidden;
-  box-shadow: $shadow-xs;
+  // Wide tables scroll sideways inside the card on small screens instead of being cut off.
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: $shadow-sm;
   @include custom-scrollbar;
 }
 
@@ -224,16 +254,16 @@ textarea.form-control {
   font-size: $font-size-sm;
 
   thead {
-    background-color: $surface-secondary;
+    background-color: $bg-light;
     border-bottom: 1px solid $border-color;
 
     th {
       padding: 12px 16px;
-      font-weight: $font-weight-semibold;
-      color: $text-secondary;
+      font-weight: $font-weight-bold;
+      color: $text-muted;
       text-transform: uppercase;
-      font-size: $font-size-xs;
-      letter-spacing: 0.04em;
+      font-size: 11px;
+      letter-spacing: $letter-spacing-caps;
       white-space: nowrap;
     }
   }
@@ -248,7 +278,7 @@ textarea.form-control {
       }
 
       &:hover {
-        background-color: rgba(247, 248, 250, 0.8);
+        background-color: rgba(255, 241, 241, 0.45);
       }
 
       td {
@@ -263,11 +293,20 @@ textarea.form-control {
 // Card Utility
 .pmart-card {
   @include pmart-card;
+
+  // A table placed straight in a card scrolls sideways on small screens.
+  &:has(> table) {
+    overflow-x: auto;
+  }
+}
+
+input[type='file'] {
+  max-width: 100%;
 }
 
 // Skeleton Loader
 .skeleton {
-  background: linear-gradient(90deg, #F1F3F5 25%, #E5E7EB 50%, #F1F3F5 75%);
+  background: linear-gradient(90deg, $surface-secondary 25%, $surface-tertiary 50%, $surface-secondary 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.6s infinite ease-in-out;
   border-radius: $radius-sm;
@@ -282,17 +321,34 @@ textarea.form-control {
   }
 }
 
+@keyframes pmart-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pmart-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pmart-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
 // Overlay / Modal backdrop
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(17, 19, 24, 0.6);
-  backdrop-filter: blur(2px);
+  background-color: rgba(17, 19, 24, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  animation: pmart-fade-in 160ms ease-out;
 }
 
 .modal-content {
@@ -303,8 +359,9 @@ textarea.form-control {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: $shadow-xl;
-  border: 1px solid $border-color;
+  border: 1px solid $border-light;
   position: relative;
+  animation: pmart-pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
   @include custom-scrollbar;
 }
 
@@ -313,9 +370,12 @@ textarea.form-control {
   position: fixed;
   inset: 0;
   background-color: rgba(17, 19, 24, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 1050;
   display: flex;
   justify-content: flex-end;
+  animation: pmart-fade-in 160ms ease-out;
 }
 
 .drawer-content {
@@ -328,6 +388,12 @@ textarea.form-control {
   box-shadow: $shadow-xl;
   position: relative;
   z-index: 1051;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-content, .drawer-overlay {
+    animation: none;
+  }
 }
 
 // Helpers

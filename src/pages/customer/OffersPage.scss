@@ -2,7 +2,7 @@
   padding: 24px 0 48px;
 
   .offers-hero-card {
-    background: linear-gradient(135deg, #111318 0%, #1E232B 100%);
+    @include brand-surface(10% 0%);
     border-radius: $radius-2xl;
     padding: 36px 40px;
     display: flex;
@@ -21,7 +21,7 @@
       .hero-tag {
         font-size: 11px;
         font-weight: $font-weight-bold;
-        color: #FF5A62;
+        color: $pmart-red-on-dark;
         letter-spacing: 0.05em;
         margin-bottom: 8px;
         display: block;
@@ -41,7 +41,7 @@
 
       .hero-desc {
         font-size: 14px;
-        color: #D1D5DB;
+        color: $border-dark;
         line-height: 1.5;
       }
     }
@@ -85,7 +85,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background-color: #FFFBFB;
+        background-color: $pmart-red-light;
 
         .ticket-left {
           flex: 1;

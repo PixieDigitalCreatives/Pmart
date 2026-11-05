@@ -5,7 +5,10 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background-color: $bg-light;
+  background:
+    radial-gradient(ellipse 50% 45% at 0% 0%, rgba(242, 13, 24, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 40% at 100% 100%, rgba(242, 13, 24, 0.06) 0%, transparent 70%),
+    $bg-light;
 
   @include mobile {
     padding: 20px 12px;
@@ -18,12 +21,12 @@
   width: 100%;
   max-width: 1000px;
   background: $white;
-  border: 1px solid $border-color;
+  border: 1px solid $border-light;
   border-radius: $radius-2xl;
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 1.15fr;
-  box-shadow: $shadow-lg;
+  box-shadow: $shadow-xl;
 
   @include tablet-down {
     grid-template-columns: 1fr;
@@ -33,25 +36,29 @@
 
 // ─── Left Brand Panel ───────────────────────────────────────────────────────
 .auth-brand-side {
-  background: linear-gradient(145deg, #111318 0%, #1a1f2e 100%);
+  @include brand-surface(0% 0%);
   padding: 52px 44px;
-  color: $white;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid $charcoal-border;
   overflow: hidden;
 
   &::before {
     content: '';
     position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 240px;
-    height: 240px;
-    background: radial-gradient(circle, rgba(242, 13, 24, 0.12) 0%, transparent 70%);
+    right: -120px;
+    bottom: -140px;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(242, 13, 24, 0.22) 0%, transparent 70%);
     pointer-events: none;
+  }
+
+  > * {
+    position: relative;
   }
 
   @include tablet-down {
@@ -67,13 +74,14 @@
     .auth-logo {
       height: 44px;
       width: auto;
+      @include logo-chip(5px);
     }
 
     .brand-tagline {
       font-size: 12.5px;
-      color: rgba(255, 255, 255, 0.5);
+      color: $on-dark-muted;
       font-weight: $font-weight-medium;
-      border-left: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 1px solid $on-dark-line;
       padding-left: 14px;
       letter-spacing: 0.02em;
     }
@@ -87,16 +95,17 @@
 
     h2 {
       font-family: $font-family-display;
-      font-size: 27px;
+      font-size: 30px;
       font-weight: $font-weight-extrabold;
-      line-height: 1.25;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
       margin-bottom: 16px;
       color: $white;
     }
 
     p {
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.55);
+      color: $on-dark-body;
       line-height: 1.65;
       max-width: 300px;
     }
@@ -113,11 +122,21 @@
       align-items: center;
       gap: 10px;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.72);
+      color: $on-dark-body;
+      padding: 10px 12px;
+      border-radius: $radius-lg;
+      background: $on-dark-fill;
+      border: 1px solid $on-dark-line;
 
       .shield-icon {
-        color: $pmart-red;
+        color: $white;
         flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        padding: 6px;
+        border-radius: $radius-sm;
+        background: $brand-gradient;
+        box-shadow: 0 4px 12px rgba(242, 13, 24, 0.3);
       }
     }
   }
@@ -170,10 +189,11 @@
 
     h2 {
       font-family: $font-family-display;
-      font-size: 23px;
-      font-weight: $font-weight-bold;
+      font-size: 25px;
+      font-weight: $font-weight-extrabold;
+      letter-spacing: $letter-spacing-tight;
       color: $charcoal-black;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
       line-height: 1.2;
     }
 
@@ -211,8 +231,9 @@
     width: 100%;
     height: 46px;
     background-color: $white;
-    border: 1.5px solid $border-dark;
+    border: 1px solid $border-color;
     border-radius: $radius-md;
+    box-shadow: $shadow-xs;
     font-family: $font-family-base;
     font-size: 14px;
     font-weight: $font-weight-semibold;
@@ -227,7 +248,8 @@
     }
 
     &:hover:not(:disabled) {
-      background-color: $surface-secondary;
+      background-color: $bg-light;
+      border-color: $border-dark;
       box-shadow: $shadow-sm;
     }
 
@@ -300,7 +322,7 @@
 
         &:focus {
           border-color: $pmart-red;
-          box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.1);
+          box-shadow: $focus-ring;
           background-color: $white;
         }
 
@@ -399,7 +421,8 @@
       .form-title {
         font-family: $font-family-display;
         font-size: 24px;
-        font-weight: $font-weight-bold;
+        font-weight: $font-weight-extrabold;
+        letter-spacing: $letter-spacing-tight;
         color: $charcoal-black;
         margin-bottom: 6px;
       }
@@ -487,7 +510,7 @@
 
         &:focus {
           border-color: $pmart-red;
-          box-shadow: 0 0 0 3px rgba(242, 13, 24, 0.1);
+          box-shadow: $focus-ring;
         }
       }
 
@@ -507,9 +530,9 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #ECFDF5;
-      border: 1px solid #6EE7B7;
-      color: #065F46;
+      background: $success-bg;
+      border: 1px solid $success-border;
+      color: $success-text;
       padding: 8px 14px;
       border-radius: $radius-md;
       font-size: 13px;

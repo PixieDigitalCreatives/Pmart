@@ -26,7 +26,7 @@ services:
       - key: OTP_ENCRYPTION_KEY
         sync: false # 64 hex chars; once orders exist never change it
       - key: ALLOWED_ORIGINS
-        sync: false # your Vercel domain, e.g. https://pmart.vercel.app (comma-separate several, no trailing slash)
+        sync: false # REQUIRED: exact web origin(s), e.g. https://pmart.vercel.app (comma-separated, https only, no * wildcards — the API won't start otherwise)
       # The web app calls /api through a Vercel rewrite (same site), so the session cookie is first-party.
       - key: COOKIE_SAME_SITE
         value: strict

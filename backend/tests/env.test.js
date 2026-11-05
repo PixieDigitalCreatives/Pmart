@@ -34,16 +34,20 @@ describe('environment validation', () => {
     ['TRUST_PROXY is not a small whole number', { TRUST_PROXY: 'yes' }],
     ['COOKIE_SAME_SITE is unknown', { COOKIE_SAME_SITE: 'loose' }],
     ['COOKIE_SAME_SITE is invalid', { COOKIE_SAME_SITE: 'invalid' }],
-    ['JWT_SECRET is short in production', { NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(10) }],
-    ['JWT_SECRET is weak in production', { NODE_ENV: 'production', JWT_SECRET: `secret${'x'.repeat(40)}` }]
+    ['JWT_SECRET is short in production', { NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://shop.example.com', JWT_SECRET: 'x'.repeat(10) }],
+    ['JWT_SECRET is weak in production', { NODE_ENV: 'production', ALLOWED_ORIGINS: 'https://shop.example.com', JWT_SECRET: `secret${'x'.repeat(40)}` }],
+    ['ALLOWED_ORIGINS is missing in production', { NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48) }],
+    ['ALLOWED_ORIGINS has a shared-host wildcard in production', { NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48), ALLOWED_ORIGINS: 'https://pmart.example.com,https://*.vercel.app' }],
+    ['ALLOWED_ORIGINS is * in production', { NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48), ALLOWED_ORIGINS: '*' }],
+    ['ALLOWED_ORIGINS has an http origin in production', { NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48), ALLOWED_ORIGINS: 'http://pmart.example.com' }]
   ])('exits when %s', (_label, overrides) => {
     const vars = { ...base, ...overrides };
     Object.keys(vars).forEach((k) => vars[k] === undefined && delete vars[k]);
     expect(loadEnv(vars).status).toBe(1);
   });
 
-  it('accepts a strong production secret', () => {
-    expect(loadEnv({ ...base, NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48) }).status).toBe(0);
+  it('accepts a strong production secret with exact origins', () => {
+    expect(loadEnv({ ...base, NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48), ALLOWED_ORIGINS: 'https://pmart.example.com, https://www.pmart.example.com/' }).status).toBe(0);
   });
 
   it.each(['strict', 'lax', 'none'])('accepts valid COOKIE_SAME_SITE=%s', (sameSite) => {
@@ -55,8 +59,13 @@ describe('environment validation', () => {
     expect(originCheck(base, origins)).toEqual([true, true, true, false, false, false]);
   });
 
-  it('only allows ALLOWED_ORIGINS in production', () => {
+  it('only allows the exact ALLOWED_ORIGINS in production (no shared-host previews)', () => {
     const prod = { ...base, NODE_ENV: 'production', JWT_SECRET: 'Z'.repeat(48), ALLOWED_ORIGINS: 'https://shop.example.com' };
-    expect(originCheck(prod, ['https://shop.example.com', 'http://localhost:5173'])).toEqual([true, false]);
+    expect(originCheck(prod, ['https://shop.example.com', 'http://localhost:5173', 'https://evil.vercel.app', 'https://pmart-evil.netlify.app', 'https://shop.example.com.evil.com'])).toEqual([true, false, false, false, false]);
+  });
+
+  it('lets development use one-label wildcards from ALLOWED_ORIGINS', () => {
+    const dev = { ...base, ALLOWED_ORIGINS: 'https://pmart-*.example.com' };
+    expect(originCheck(dev, ['https://pmart-git-main.example.com', 'https://pmart-x.evil.example.com', 'https://evil.com'])).toEqual([true, false, false]);
   });
 });

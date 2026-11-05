@@ -36,7 +36,7 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
    |---|---|
    | `MONGODB_URI` | your Atlas URI |
    | `OTP_ENCRYPTION_KEY` | 64 hex characters (see above) |
-   | `ALLOWED_ORIGINS` | your Vercel production URL, e.g. `https://pmart.vercel.app` — fill in after step 2 if you don't know it yet |
+   | `ALLOWED_ORIGINS` | **required** — your exact Vercel production URL(s), e.g. `https://pmart.vercel.app` (comma-separate several, `https://` only, no `*`). The API refuses to start in production without it. Use the project's `https://<project>.vercel.app` name if the domain is not known yet and correct it after step 2 |
    | `MAPTILER_API_KEY` | optional (server-side address lookup) |
    | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | optional, all three for Google sign-in |
 
@@ -53,8 +53,9 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
    (On a paid plan you can run the same commands in the Render **Shell**.)
 
 ## 2. Web app on Vercel
-1. If the Render URL is not `https://pmart-backend.onrender.com`, edit the `/api/:path*` destination in `vercel.json`
-   and commit it (Vercel config can't read environment variables).
+1. The live API is `https://pmart-66mp.onrender.com`. If yours is different, edit both the `/api/:path*` destination
+   and the `Content-Security-Policy` `connect-src` entries (`https://…` and `wss://…`) in `vercel.json` and commit them
+   (Vercel config can't read environment variables). A wrong `connect-src` makes the browser block every socket call.
 2. Vercel → **Add New → Project** → import the repo. Root directory: the repository root. Vercel reads `vercel.json`
    (Vite, `npm ci`, `npm run build`, output `dist`).
 3. **Environment Variables** (Production, and Preview if you use previews):
@@ -83,7 +84,15 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
 - **Render free plan** sleeps after 15 minutes without traffic. The next request waits for a cold start (often
   30–60 s) and live updates disconnect while asleep. Use the Starter plan for real customers.
 - **Preview deployments** get random `*.vercel.app` URLs that are not in `ALLOWED_ORIGINS`, so their API calls are
-  refused. Test on the production URL, or add a stable preview domain to `ALLOWED_ORIGINS`.
+  refused. Test on the production URL, or add a stable preview domain (e.g. the branch alias
+  `https://<project>-git-<branch>-<team>.vercel.app`) to `ALLOWED_ORIGINS`. Wildcards such as `https://*.vercel.app`
+  are refused in production: anyone can host a page on `vercel.app`, and the API answers credentialed requests.
+- **Upgrading to the 2026-11-05 security release:** before Render deploys it, make sure `ALLOWED_ORIGINS` on Render
+  lists every web origin exactly (the release stops accepting all `*.vercel.app` / `*.netlify.app` origins), and that
+  `COOKIE_SAME_SITE` is `strict` or unset. If the new build fails to start, Render's log names the variable to fix.
+- **Security headers** (CSP, HSTS, Permissions-Policy) are set in `vercel.json`. After a deploy, open the site with
+  dev tools → Console and check there are no "Content Security Policy" errors on the home page, sign-in, admin live
+  map and the address map.
 - **Secrets** live only in the Render and Vercel dashboards. `VITE_*` values are public by design.
 - **Netlify:** `netlify.toml` is from an earlier plan. If you stay on Vercel you can delete it; if you ever use Netlify,
   add an equivalent `/api/*` proxy redirect there instead of calling Render directly.

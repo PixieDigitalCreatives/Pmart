@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { productService } from '@/services/productService';
 import { categoryService } from '@/services/categoryService';
-import { useCart } from '@/context/CartContext';
 import { ProductCarousel } from '@/components/product/ProductCarousel';
-import { ArrowRight, Truck, Store } from 'lucide-react';
+import { TbBuildingStore as Store, TbArrowRight } from 'react-icons/tb';
 import { Button, EmptyState } from '@/components/ui';
+import { HeroBasketArt } from '@/components/home/HeroBasketArt';
+import { CategoryIcon } from '@/components/home/CategoryIcon';
 import './HomePage.scss';
 
 // Products are grouped on the home page by these catalog tags (set in the product editor).
@@ -17,7 +18,6 @@ const TAG_SECTIONS = [
 ];
 
 export const HomePage = () => {
-  const { settings } = useCart();
   const [categories, setCategories] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [sections, setSections] = useState({});
@@ -48,38 +48,26 @@ export const HomePage = () => {
     };
   }, []);
 
-  const firstCategory = categories[0];
   const catalogEmpty = !loading && categories.length === 0 && newArrivals.length === 0;
+  const firstCategory = categories[0];
 
   return (
     <div className="pmart-home-page">
-      <section className="home-hero-section full-width-hero">
+      <section className="home-hero-section container">
         <div className="hero-banner-card">
-          <div className="hero-backdrop-media">
-            <img src="/hero-bg.png" alt="" className="hero-grocery-img" />
-            <div className="hero-gradient-overlay" />
+          <div className="hero-text-content">
+            <span className="hero-eyebrow">Fresh groceries, everyday</span>
+            <h1 className="hero-title">
+              Your Everyday
+              <span className="highlight-text">Grocery Store</span>
+            </h1>
+            <p className="hero-desc">Fresh, quality products delivered from your nearest PMart store.</p>
+            <Button component={Link} to={firstCategory ? `/category/${firstCategory.slug}` : '/search'} className="hero-cta">
+              <span>Shop Now</span>
+              <TbArrowRight size={18} />
+            </Button>
           </div>
-          <div className="hero-container-inner">
-            <div className="hero-text-content">
-              <h1 className="hero-title">
-                Everything you need, <br />
-                <span className="highlight-text">delivered fast.</span>
-              </h1>
-              <p className="hero-desc">Fresh produce, dairy, pantry staples and household essentials from your nearby PMart store.</p>
-              <div className="hero-actions">
-                <Button component={Link} to={firstCategory ? `/category/${firstCategory.slug}` : '/search'} variant="primary" size="lg" className="hero-cta">
-                  <span>Start shopping</span>
-                  <ArrowRight size={18} />
-                </Button>
-                {settings.freeDeliveryThreshold > 0 && (
-                  <div className="hero-guarantee">
-                    <Truck size={18} className="shield-icon" />
-                    <span>Free delivery on orders above ₹{settings.freeDeliveryThreshold}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <HeroBasketArt />
         </div>
       </section>
 
@@ -93,13 +81,16 @@ export const HomePage = () => {
             <section className="home-categories-section">
               <div className="container">
                 <div className="section-header-row">
-                  <h2 className="section-heading">Shop by category</h2>
+                  <h2 className="section-heading">Shop by Category</h2>
+                  <Link to="/search" className="view-all-link">
+                    View All Categories <TbArrowRight size={16} aria-hidden="true" />
+                  </Link>
                 </div>
                 <div className="categories-grid-track">
                   {categories.map((cat) => (
                     <Link key={cat._id} to={`/category/${cat.slug}`} className="category-pill-card">
                       <div className="cat-image-box">
-                        {cat.imageUrl ? <img src={cat.imageUrl} alt="" loading="lazy" decoding="async" /> : <Store size={28} aria-hidden="true" />}
+                        {cat.imageUrl ? <img src={cat.imageUrl} alt="" loading="lazy" decoding="async" /> : <CategoryIcon name={cat.name} />}
                       </div>
                       <span className="cat-name">{cat.name}</span>
                     </Link>

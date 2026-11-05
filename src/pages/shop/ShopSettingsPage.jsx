@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Save, Check, AlertTriangle } from 'lucide-react';
+import { TbDeviceFloppy as Save, TbCheck as Check, TbAlertTriangle as AlertTriangle } from 'react-icons/tb';
 import { shopService } from '@/services/shopService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useMyShop } from '@/components/shop/ShopLayout';

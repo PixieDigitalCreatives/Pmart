@@ -2,8 +2,9 @@
 
 const { Order, OrderStatus, PaymentStatus, DeliveryVerification } = require('./order.model');
 const { OtpService } = require('./otp.service');
-const { Product } = require('../catalog/catalog.model');
 const { Shop } = require('../shop/shop.model');
+const { applyStockChange } = require('../inventory/inventory.service');
+const { MovementType, RefType } = require('../inventory/inventory.model');
 const { RiderProfile, RiderAvailability } = require('../rider/rider.model');
 const { User, UserRole } = require('../auth/auth.model');
 const { hasPermission } = require('../../middleware/auth.middleware');
@@ -82,10 +83,22 @@ async function releaseRider(order, session, { completed = false } = {}) {
   await RiderProfile.updateOne({ user: order.rider, currentOrder: order._id }, update, { session });
 }
 
-async function restoreInventory(order, session) {
+async function restoreInventory(order, session, user, to) {
   if (order.inventoryRestored) return;
   for (const item of order.items) {
-    await Product.updateOne({ _id: item.product }, { $inc: { stockCount: item.quantity } }, { session });
+    // A product deleted since the order was placed has nothing to restore (applyStockChange returns null).
+    await applyStockChange(session, {
+      productId: item.product,
+      delta: item.quantity,
+      type: MovementType.ONLINE_ORDER_REVERSAL,
+      refType: RefType.ORDER,
+      refId: order._id,
+      refNumber: order.orderNumber,
+      reason: `Order ${String(to || 'cancelled').toLowerCase()}`,
+      user,
+      dedupeKey: `ORD:${order._id}:${item.product}:RESTORE`,
+      allowNegative: true
+    });
   }
   order.inventoryRestored = true;
 }
@@ -138,7 +151,7 @@ async function applyStatusChange({ order, to, user, actor, reason, session }) {
       order.cancelledAt = now;
       order.cancellationReason = reason || (actor === CUSTOMER ? 'Cancelled by customer' : 'Cancelled');
       await releaseRider(order, session);
-      await restoreInventory(order, session);
+      await restoreInventory(order, session, user, to);
       OtpService.clearOtp(order);
       break;
     default:

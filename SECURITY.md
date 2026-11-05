@@ -1,15 +1,19 @@
 # PMart Security
 
-_Updated 2026-10-13 for the rebuilt backend. Report vulnerabilities privately to the project owner._
+_Updated 2026-11-05 (M0 hardening from the [Security & Compliance Audit](docs/PMart_SECURITY_COMPLIANCE_AUDIT.md)). Report vulnerabilities privately to the project owner._
 
 ## Authentication
 - Phone + password for every role; bcrypt hashes. Passwords: at least 8 characters.
 - Access token: JWT signed with `JWT_SECRET` (production requires 32+ characters, no weak words), default 1 hour.
-- Refresh token: random, sent only as an httpOnly, `SameSite` cookie on `/api/auth`, stored as a sha256 hash,
+  Verified with HS256 only and a fixed issuer (`pmart-api`) and audience (`pmart-app`) — `backend/src/utils/jwt.js`,
+  used by the REST middleware and the socket handshake.
+- Refresh token: random, sent only as an httpOnly cookie on `/api/auth` (`SameSite=Strict` by default; `none` only when
+  `COOKIE_SAME_SITE=none`, which logs a warning in production), stored as a sha256 hash,
   rotated on every refresh (a reused old token is rejected). Logout and deactivation clear it.
 - Store owners and riders start with an admin-set temporary password and are blocked from every route except
   `/auth/me`, `/auth/password` and `/auth/logout` until they change it (`MUST_CHANGE_PASSWORD`).
-- Staff activate through a one-time link (72 hours, single use, stored as a hash).
+- Staff activate through a one-time link (72 hours, single use, stored as a hash). Only an admin, or a staff manager
+  who holds every permission of that employee, can regenerate it (the link signs in as the employee).
 - Google sign-in verifies Firebase ID tokens server-side; without Firebase Admin credentials it is disabled (no mock).
 
 ## Authorization
@@ -25,29 +29,50 @@ Created when the order goes out for delivery; stored AES-256-GCM encrypted (for 
 (for verification); valid 60 minutes; 5 wrong attempts lock it until a new code is generated. Never logged, never sent to the rider.
 
 ## Rate limits (production; off in development unless `RATE_LIMIT_IN_DEV=true`)
-| Scope | Limit |
-|---|---|
-| All API requests | 600 / 15 min per IP |
-| Login, Google sign-in | 10 / 15 min |
-| Register, complete profile | 10 / hour |
-| Password change, activation | 10 / 15 min |
-| Checkout | 20 / 15 min |
-| Delivery-code verify/resend | 15 / 15 min |
-| Admin mutations | 300 / 15 min |
-| Catalog search | 60 / min |
-| Rider location | 40 / min |
-| Road routing | 30 / min |
-`trust proxy` is set to 1 so limits apply to the client IP behind one proxy.
+Client IPs come from `X-Forwarded-For` (`TRUST_PROXY`). Behind Vercel → Render that is correct, but a client calling the
+Render URL directly can put any IP there, so IP-keyed limits are only a first line. Limits that protect accounts or money
+are keyed on something the client can't rotate (`backend/src/middleware/rate-limit.js`).
+
+| Scope | Limit | Counted per |
+|---|---|---|
+| All API requests | 600 / 15 min | IP |
+| Login, Google sign-in | 10 / 15 min | IP |
+| Login failures to one mobile number | 8 / 15 min (successful sign-ins don't count) | mobile number, any IP |
+| Register | 10 / hour | IP |
+| Complete profile | 10 / hour | signed-in user |
+| Password change | 10 / 15 min | signed-in user |
+| Activation | 10 / 15 min | IP (tokens are 256-bit) |
+| Checkout | 20 / 15 min | signed-in user |
+| Delivery-code verify/resend | 15 / 15 min | signed-in user |
+| Admin mutations | 300 / 15 min | signed-in user |
+| Catalog search | 60 / min | IP |
+| Rider location | 40 / min | signed-in user |
+| Road routing | 30 / min | signed-in user |
+| External barcode lookup | 30 / min | signed-in user |
+
+A per-number limit also lets someone hold a number's sign-in closed for 15 minutes by guessing; the planned account
+lockout with safe recovery (audit plan M2) replaces it. Register and search stay IP-based until direct access to Render
+is restricted (audit plan M12).
 
 ## Transport and headers
-- Helmet defaults; `X-Powered-By` disabled; JSON bodies limited to 200 kB.
-- CORS and Socket.IO accept only `ALLOWED_ORIGINS` in production (plus localhost/loopback ports in development);
-  other origins get 403 `CORS_FORBIDDEN`. Sockets require a valid JWT and are authorised per room.
+- Helmet defaults; `X-Powered-By` disabled; JSON bodies limited to 5 MB (12 MB for CSV imports).
+- CORS and Socket.IO accept only the exact `ALLOWED_ORIGINS` in production (plus localhost/loopback ports and `*`
+  patterns in development); other origins get 403 `CORS_FORBIDDEN`. Production refuses to start without
+  `ALLOWED_ORIGINS` or with a wildcard or `http://` entry — the API answers credentialed requests, so a pattern such as
+  `https://*.vercel.app` would let any page on that shared host act for a signed-in user. Sockets require a valid JWT
+  and are authorised per room.
+- Web app (`vercel.json`, `netlify.toml`): `Content-Security-Policy` (scripts only from the app and Google's sign-in
+  script; connections only to the app, the Render API, MapTiler and Google APIs; no plugins, no framing, no
+  `<base>` changes), `Strict-Transport-Security`, `Permissions-Policy` (camera and location for the app only),
+  `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`. Checked on 2026-11-05 against a production build served with
+  these headers (store, search, sign-in, admin console incl. live map, invoice, customer address map + search): no
+  violations; an injected inline script was blocked. Not checked: Google sign-in (not configured), sockets to Render.
 - Errors return a stable `code` and a request id; unexpected 5xx messages and stack traces are never sent to clients.
 
 ## Data
 - `checkout` is idempotent per customer and runs in a transaction; stock can't go negative.
-- Admin/store changes are written to `auditlogs`.
+- Admin/store changes are written to `auditlogs`. Staff changes to an online order's payment status need a reason and
+  are audited with the before/after values; `REFUNDED` is accepted only for collected cash.
 - CSV exports escape values that start with `=`, `+`, `-` or `@` (formula injection).
 - Database backups and removed files live in the gitignored `backups/` folder and contain password hashes and personal
   data — keep them off shared drives and delete them when no longer needed.
@@ -56,3 +81,11 @@ Created when the order goes out for delivery; stored AES-256-GCM encrypted (for 
 - A MapTiler API key is in git history and is still the key in `.env` — rotate it (Remaining Work R1).
 - No self-service password reset; see `docs/PMart_RECOVERY_PROCEDURE.md` (Remaining Work R18).
 - Phone numbers are not verified by OTP at registration (Remaining Work R9).
+- Open findings and the plan to close them: [Security & Compliance Audit](docs/PMart_SECURITY_COMPLIANCE_AUDIT.md)
+  (no account lockout or MFA yet, access token in `localStorage`, one session per user, no tamper-evident audit log,
+  COD cash not reconciled).
+- Dependencies (`npm audit --omit=dev`, 2026-11-05 after fixes): backend 7 moderate, all inside firebase-admin's
+  Firestore/Storage packages that PMart does not call. Web app: `xlsx` (high, no npm fix — replacement waiting for the
+  owner's choice), `maplibre-gl` (critical sanitizer bypass, no fix yet; PMart's map popups use `setText` /
+  `setDOMContent`, never HTML), `@grpc/grpc-js` via Firebase Firestore (not imported by the web app), `minimatch`
+  via `@maptiler/sdk` → `eslint` (not in the browser bundle).

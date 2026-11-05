@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { TbChevronLeft as ChevronLeft, TbChevronRight as ChevronRight, TbArrowRight } from 'react-icons/tb';
 import { ProductCard } from './ProductCard';
 import './ProductCarousel.scss';
 
@@ -27,7 +27,7 @@ export const ProductCarousel = ({ title, subtitle, viewAllLink, products = [] })
         <div className="carousel-controls">
           {viewAllLink && (
             <Link to={viewAllLink} className="view-all-link">
-              see all
+              View All <TbArrowRight size={16} aria-hidden="true" />
             </Link>
           )}
           <div className="arrow-nav-group">

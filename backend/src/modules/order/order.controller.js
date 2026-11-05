@@ -3,8 +3,11 @@
 const crypto = require('crypto');
 const { Order, OrderStatus, PaymentStatus, PaymentMethod, DeliveryVerification } = require('./order.model');
 const { Address } = require('../address/address.model');
+const mongoose = require('mongoose');
 const { Product } = require('../catalog/catalog.model');
 const { Shop } = require('../shop/shop.model');
+const { applyStockChange } = require('../inventory/inventory.service');
+const { MovementType, RefType } = require('../inventory/inventory.model');
 const { Cart } = require('../cart/cart.model');
 const { Settings } = require('../admin/settings.model');
 const { UserRole } = require('../auth/auth.model');
@@ -12,6 +15,7 @@ const { hasPermission } = require('../../middleware/auth.middleware');
 const { OtpService, MAX_OTP_ATTEMPTS } = require('./otp.service');
 const OrderService = require('./order.service');
 const { emitOrderUpdate } = require('../../config/socket');
+const { recordAudit, AuditAction } = require('../admin/audit.model');
 const { runInTransaction } = require('../../utils/transaction');
 const { distanceKm } = require('../../utils/geo');
 const { escapeRegExp } = require('../../utils/regex');
@@ -120,13 +124,23 @@ class OrderController {
 
         const orderItems = [];
         let subTotal = 0;
+        // The order id is fixed up front so each stock-ledger row can point at it.
+        const orderId = new mongoose.Types.ObjectId();
+        const orderNumber = newOrderNumber();
         for (const id of productIds) {
           const quantity = quantities.get(id);
-          const updated = await Product.findOneAndUpdate(
-            { _id: id, isActive: true, stockCount: { $gte: quantity } },
-            { $inc: { stockCount: -quantity } },
-            { session, new: true }
-          );
+          const moved = await applyStockChange(session, {
+            productId: id,
+            delta: -quantity,
+            filter: { isActive: true },
+            type: MovementType.ONLINE_ORDER,
+            refType: RefType.ORDER,
+            refId: orderId,
+            refNumber: orderNumber,
+            user: { _id: customerId },
+            dedupeKey: `ORD:${orderId}:${id}:SALE`
+          });
+          const updated = moved && moved.product;
           if (!updated) {
             const product = byId.get(id);
             throw conflict(
@@ -155,7 +169,8 @@ class OrderController {
         const [order] = await Order.create(
           [
             {
-              orderNumber: newOrderNumber(),
+              _id: orderId,
+              orderNumber,
               customer: customerId,
               shop: shop._id,
               items: orderItems,
@@ -356,8 +371,12 @@ class OrderController {
   }
 
   static async updatePaymentStatus(req, res) {
-    const { paymentStatus } = z.object({ paymentStatus: z.enum(Object.values(PaymentStatus)) }).parse(req.body);
+    const { paymentStatus, reason } = z
+      .object({ paymentStatus: z.enum(Object.values(PaymentStatus)), reason: z.string().trim().max(300).optional() })
+      .parse(req.body);
+    let change = null;
     const order = await runInTransaction(async (session) => {
+      change = null;
       const doc = await OrderService.loadOrder(req.params.id, { session });
       const actor = await OrderService.resolveActor(req.user, doc, { session });
       if (actor === ACTORS.RIDER) {
@@ -367,15 +386,31 @@ class OrderController {
         throw forbidden('Only the assigned rider or operations staff can update payment');
       }
       if (doc.paymentStatus === paymentStatus) return doc;
+      // Staff corrections are overrides of the cash record: they need a reason and are audited.
+      if (actor === ACTORS.STAFF && (!reason || reason.length < 3)) {
+        throw badRequest('Give a reason for changing the payment status', 'REASON_REQUIRED');
+      }
+      if (paymentStatus === PaymentStatus.REFUNDED && doc.paymentStatus !== PaymentStatus.COLLECTED) {
+        throw conflict('Only collected cash can be marked refunded', 'INVALID_PAYMENT_TRANSITION');
+      }
+      change = { from: doc.paymentStatus, to: paymentStatus, actor };
       doc.paymentStatus = paymentStatus;
       if (paymentStatus === PaymentStatus.COLLECTED) {
         doc.paymentCollectedAt = new Date();
         doc.paymentCollectedBy = req.user._id;
       }
-      OrderService.pushHistory(doc, doc.status, req.user, `Payment marked ${paymentStatus}`);
+      OrderService.pushHistory(doc, doc.status, req.user, reason ? `Payment marked ${paymentStatus}: ${reason}` : `Payment marked ${paymentStatus}`);
       await doc.save({ session });
       return doc;
     });
+    if (change && change.actor === ACTORS.STAFF) {
+      await recordAudit(req, AuditAction.UPDATE, 'OrderPayment', order._id, {
+        orderNumber: order.orderNumber,
+        before: { paymentStatus: change.from },
+        after: { paymentStatus: change.to },
+        reason
+      });
+    }
     await respondWithOrder(res, order);
   }
 

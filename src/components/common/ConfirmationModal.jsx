@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
+import { TbAlertTriangle as AlertTriangle, TbTrash as Trash2, TbInfoCircle as Info, TbX as X } from 'react-icons/tb';
 import './ConfirmationModal.scss';
 import { Button } from '@/components/ui';
 

@@ -63,7 +63,24 @@ const settingsSchema = z.object({
   deliverySlaMinutes: z.number().int().min(1).max(600),
   lowStockThreshold: z.number().int().min(0).max(100000),
   supportPhone: phone.or(z.literal('')),
-  supportEmail: z.string().trim().toLowerCase().email('Enter a valid support email').or(z.literal(''))
+  supportEmail: z.string().trim().toLowerCase().email('Enter a valid support email').or(z.literal('')),
+  billing: z
+    .object({
+      businessName: z.string().trim().max(120),
+      businessAddress: z.string().trim().max(300),
+      businessPhone: z.string().trim().max(20),
+      gstin: z.string().trim().toUpperCase().regex(/^([0-9A-Z]{15})?$/, 'GSTIN must be 15 letters/digits'),
+      invoicePrefix: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{1,10}$/, 'Prefix: 1-10 letters, digits or -'),
+      taxMode: z.enum(['NONE', 'EXCLUSIVE', 'INCLUSIVE']),
+      defaultTaxRate: z.number().min(0).max(100),
+      taxLabel: z.string().trim().min(1).max(20),
+      gstSplit: z.enum(['NONE', 'CGST_SGST', 'IGST']),
+      roundTotal: z.boolean(),
+      paymentTermsDays: z.number().int().min(0).max(365),
+      allowNegativeStock: z.boolean(),
+      invoiceFooter: z.string().trim().max(300)
+    })
+    .partial()
 }).partial();
 
 async function assertPhoneFree(phoneNumber, exceptId) {
@@ -386,6 +403,7 @@ class AdminController {
     user.passwordHash = await hashPassword(newPassword);
     user.mustChangePassword = true;
     user.refreshTokenHash = undefined;
+    user.tokenVersion = (user.tokenVersion || 1) + 1;
     await user.save();
     await recordAudit(req, AuditAction.UPDATE, 'Rider', user._id, { passwordReset: true });
     res.json({ success: true, message: 'Temporary password set. The rider must change it on next sign-in.' });
@@ -446,9 +464,40 @@ class AdminController {
     const user = await User.findOne({ _id: req.params.id, role: UserRole.EMPLOYEE }).select('+passwordHash');
     if (!user) throw notFound('Employee not found');
     if (user.passwordHash) throw conflict('This employee has already activated their account', 'ALREADY_ACTIVE');
+    // The link signs in as this employee, so handing it out is the same as granting their permissions.
+    if (req.user.role !== UserRole.ADMIN && (user.permissions || []).some((p) => !req.user.permissions.includes(p))) {
+      throw forbidden('This employee has permissions you do not have. Ask an admin for a new activation link.', 'PERMISSION_ESCALATION');
+    }
     const setupToken = await AuthService.createSetupToken(user._id);
     await recordAudit(req, AuditAction.UPDATE, 'Employee', user._id, { activationLinkRegenerated: true });
     res.json({ success: true, data: { setupToken, activationPath: `/activate?token=${setupToken}` } });
+  }
+
+  static async createPasswordResetLink(req, res) {
+    assertObjectId(req.params.id, 'user id');
+    const user = await User.findById(req.params.id);
+    if (!user) throw notFound('User not found');
+    if (user.role === UserRole.ADMIN && String(req.user._id) !== String(user._id) && req.user.role !== 'SUPER_ADMIN') {
+      throw forbidden('Only a Super Admin can issue reset links for administrators', 'ADMIN_PROTECTED');
+    }
+    const { token, expiresAt } = await AuthService.createPasswordResetToken(user._id);
+    await recordAudit(req, AuditAction.UPDATE, 'User', user._id, { passwordResetLinkGenerated: true });
+    res.json({
+      success: true,
+      data: { id: String(user._id), resetToken: token, resetPath: `/reset-password?token=${token}`, expiresAt },
+      message: 'Password reset link generated. Share it securely with the user.'
+    });
+  }
+
+  static async unlockUser(req, res) {
+    assertObjectId(req.params.id, 'user id');
+    const user = await User.findById(req.params.id);
+    if (!user) throw notFound('User not found');
+    user.failedLogins = 0;
+    user.lockedUntil = null;
+    await user.save();
+    await recordAudit(req, AuditAction.UPDATE, 'User', user._id, { accountUnlocked: true });
+    res.json({ success: true, message: 'User account unlocked successfully' });
   }
 
   static async updateEmployee(req, res) {
@@ -482,11 +531,13 @@ class AdminController {
   }
 
   static async updateSettings(req, res) {
-    const data = settingsSchema.parse(req.body);
+    const { billing, ...data } = settingsSchema.parse(req.body);
     const settings = await Settings.getSingleton();
     settings.set(data);
+    // Merge billing fields one by one so a partial update keeps the others.
+    Object.entries(billing || {}).forEach(([key, value]) => settings.set(`billing.${key}`, value));
     await settings.save();
-    await recordAudit(req, AuditAction.UPDATE, 'Settings', settings._id, data);
+    await recordAudit(req, AuditAction.UPDATE, 'Settings', settings._id, billing ? { ...data, billing } : data);
     res.json({ success: true, data: settings });
   }
 

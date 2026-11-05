@@ -10,7 +10,7 @@ import { OrderStatusTimeline } from '@/components/order/OrderStatusTimeline';
 import { PaymentStatusBadge } from '@/components/order/PaymentStatusBadge';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ORDER_STATUS_LABELS, CUSTOMER_CANCELLABLE, getCustomerOrderStatus } from '@/types/orderTypes';
-import { ChevronLeft, ChevronDown, Banknote, Package, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react';
+import { TbChevronLeft as ChevronLeft, TbChevronDown as ChevronDown, TbCash as Banknote, TbPackage as Package, TbShieldCheck as ShieldCheck, TbAlertTriangle as AlertTriangle, TbCircleX as XCircle } from 'react-icons/tb';
 import { Button, EmptyState, LoadingState } from '@/components/ui';
 import './OrderTrackingPage.scss';
 

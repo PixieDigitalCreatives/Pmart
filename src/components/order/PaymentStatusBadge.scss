@@ -10,22 +10,22 @@
   transition: all $transition-fast;
 
   &.status-pending {
-    background-color: #fffbeb;
-    border: 1px solid #fef3c7;
-    color: #b45309;
+    background-color: $warning-bg;
+    border: 1px solid $warning-bg;
+    color: $warning-strong;
 
     .badge-icon-wrap {
-      color: #d97706;
+      color: $warning-strong;
     }
   }
 
   &.status-collected {
-    background-color: #f0fdf4;
-    border: 1px solid #dcfce7;
-    color: #15803d;
+    background-color: $success-bg;
+    border: 1px solid $leaf-green-light;
+    color: $leaf-green;
 
     .badge-icon-wrap {
-      color: #16a34a;
+      color: $leaf-green;
     }
   }
 

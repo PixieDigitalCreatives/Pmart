@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History } from 'lucide-react';
+import { TbHistory as History } from 'react-icons/tb';
 import { riderService } from '@/services/riderService';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
 import { PageHeader, Card, StatusBadge, EmptyState, LoadingState, Button } from '@/components/ui';

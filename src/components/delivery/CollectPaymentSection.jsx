@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Banknote, User, AlertCircle, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { TbCash as Banknote, TbUser as User, TbAlertCircle as AlertCircle, TbCircleCheck as CheckCircle2, TbShieldCheck as ShieldCheck, TbLoader2 as Loader2 } from 'react-icons/tb';
 import { deliveryService } from '@/services/deliveryService';
 import './CollectPaymentSection.scss';
 import { Button } from '@/components/ui';

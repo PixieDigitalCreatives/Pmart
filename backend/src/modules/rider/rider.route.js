@@ -8,7 +8,7 @@ const { limiter } = require('../../middleware/rate-limit');
 
 const router = Router();
 
-const locationLimiter = limiter({ windowMs: 60 * 1000, max: 40, message: 'Too many location updates' });
+const locationLimiter = limiter({ windowMs: 60 * 1000, max: 40, key: 'user', message: 'Too many location updates' });
 
 const canDispatch = (req, res, next) => {
   const u = req.user;

@@ -31,7 +31,31 @@ const PERMISSIONS = Object.freeze([
   'employees.manage',
   'settings.read',
   'settings.manage',
-  'catalog.manage'
+  'catalog.manage',
+  'catalog.delete',
+  'catalog.import',
+  'images.verify',
+  'inventory.read',
+  'inventory.restock',
+  'inventory.adjust',
+  'inventory.negative_stock',
+  'invoices.create',
+  'invoices.read',
+  'invoices.cancel',
+  'billing.price_override',
+  'payments.record',
+  'payments.read'
+]);
+
+/** One-click permission set for a store manager (see docs/PMart_INVENTORY_BILLING.md §5). */
+const STORE_MANAGER_PERMISSIONS = Object.freeze([
+  'dashboard.read',
+  'inventory.read',
+  'inventory.restock',
+  'invoices.create',
+  'invoices.read',
+  'payments.record',
+  'payments.read'
 ]);
 
 const stringOnly = (field) => ({ [field]: { $type: 'string' } });
@@ -50,10 +74,16 @@ const UserSchema = new Schema(
     profileComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     mustChangePassword: { type: Boolean, default: false },
+    tokenVersion: { type: Number, default: 1 },
+    failedLogins: { type: Number, default: 0 },
+    lockedUntil: { type: Date, default: null },
+    passwordChangedAt: { type: Date },
     passwordHash: { type: String, select: false },
     refreshTokenHash: { type: String, select: false },
     setupTokenHash: { type: String, select: false },
     setupTokenExpires: { type: Date, select: false },
+    resetTokenHash: { type: String, select: false },
+    resetTokenExpires: { type: Date, select: false },
     lastLoginAt: { type: Date }
   },
   { timestamps: true }
@@ -65,8 +95,9 @@ UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: stringOn
 UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: stringOnly('googleId') });
 UserSchema.index({ refreshTokenHash: 1 }, { partialFilterExpression: stringOnly('refreshTokenHash') });
 UserSchema.index({ setupTokenHash: 1 }, { partialFilterExpression: stringOnly('setupTokenHash') });
+UserSchema.index({ resetTokenHash: 1 }, { partialFilterExpression: stringOnly('resetTokenHash') });
 UserSchema.index({ role: 1, isActive: 1, createdAt: -1 });
 
 const User = mongoose.model('User', UserSchema);
 
-module.exports = { User, UserRole, AuthProvider, PERMISSIONS };
+module.exports = { User, UserRole, AuthProvider, PERMISSIONS, STORE_MANAGER_PERMISSIONS };

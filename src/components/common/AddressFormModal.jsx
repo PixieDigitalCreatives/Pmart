@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Navigation, MapPin, Loader2, AlertCircle, Search } from 'lucide-react';
+import { TbX as X, TbNavigation as Navigation, TbMapPin as MapPin, TbLoader2 as Loader2, TbAlertCircle as AlertCircle, TbSearch as Search } from 'react-icons/tb';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient, { apiErrorMessage } from '@/services/apiClient';

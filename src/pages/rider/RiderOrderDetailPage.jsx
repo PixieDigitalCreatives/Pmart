@@ -12,7 +12,7 @@ import { DeliveryVerificationSection } from '@/components/delivery/DeliveryVerif
 import { DeliveryCompletionScreen } from '@/components/delivery/DeliveryCompletionScreen';
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '@/types/orderTypes';
 import { getFullAddressString } from '@/utils/addressUtils';
-import { Navigation, Phone, CheckCircle2, MapPin, ChevronLeft, AlertTriangle, Store } from 'lucide-react';
+import { TbNavigation as Navigation, TbPhone as Phone, TbCircleCheck as CheckCircle2, TbMapPin as MapPin, TbChevronLeft as ChevronLeft, TbAlertTriangle as AlertTriangle, TbBuildingStore as Store } from 'react-icons/tb';
 import { Button, Card, StatusBadge, LoadingState, EmptyState, Modal, FormField, Input } from '@/components/ui';
 import './RiderOrderDetailPage.scss';
 

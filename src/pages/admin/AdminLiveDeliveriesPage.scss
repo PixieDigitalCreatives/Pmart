@@ -27,9 +27,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background-color: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      color: #166534;
+      background-color: $success-bg;
+      border: 1px solid $success-border;
+      color: $success-text;
       font-size: 12.5px;
       font-weight: $font-weight-semibold;
       padding: 6px 14px;
@@ -39,7 +39,7 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background-color: #16a34a;
+        background-color: $leaf-green;
         animation: livePulse 1.5s infinite;
       }
     }
@@ -123,12 +123,12 @@
 
   .operations-grid {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(0, 1fr) 360px;
     gap: 20px;
     align-items: start;
 
-    @include tablet {
-      grid-template-columns: 1fr;
+    @include tablet-down {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .logistics-map-card {
@@ -237,21 +237,21 @@
             border-radius: $radius-pill;
 
             &.out_for_delivery {
-              background-color: #eff6ff;
-              color: #1d4ed8;
-              border: 1px solid #bfdbfe;
+              background-color: $info-bg;
+              color: $info-text;
+              border: 1px solid $info-border;
             }
 
             &.near_customer {
-              background-color: #f0fdf4;
-              color: #15803d;
-              border: 1px solid #bbf7d0;
+              background-color: $success-bg;
+              color: $leaf-green;
+              border: 1px solid $success-border;
             }
 
             &.picked_up {
-              background-color: #fefce8;
-              color: #a16207;
-              border: 1px solid #fef08a;
+              background-color: $warning-bg;
+              color: $warning-text;
+              border: 1px solid $warning-border;
             }
 
             &.assigned {
@@ -272,7 +272,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px 12px;
-            background: #fafbfc;
+            background: $bg-light;
             padding: 12px;
             border-radius: $radius-md;
             border: 1px solid $border-color;
@@ -353,7 +353,7 @@
               }
 
               .cust-icon {
-                color: #2563eb;
+                color: $info;
                 flex-shrink: 0;
                 margin-top: 2px;
               }
