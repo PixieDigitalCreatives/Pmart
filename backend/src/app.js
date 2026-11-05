@@ -43,6 +43,9 @@ app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use(require('./middleware/csrf.middleware').csrfProtection);
 
+// Ultra-lightweight keep-alive ping for Render free tier (4 bytes response, no database load)
+app.get('/api/ping', (req, res) => res.status(200).send('pong'));
+
 app.get('/api/health', (req, res) => {
   const mongoose = require('mongoose');
   const connected = mongoose.connection.readyState === 1;

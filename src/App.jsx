@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { IconContext } from 'react-icons';
 import { AuthProvider } from '@/context/AuthContext';
@@ -14,6 +14,14 @@ import '@/styles/main.scss';
 const ICON_DEFAULTS = { size: '24' };
 
 function App() {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetch('/api/ping', { method: 'GET', keepalive: true }).catch(() => {});
+      }
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
   return (
     <IconContext.Provider value={ICON_DEFAULTS}>
       <ErrorBoundary>
