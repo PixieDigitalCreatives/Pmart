@@ -22,6 +22,7 @@ const profileLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 10, key: 'user',
 
 router.post('/register', registerLimiter, AuthController.register);
 router.post('/login', loginLimiter, accountLoginLimiter, AuthController.login);
+router.post('/mfa/verify', loginLimiter, AuthController.verifyMfa);
 router.post('/google', loginLimiter, AuthController.googleLogin);
 router.post('/activate', passwordLimiter, AuthController.activateAccount);
 router.post('/reset-password', passwordLimiter, AuthController.resetPassword);
@@ -35,5 +36,6 @@ router.put('/password', protect, passwordLimiter, AuthController.changePassword)
 router.get('/sessions', protect, AuthController.listSessions);
 router.post('/sessions/revoke-others', protect, AuthController.revokeOtherSessions);
 router.post('/sessions/revoke-all', protect, AuthController.revokeAllSessions);
+router.post('/socket-ticket', protect, AuthController.getSocketTicket);
 
 module.exports = router;

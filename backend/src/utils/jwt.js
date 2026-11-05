@@ -7,8 +7,10 @@ const { env } = require('../config/env');
 // anything else with the same secret, or with another algorithm, is refused.
 const ACCESS_TOKEN = Object.freeze({ algorithm: 'HS256', issuer: 'pmart-api', audience: 'pmart-app' });
 
-function signAccessToken(userId, tokenVersion = 1) {
-  return jwt.sign({ id: String(userId), ver: tokenVersion }, env.JWT_SECRET, {
+function signAccessToken(userId, tokenVersion) {
+  const payload = { id: String(userId) };
+  if (tokenVersion !== undefined) payload.ver = tokenVersion;
+  return jwt.sign(payload, env.JWT_SECRET, {
     algorithm: ACCESS_TOKEN.algorithm,
     issuer: ACCESS_TOKEN.issuer,
     audience: ACCESS_TOKEN.audience,

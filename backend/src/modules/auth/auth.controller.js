@@ -71,11 +71,26 @@ class AuthController {
   static async login(req, res) {
     const data = loginSchema.parse(req.body);
     try {
-      sessionResponse(res, 200, await AuthService.login(data, req));
+      const result = await AuthService.login(data, req);
+      if (result.mfaRequired) {
+        return res.status(200).json({
+          success: true,
+          mfaRequired: true,
+          mfaTicket: result.mfaTicket,
+          user: AuthService.toPublicUser(result.user)
+        });
+      }
+      sessionResponse(res, 200, result);
     } catch (err) {
       logger.warn(`Failed login for ${data.phone} from ${req.ip}`);
       throw err;
     }
+  }
+
+  static async verifyMfa(req, res) {
+    const { mfaTicket, code, recoveryCode } = req.body;
+    const result = await AuthService.verifyMfaLogin({ mfaTicket, code, recoveryCode }, req);
+    sessionResponse(res, 200, result);
   }
 
   static async googleLogin(req, res) {
@@ -143,6 +158,11 @@ class AuthController {
     await AuthService.revokeAllSessions(req.user._id);
     res.clearCookie(REFRESH_COOKIE, getCookieOptions());
     res.json({ success: true, message: 'All sessions logged out' });
+  }
+
+  static async getSocketTicket(req, res) {
+    const ticket = AuthService.createSocketTicket(req.user._id);
+    res.json({ success: true, ticket });
   }
 }
 

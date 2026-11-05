@@ -10,7 +10,8 @@ const UserRole = Object.freeze({
   RIDER: 'RIDER',
   SHOP_OWNER: 'SHOP_OWNER',
   EMPLOYEE: 'EMPLOYEE',
-  ADMIN: 'ADMIN'
+  ADMIN: 'ADMIN',
+  SUPER_ADMIN: 'SUPER_ADMIN'
 });
 
 const AuthProvider = Object.freeze({
@@ -25,6 +26,7 @@ const PERMISSIONS = Object.freeze([
   'orders.manage',
   'reports.read',
   'customers.read',
+  'customers.pii',
   'riders.read',
   'riders.manage',
   'shops.manage',
@@ -44,10 +46,18 @@ const PERMISSIONS = Object.freeze([
   'invoices.cancel',
   'billing.price_override',
   'payments.record',
-  'payments.read'
+  'payments.read',
+  'audit.read',
+  'security.manage',
+  'approvals.review',
+  'cod.reconcile',
+  'settlements.manage',
+  'grievances.manage',
+  'policies.manage',
+  'privacy.requests'
 ]);
 
-/** One-click permission set for a store manager (see docs/PMart_INVENTORY_BILLING.md §5). */
+/** One-click permission sets for employee presets (§5 of Security & Compliance Audit). */
 const STORE_MANAGER_PERMISSIONS = Object.freeze([
   'dashboard.read',
   'inventory.read',
@@ -56,6 +66,47 @@ const STORE_MANAGER_PERMISSIONS = Object.freeze([
   'invoices.read',
   'payments.record',
   'payments.read'
+]);
+
+const OPERATIONS_ADMIN_PERMISSIONS = Object.freeze([
+  'dashboard.read',
+  'orders.read',
+  'orders.manage',
+  'riders.read',
+  'riders.manage',
+  'shops.manage',
+  'customers.read'
+]);
+
+const WAREHOUSE_STAFF_PERMISSIONS = Object.freeze([
+  'dashboard.read',
+  'inventory.read',
+  'inventory.restock',
+  'inventory.adjust'
+]);
+
+const FINANCE_MANAGER_PERMISSIONS = Object.freeze([
+  'dashboard.read',
+  'payments.record',
+  'payments.read',
+  'invoices.read',
+  'reports.read',
+  'cod.reconcile',
+  'settlements.manage'
+]);
+
+const CUSTOMER_SUPPORT_PERMISSIONS = Object.freeze([
+  'orders.read',
+  'customers.read',
+  'grievances.manage'
+]);
+
+const AUDITOR_PERMISSIONS = Object.freeze([
+  'reports.read',
+  'audit.read',
+  'invoices.read',
+  'inventory.read',
+  'policies.manage'
 ]);
 
 const stringOnly = (field) => ({ [field]: { $type: 'string' } });
@@ -69,6 +120,7 @@ const UserSchema = new Schema(
     phoneVerified: { type: Boolean, default: false },
     name: { type: String, trim: true, maxlength: 100 },
     role: { type: String, enum: Object.values(UserRole), default: UserRole.CUSTOMER, required: true },
+    staffRole: { type: String, default: null },
     permissions: { type: [{ type: String, enum: PERMISSIONS }], default: [] },
     authProvider: { type: String, enum: Object.values(AuthProvider), default: AuthProvider.PHONE },
     profileComplete: { type: Boolean, default: false },
@@ -78,6 +130,13 @@ const UserSchema = new Schema(
     failedLogins: { type: Number, default: 0 },
     lockedUntil: { type: Date, default: null },
     passwordChangedAt: { type: Date },
+    mfa: {
+      enabled: { type: Boolean, default: false },
+      secretEnc: { type: String, select: false },
+      pendingSecretEnc: { type: String, select: false },
+      enabledAt: { type: Date },
+      recoveryCodeHashes: { type: [String], select: false, default: [] }
+    },
     passwordHash: { type: String, select: false },
     refreshTokenHash: { type: String, select: false },
     setupTokenHash: { type: String, select: false },
@@ -100,4 +159,15 @@ UserSchema.index({ role: 1, isActive: 1, createdAt: -1 });
 
 const User = mongoose.model('User', UserSchema);
 
-module.exports = { User, UserRole, AuthProvider, PERMISSIONS, STORE_MANAGER_PERMISSIONS };
+module.exports = {
+  User,
+  UserRole,
+  AuthProvider,
+  PERMISSIONS,
+  STORE_MANAGER_PERMISSIONS,
+  OPERATIONS_ADMIN_PERMISSIONS,
+  WAREHOUSE_STAFF_PERMISSIONS,
+  FINANCE_MANAGER_PERMISSIONS,
+  CUSTOMER_SUPPORT_PERMISSIONS,
+  AUDITOR_PERMISSIONS
+};

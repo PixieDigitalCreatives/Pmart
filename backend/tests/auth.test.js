@@ -209,3 +209,130 @@ describe('sign-in throttling (rate limits on, as in production)', () => {
     }
   });
 });
+
+describe('M2 security hardening', () => {
+  it('enforces password policy: rejects common passwords and passwords containing phone number', async () => {
+    const res1 = await api().post('/api/auth/register').send({ name: 'A', phone: '9876543210', password: 'password123' });
+    expect(res1.status).toBe(400);
+
+    const res2 = await api().post('/api/auth/register').send({ name: 'B', phone: '9876543210', password: 'pass-9876543210' });
+    expect(res2.status).toBe(400);
+  });
+
+  it('locks account after 5 consecutive failed login attempts', async () => {
+    const user = await createUser('CUSTOMER', { password: 'SecurePassword1!' });
+    for (let i = 0; i < 4; i++) {
+      const res = await api().post('/api/auth/login').send({ phone: user.phone, password: 'wrongpassword' });
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe('INVALID_CREDENTIALS');
+    }
+
+    // 5th failed attempt locks the account
+    const fifth = await api().post('/api/auth/login').send({ phone: user.phone, password: 'wrongpassword' });
+    expect(fifth.status).toBe(401);
+    expect(fifth.body.code).toBe('ACCOUNT_LOCKED');
+
+    // Subsequent attempt even with correct password is rejected while locked
+    const locked = await api().post('/api/auth/login').send({ phone: user.phone, password: 'SecurePassword1!' });
+    expect(locked.status).toBe(401);
+    expect(locked.body.code).toBe('ACCOUNT_LOCKED');
+
+    // Admin unlock allows login again
+    const admin = await createUser('ADMIN');
+    const unlockRes = await api().post(`/api/admin/users/${user._id}/unlock`).set(auth(admin));
+    expect(unlockRes.status).toBe(200);
+
+    const success = await api().post('/api/auth/login').send({ phone: user.phone, password: 'SecurePassword1!' });
+    expect(success.status).toBe(200);
+  });
+
+  it('revokes access token when password is changed (tokenVersion check)', async () => {
+    const user = await createUser('CUSTOMER', { password: 'OriginalPassword1!' });
+    const loginRes = await api().post('/api/auth/login').send({ phone: user.phone, password: 'OriginalPassword1!' });
+    const tokenBefore = loginRes.body.accessToken;
+
+    // Verify token works
+    expect((await api().get('/api/auth/me').set('Authorization', `Bearer ${tokenBefore}`)).status).toBe(200);
+
+    // Change password
+    const changeRes = await api()
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${tokenBefore}`)
+      .send({ currentPassword: 'OriginalPassword1!', newPassword: 'UpdatedPassword1!', confirmPassword: 'UpdatedPassword1!' });
+    expect(changeRes.status).toBe(200);
+
+    // The old token is immediately rejected with TOKEN_REVOKED
+    const rejected = await api().get('/api/auth/me').set('Authorization', `Bearer ${tokenBefore}`);
+    expect(rejected.status).toBe(401);
+    expect(rejected.body.code).toBe('TOKEN_REVOKED');
+
+    // The new token works
+    const tokenAfter = changeRes.body.accessToken;
+    expect((await api().get('/api/auth/me').set('Authorization', `Bearer ${tokenAfter}`)).status).toBe(200);
+  });
+
+  it('detects refresh token reuse and revokes the session family', async () => {
+    const reg = await api().post('/api/auth/register').send({ name: 'Bob', phone: '9123456789', password: 'BobPassword123!' });
+    const firstCookie = refreshCookie(reg).split(';')[0];
+
+    // Legitimate refresh rotates to second token
+    const firstRefresh = await api().post('/api/auth/refresh').set('Cookie', firstCookie);
+    expect(firstRefresh.status).toBe(200);
+    const secondCookie = refreshCookie(firstRefresh).split(';')[0];
+
+    // Replay of the first (already rotated) token triggers theft detection
+    const replayed = await api().post('/api/auth/refresh').set('Cookie', firstCookie);
+    expect(replayed.status).toBe(401);
+    expect(replayed.body.code).toBe('REFRESH_REVOKED');
+
+    // The entire session family is now revoked, so secondCookie is also rejected
+    const blocked = await api().post('/api/auth/refresh').set('Cookie', secondCookie);
+    expect(blocked.status).toBe(401);
+  });
+
+  it('supports admin-issued password reset links and single-use password reset', async () => {
+    const admin = await createUser('ADMIN');
+    const customer = await createUser('CUSTOMER', { password: 'OldPassword1!' });
+
+    const linkRes = await api().post(`/api/admin/users/${customer._id}/reset-link`).set(auth(admin));
+    expect(linkRes.status).toBe(200);
+    const { resetToken } = linkRes.body.data;
+    expect(resetToken).toBeTruthy();
+
+    // Reset password with token
+    const resetRes = await api().post('/api/auth/reset-password').send({ token: resetToken, password: 'BrandNewPassword1!' });
+    expect(resetRes.status).toBe(200);
+
+    // Can log in with new password
+    expect((await api().post('/api/auth/login').send({ phone: customer.phone, password: 'BrandNewPassword1!' })).status).toBe(200);
+
+    // Token cannot be reused
+    const reuse = await api().post('/api/auth/reset-password').send({ token: resetToken, password: 'AnotherPassword1!' });
+    expect(reuse.status).toBe(400);
+  });
+
+  it('manages sessions and allows revoking other sessions', async () => {
+    const customer = await createUser('CUSTOMER', { password: 'PasswordForSessions1!' });
+    const session1 = await api().post('/api/auth/login').send({ phone: customer.phone, password: 'PasswordForSessions1!' });
+    const cookie1 = refreshCookie(session1).split(';')[0];
+
+    const session2 = await api().post('/api/auth/login').send({ phone: customer.phone, password: 'PasswordForSessions1!' });
+    const cookie2 = refreshCookie(session2).split(';')[0];
+
+    // Both sessions can refresh
+    expect((await api().post('/api/auth/refresh').set('Cookie', cookie1)).status).toBe(200);
+    expect((await api().post('/api/auth/refresh').set('Cookie', cookie2)).status).toBe(200);
+
+    // List sessions
+    const listRes = await api().get('/api/auth/sessions').set('Authorization', `Bearer ${session2.body.accessToken}`).set('Cookie', cookie2);
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.data.length).toBeGreaterThanOrEqual(2);
+
+    // Revoke other sessions from session 2
+    const revokeRes = await api().post('/api/auth/sessions/revoke-others').set('Authorization', `Bearer ${session2.body.accessToken}`).set('Cookie', cookie2);
+    expect(revokeRes.status).toBe(200);
+
+    // Session 1 is now revoked
+    expect((await api().post('/api/auth/refresh').set('Cookie', cookie1)).status).toBe(401);
+  });
+});

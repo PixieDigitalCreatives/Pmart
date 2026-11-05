@@ -34,7 +34,7 @@ const DUMMY_PASSWORD_HASH = '$2a$10$CwTycUXWue0Thq9StjUM0uJ8p2fJvS7w8M4mF9l0q9T1
 
 const COMMON_PASSWORDS = new Set([
   'password', 'password123', 'admin123', '12345678', '123456789', '1234567890',
-  'qwerty123', 'welcome123', 'pmart123', 'letmein123', 'iloveyou'
+  'qwerty123', 'pmart123', 'letmein123', 'iloveyou'
 ]);
 
 function validatePasswordStrength(password, phone = '') {

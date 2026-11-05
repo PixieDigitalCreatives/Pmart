@@ -41,6 +41,7 @@ app.use(limiter({ windowMs: 15 * 60 * 1000, max: 600, message: 'Too many request
 app.use('/api/inventory/imports', express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
+app.use(require('./middleware/csrf.middleware').csrfProtection);
 
 app.get('/api/health', (req, res) => {
   const mongoose = require('mongoose');

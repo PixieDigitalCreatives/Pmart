@@ -23,3 +23,4 @@ SessionSchema.index({ user: 1, isRevoked: 1, expiresAt: 1 });
 const Session = mongoose.model('Session', SessionSchema);
 
 module.exports = { Session };
+

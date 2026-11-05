@@ -30,19 +30,36 @@ function initSocket(server) {
   });
 
   io.use(async (socket, next) => {
-    const token = socket.handshake.auth && socket.handshake.auth.token;
-    if (!token) return next(new Error('Authentication error: Token missing'));
+    const authData = socket.handshake.auth || {};
+    let userId = null;
+    let tokenVer = undefined;
+
+    if (authData.ticket) {
+      const { AuthService } = require('../modules/auth/auth.service');
+      userId = AuthService.verifySocketTicket(authData.ticket);
+      if (!userId) return next(new Error('Authentication error: Ticket invalid or expired'));
+    } else if (authData.token) {
+      try {
+        const decoded = verifyAccessToken(authData.token);
+        userId = decoded.id;
+        tokenVer = decoded.ver;
+      } catch {
+        return next(new Error('Authentication error: Token invalid'));
+      }
+    } else {
+      return next(new Error('Authentication error: Token missing'));
+    }
+
     try {
-      const decoded = verifyAccessToken(token);
-      const user = await User.findById(decoded.id).select('role permissions isActive tokenVersion').lean();
+      const user = await User.findById(userId).select('role permissions isActive tokenVersion').lean();
       if (!user || !user.isActive) return next(new Error('Authentication error: User invalid or inactive'));
-      if (decoded.ver !== undefined && user.tokenVersion !== undefined && decoded.ver !== user.tokenVersion) {
+      if (tokenVer !== undefined && user.tokenVersion !== undefined && tokenVer < user.tokenVersion) {
         return next(new Error('Authentication error: Token revoked'));
       }
       socket.user = { _id: String(user._id), role: user.role, permissions: user.permissions || [] };
       next();
     } catch {
-      next(new Error('Authentication error: Token invalid'));
+      next(new Error('Authentication error: Database lookup failed'));
     }
   });
 

@@ -1,9 +1,9 @@
 # PMart Deployment — Render (API) + Vercel (web app)
 
 ```
-Browser ──► https://<your-app>.vercel.app          (Vercel: static React build)
-   │            └─ /api/*  ──rewrite──►  https://pmart-backend.onrender.com/api/*   (Render: Express API)
-   └─ live updates (Socket.IO) ───────►  https://pmart-backend.onrender.com          (direct, WebSocket)
+Browser ──► https://thepmart.in                     (Vercel: static React build)
+   │            └─ /api/*  ──rewrite──►  https://api.thepmart.in/api/*   (Render: Express API)
+   └─ live updates (Socket.IO) ───────►  https://api.thepmart.in         (direct, WebSocket)
                                               └──► MongoDB Atlas
 ```
 
@@ -36,7 +36,7 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
    |---|---|
    | `MONGODB_URI` | your Atlas URI |
    | `OTP_ENCRYPTION_KEY` | 64 hex characters (see above) |
-   | `ALLOWED_ORIGINS` | **required** — your exact Vercel production URL(s), e.g. `https://pmart.vercel.app` (comma-separate several, `https://` only, no `*`). The API refuses to start in production without it. Use the project's `https://<project>.vercel.app` name if the domain is not known yet and correct it after step 2 |
+   | `ALLOWED_ORIGINS` | **required** — exact web production URL(s): `https://thepmart.in,https://www.thepmart.in` (`https://` only, no `*`). The API refuses to start in production without it |
    | `MAPTILER_API_KEY` | optional (server-side address lookup) |
    | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | optional, all three for Google sign-in |
 
@@ -53,7 +53,7 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
    (On a paid plan you can run the same commands in the Render **Shell**.)
 
 ## 2. Web app on Vercel
-1. The live API is `https://pmart-66mp.onrender.com`. If yours is different, edit both the `/api/:path*` destination
+1. The live API is `https://api.thepmart.in`. Configure `vercel.json` rewrites and CSP `connect-src` (`https://api.thepmart.in` and `wss://api.thepmart.in`).
    and the `Content-Security-Policy` `connect-src` entries (`https://…` and `wss://…`) in `vercel.json` and commit them
    (Vercel config can't read environment variables). A wrong `connect-src` makes the browser block every socket call.
 2. Vercel → **Add New → Project** → import the repo. Root directory: the repository root. Vercel reads `vercel.json`
@@ -62,13 +62,13 @@ Files in the repo: `render.yaml` (Render Blueprint), `vercel.json` (build, rewri
 
    | Key | Value |
    |---|---|
-   | `VITE_SOCKET_URL` | `https://pmart-backend.onrender.com` |
+   | `VITE_SOCKET_URL` | `https://api.thepmart.in` |
    | `VITE_MAPTILER_API_KEY` | the new MapTiler key |
    | `VITE_FIREBASE_*` | optional, only with Google sign-in (also add the Vercel domain to Firebase → Authentication → Authorized domains) |
    | `VITE_API_BASE_URL` | **leave unset** |
 
    `VITE_*` values are baked in at build time — redeploy after changing them.
-4. Deploy. Put the production URL (e.g. `https://pmart.vercel.app`, no trailing slash) into Render's `ALLOWED_ORIGINS`
+4. Deploy. In Vercel Project Settings → Domains, add `thepmart.in` and `www.thepmart.in`. In Render Settings → Custom Domains, add `api.thepmart.in`. Set Render's `ALLOWED_ORIGINS=https://thepmart.in,https://www.thepmart.in`.
    and let Render redeploy. Add a custom domain later the same way (Vercel domain + `ALLOWED_ORIGINS`).
 
 ## 3. Check it

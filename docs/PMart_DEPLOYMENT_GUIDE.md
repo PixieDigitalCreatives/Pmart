@@ -118,7 +118,7 @@ Now that you have both URLs:
      since 2026-11-05; the API logs a warning in production when it is `none`). The cookie is then `Secure`. Browsers
      that block third-party cookies (Safari) will still drop it, so prefer the Vercel layout in
      [PMart_DEPLOYMENT.md](PMart_DEPLOYMENT.md), where the API is reached through a same-site rewrite.
-3. Content-Security-Policy: `netlify.toml` allows API and socket connections only to `https://pmart-66mp.onrender.com`.
+3. Content-Security-Policy: `netlify.toml` and `vercel.json` allow API and socket connections to `https://api.thepmart.in` and `wss://api.thepmart.in` (plus fallback `https://pmart-66mp.onrender.com`).
    If your Render URL is different, change the `connect-src` entry (both `https://` and `wss://`) before deploying,
    or every API call is blocked by the browser.
 

@@ -1,10 +1,13 @@
 'use strict';
 
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const { env } = require('../../config/env');
 const { User, UserRole, AuthProvider } = require('./auth.model');
 const { Session } = require('./session.model');
 const { signAccessToken } = require('../../utils/jwt');
 const { hashPassword, verifyPassword, hashToken, DUMMY_PASSWORD_HASH, validatePasswordStrength } = require('../../utils/auth');
+const { generateTotpSecret, generateTotp, verifyTotp, generateRecoveryCodes, encryptSecret, decryptSecret, base32Decode } = require('../../utils/totp');
 const { getFirebaseAuth } = require('../../config/firebase-admin');
 const { HttpError, unauthorized, conflict, badRequest, notFound } = require('../../utils/http-error');
 
@@ -12,6 +15,8 @@ const INVALID_CREDENTIALS = 'Invalid mobile number or password';
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const SESSION_TTL_MS = 7 * 24 * 3600 * 1000; // 7 days
+
+const socketTickets = new Map();
 
 class AuthService {
   static signAccessToken(userId, tokenVersion = 1) {
@@ -85,7 +90,7 @@ class AuthService {
 
   static async login({ phone, password }, req = null) {
     const user = await User.findOne({ phone }).select('+passwordHash');
-    
+
     // Constant-time compare if user does not exist
     if (!user || !user.passwordHash) {
       await verifyPassword(password, DUMMY_PASSWORD_HASH);
@@ -123,6 +128,11 @@ class AuthService {
       user.failedLogins = 0;
       user.lockedUntil = null;
       await user.save();
+    }
+
+    if (user.mfa && user.mfa.enabled) {
+      const mfaTicket = jwt.sign({ id: String(user._id), mfa: true }, env.JWT_SECRET, { expiresIn: '5m' });
+      return { mfaRequired: true, mfaTicket, user };
     }
 
     return { user, ...(await this.issueSession(user, req)) };
@@ -259,6 +269,8 @@ class AuthService {
   static async logout(userId, refreshToken = null) {
     if (refreshToken) {
       await Session.updateOne({ refreshTokenHash: hashToken(refreshToken) }, { isRevoked: true });
+    } else {
+      await Session.updateMany({ user: userId }, { isRevoked: true });
     }
     await User.updateOne({ _id: userId }, { $unset: { refreshTokenHash: 1 } });
   }
@@ -330,6 +342,115 @@ class AuthService {
 
     await Session.updateMany({ user: user._id }, { isRevoked: true });
     return user;
+  }
+
+  static createSocketTicket(userId) {
+    const ticket = crypto.randomBytes(32).toString('hex');
+    socketTickets.set(ticket, { userId: String(userId), expiresAt: Date.now() + 60000 });
+    return ticket;
+  }
+
+  static verifySocketTicket(ticket) {
+    if (!ticket || typeof ticket !== 'string') return null;
+    const entry = socketTickets.get(ticket);
+    if (!entry) return null;
+    socketTickets.delete(ticket);
+    if (entry.expiresAt < Date.now()) return null;
+    return entry.userId;
+  }
+
+  static async setupMfa(userId) {
+    const user = await User.findById(userId);
+    if (!user) throw notFound('User not found');
+    const { raw, base32 } = generateTotpSecret();
+    const recoveryCodes = generateRecoveryCodes(8);
+    const recoveryHashes = recoveryCodes.map(hashToken);
+
+    user.mfa = user.mfa || {};
+    user.mfa.pendingSecretEnc = encryptSecret(base32);
+    user.mfa.recoveryCodeHashes = recoveryHashes;
+    await user.save();
+
+    const label = encodeURIComponent(user.phone || user.name || 'Account');
+    const uri = `otpauth://totp/PMart:${label}?secret=${base32}&issuer=PMart`;
+    return {
+      secret: base32,
+      uri,
+      recoveryCodes
+    };
+  }
+
+  static async confirmMfa(userId, code) {
+    const user = await User.findById(userId).select('+mfa.pendingSecretEnc');
+    if (!user || !user.mfa?.pendingSecretEnc) {
+      throw badRequest('MFA setup has not been initiated', 'MFA_NOT_INITIALIZED');
+    }
+    const secretBase32 = decryptSecret(user.mfa.pendingSecretEnc);
+    const secretBytes = base32Decode(secretBase32);
+    if (!verifyTotp(code, secretBytes)) {
+      throw badRequest('Invalid 6-digit verification code. Please check your authenticator app and try again.', 'INVALID_TOTP');
+    }
+
+    user.mfa.secretEnc = user.mfa.pendingSecretEnc;
+    user.mfa.pendingSecretEnc = undefined;
+    user.mfa.enabled = true;
+    user.mfa.enabledAt = new Date();
+    await user.save();
+
+    return { success: true, message: 'Two-factor authentication enabled successfully' };
+  }
+
+  static async verifyMfaLogin({ mfaTicket, code, recoveryCode }, req = null) {
+    let decoded;
+    try {
+      decoded = jwt.verify(mfaTicket, env.JWT_SECRET);
+      if (!decoded.mfa) throw new Error();
+    } catch {
+      throw unauthorized('Invalid or expired MFA session', 'MFA_SESSION_INVALID');
+    }
+
+    const user = await User.findById(decoded.id).select('+mfa.secretEnc +mfa.recoveryCodeHashes');
+    if (!user || !user.isActive || !user.mfa?.enabled) {
+      throw unauthorized('MFA not configured or user invalid', 'MFA_INVALID');
+    }
+
+    let verified = false;
+    if (code) {
+      const secretBase32 = decryptSecret(user.mfa.secretEnc);
+      const secretBytes = base32Decode(secretBase32);
+      verified = verifyTotp(code, secretBytes);
+    } else if (recoveryCode) {
+      const hashedRecovery = hashToken(recoveryCode.trim().toUpperCase());
+      const idx = (user.mfa.recoveryCodeHashes || []).indexOf(hashedRecovery);
+      if (idx !== -1) {
+        verified = true;
+        user.mfa.recoveryCodeHashes.splice(idx, 1);
+        await user.save();
+      }
+    }
+
+    if (!verified) {
+      throw unauthorized('Invalid verification code or recovery code', 'MFA_CODE_INVALID');
+    }
+
+    return { user, ...(await this.issueSession(user, req)) };
+  }
+
+  static async disableMfa(userId, currentPassword) {
+    const user = await User.findById(userId).select('+passwordHash');
+    if (!user) throw notFound('User not found');
+    if (!user.passwordHash || !(await verifyPassword(currentPassword, user.passwordHash))) {
+      throw badRequest('Current password is incorrect', 'WRONG_PASSWORD');
+    }
+    user.mfa = {
+      enabled: false,
+      secretEnc: undefined,
+      pendingSecretEnc: undefined,
+      enabledAt: undefined,
+      recoveryCodeHashes: []
+    };
+    await user.save();
+    return { success: true, message: 'Two-factor authentication disabled successfully' };
   }
 
   /** Creates a one-time setup token; returns the plain token (only its hash is stored). */

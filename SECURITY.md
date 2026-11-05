@@ -89,3 +89,17 @@ is restricted (audit plan M12).
   owner's choice), `maplibre-gl` (critical sanitizer bypass, no fix yet; PMart's map popups use `setText` /
   `setDOMContent`, never HTML), `@grpc/grpc-js` via Firebase Firestore (not imported by the web app), `minimatch`
   via `@maptiler/sdk` → `eslint` (not in the browser bundle).
+
+
+## Implementation of Audit Hardening (M1–M12)
+- **M1 (Password Visibility)**: Standardized on accessible `PasswordInput` with toggle visibility (`TbEye`/`TbEyeOff`) across all forms.
+- **M2 (Auth & Account Hardening)**: Progressive lockout after 5 failed attempts (15-minute lock), admin unlock mechanism, constant-time dummy bcrypt verification on missing accounts, tokenVersion revocation on password changes and administrative resets, multi-device sessions with family rotation theft detection, and admin-issued single-use reset links.
+- **M3 (Cookie Sessions & CSRF)**: Double-submit CSRF protection (`XSRF-TOKEN` cookie + `X-XSRF-TOKEN` / `X-CSRF-Token` headers), origin verification, short-lived socket tickets (`POST /api/auth/socket-ticket`), and dual-mode token support.
+- **M4 (MFA & Step-up)**: Native Node.js `crypto` TOTP engine (RFC 6238 Base32, AES-256-GCM encrypted secrets, 8 single-use recovery code hashes, drift tolerance), and step-up auth for sensitive actions.
+- **M5 (RBAC v2 & Approvals)**: Added `SUPER_ADMIN` role, 5 employee presets, 9 new permissions, product soft deletion (`isArchived`, `archivedAt`), and maker-checker approval workflows (`Approval` model) preventing self-approval.
+- **M6 (Audit v2)**: Hash-chained tamper-evident audit logging (SHA-256 chain from `GENESIS`), sensitive field redaction, and atomic transaction write support.
+- **M7 (COD Custody)**: `CodCollection` and `RiderRemittance` models tracking delivery cash handovers, variances, and reconciliation.
+- **M8 (India Compliance)**: `Policy` and `PolicyAcceptance` tracking, `ConsentRecord` (DPDP), `GrievanceTicket` (48h/30d SLA clocks), `DataRequest`, and Legal Metrology/FSSAI fields.
+- **M9 (Payment Gateway Ready)**: Provider-agnostic `PaymentIntent` and idempotent `PaymentEvent` store with HMAC signature verification and replay prevention.
+- **M10 (Marketplace Architecture)**: `Seller` and `SellerSettlement` models supporting multi-store commissions and Section 52 TCS tax compliance.
+- **M11 (Security Test Suite)**: Automated security regression suite (`backend/tests/security.test.js`) validating CSRF, injection sanitization, TOTP, approvals, audit integrity, and RBAC hierarchy.

@@ -7,14 +7,16 @@ const PASSWORD_CHANGE_EXEMPT = new Set(['/api/auth/password', '/api/auth/logout'
 
 function hasPermission(user, permission) {
   if (!user) return false;
-  if (user.role === UserRole.ADMIN) return true;
+  if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) return true;
   return user.role === UserRole.EMPLOYEE && Array.isArray(user.permissions) && user.permissions.includes(permission);
 }
 
 /** Verifies the bearer access token and attaches the active user to req.user. */
 const protect = async (req, res, next) => {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  const bearerToken = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  const cookieToken = req.cookies && req.cookies.accessToken;
+  const token = bearerToken || cookieToken;
 
   if (!token) {
     return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Not authorized, no token' });
@@ -34,7 +36,7 @@ const protect = async (req, res, next) => {
   if (!user.isActive) {
     return res.status(401).json({ success: false, code: 'ACCOUNT_DEACTIVATED', message: 'User account is deactivated' });
   }
-  if (decoded.ver !== undefined && user.tokenVersion !== undefined && decoded.ver !== user.tokenVersion) {
+  if (decoded.ver !== undefined && user.tokenVersion !== undefined && decoded.ver < user.tokenVersion) {
     return res.status(401).json({ success: false, code: 'TOKEN_REVOKED', message: 'Session expired or password changed. Please sign in again.' });
   }
 
@@ -51,9 +53,13 @@ const protect = async (req, res, next) => {
   next();
 };
 
-/** Allows only the listed roles. */
+/** Allows only the listed roles. SUPER_ADMIN implicitly satisfies ADMIN role. */
 const authorize = (...roles) => (req, res, next) => {
-  if (!req.user || !roles.includes(req.user.role)) {
+  if (!req.user) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'You are not allowed to access this resource' });
+  }
+  const isAllowed = roles.includes(req.user.role) || (req.user.role === UserRole.SUPER_ADMIN && roles.includes(UserRole.ADMIN));
+  if (!isAllowed) {
     return res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'You are not allowed to access this resource' });
   }
   next();
