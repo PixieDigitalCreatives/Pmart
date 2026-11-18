@@ -1,0 +1,29 @@
+# ==============================================================================
+# PMart Backend Environment Variables (api.thepmart.in on Render)
+# ==============================================================================
+# Render Dashboard -> pmart-backend -> Environment
+# ==============================================================================
+
+# Node Environment
+NODE_ENV=production
+PORT=5000
+
+# MongoDB Atlas Database Connection
+MONGODB_URI=mongodb+srv://pmart:Pmart%402026@pmart.sdws2dd.mongodb.net/pmart?appName=pmart
+MONGODB_DB_NAME=pmart
+
+# Security Keys
+JWT_SECRET=qOeCXHils7GSb8NH6lipVQof3ZlbPowFTH7kO6VAXnXY6xIF6KW2e-bQ4LMpoW86
+OTP_ENCRYPTION_KEY=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+OTP_LENGTH=4
+
+# Allowed Frontend Origins (Exact domains, no trailing slashes)
+ALLOWED_ORIGINS=https://thepmart.in,https://www.thepmart.in
+
+# Cookie & Proxy Settings (SameSite=strict works because thepmart.in and api.thepmart.in share the root domain)
+COOKIE_SAME_SITE=strict
+TRUST_PROXY=1
+LOG_LEVEL=info
+
+# MapTiler Service Key (Server-side geocoding & address reverse-lookup)
+MAPTILER_API_KEY=Ex3uk6dmjLzOoVUhieWZ
