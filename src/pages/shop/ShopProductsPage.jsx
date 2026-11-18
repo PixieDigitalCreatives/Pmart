@@ -4,6 +4,7 @@ import { productService } from '@/services/productService';
 import { inventoryService } from '@/services/inventoryService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { BulkProductUploadModal } from '@/components/shop/BulkProductUploadModal';
 import { useToast } from '@/context/ToastContext';
@@ -30,6 +31,7 @@ const FIELDS = [
 /** Product and inventory list. Store owners see their own store; staff see every store. */
 export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
   const { role, can } = useAuth();
+  const { t, lang } = useLanguage();
   const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -269,6 +271,42 @@ export const ShopProductsPage = ({ basePath = '/shop/products' }) => {
           <ScannerInput onScan={onScan} busy={looking} autoFocus={false} placeholder="Scan a barcode to open the product (unknown barcodes open Add product)" />
         </div>
       )}
+
+      {/* Quick Stock Status Filter Pills (Requirement 7) */}
+      <div className="flex gap-2 mb-3 flex-wrap items-center">
+        <span className="text-sm font-bold text-slate-600 mr-1">{t('nav.stock', 'Stock')}:</span>
+        <button
+          type="button"
+          className={`btn btn-sm ${f.stock === '' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setFilter('stock', '')}
+        >
+          {t('stock.all', 'सभी सामान')}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${f.stock === 'in' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ color: f.stock === 'in' ? undefined : '#15803d' }}
+          onClick={() => setFilter('stock', 'in')}
+        >
+          🟢 {t('stock.sufficient', 'पर्याप्त सामान')}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${f.stock === 'low' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ color: f.stock === 'low' ? undefined : '#b45309' }}
+          onClick={() => setFilter('stock', 'low')}
+        >
+          🟡 {t('stock.low', 'सामान कम है')}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${f.stock === 'out' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ color: f.stock === 'out' ? undefined : '#b91c1c' }}
+          onClick={() => setFilter('stock', 'out')}
+        >
+          🔴 {t('stock.out', 'सामान खत्म है')}
+        </button>
+      </div>
 
       <div className="toolbar">
         <div className="toolbar-grow">

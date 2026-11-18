@@ -27,12 +27,13 @@ services:
         sync: false # 64 hex chars; once orders exist never change it
       - key: ALLOWED_ORIGINS
         sync: false # REQUIRED: exact web origin(s), e.g. https://thepmart.in,https://www.thepmart.in (comma-separated, https only, no * wildcards — the API won't start otherwise)
-      # The web app calls /api through a Vercel rewrite (same site), so the session cookie is first-party.
+      # The web app (www.thepmart.in) calls api.thepmart.in directly: same site, so the session cookie is first-party.
       - key: COOKIE_SAME_SITE
         value: strict
-      # Browser → Vercel → Render load balancer → API = 2 proxies; needed for real client IPs in rate limits.
+      # Browser → Render (api.thepmart.in) → API = 1 proxy. Use 2 only if the web app goes through the Vercel /api
+      # rewrite instead; with 2 and direct calls, any client can choose its own IP and dodge IP-based rate limits.
       - key: TRUST_PROXY
-        value: "2"
+        value: "1"
       - key: OTP_LENGTH
         value: "4"
       - key: LOG_LEVEL

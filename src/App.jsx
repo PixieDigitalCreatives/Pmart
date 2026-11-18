@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { LocationProvider } from '@/context/LocationContext';
 import { CartProvider } from '@/context/CartContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { ScrollToTop } from '@/routes/ScrollToTop';
 import { AppRoutes } from '@/routes/AppRoutes';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -17,7 +18,8 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        fetch('/api/ping', { method: 'GET', keepalive: true }).catch(() => {});
+        // Straight to the API (not through the Vercel /api rewrite), so the request counts against the user's own IP.
+        fetch(`${import.meta.env.VITE_API_BASE_URL || '/api'}/ping`, { method: 'GET', keepalive: true }).catch(() => {});
       }
     }, 10 * 60 * 1000);
     return () => clearInterval(interval);
@@ -25,18 +27,20 @@ function App() {
   return (
     <IconContext.Provider value={ICON_DEFAULTS}>
       <ErrorBoundary>
-        <BrowserRouter>
-          <AuthProvider>
-            <LocationProvider>
-              <CartProvider>
-                <ToastProvider>
-                  <ScrollToTop />
-                  <AppRoutes />
-                </ToastProvider>
-              </CartProvider>
-            </LocationProvider>
-          </AuthProvider>
-        </BrowserRouter>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <LocationProvider>
+                <CartProvider>
+                  <ToastProvider>
+                    <ScrollToTop />
+                    <AppRoutes />
+                  </ToastProvider>
+                </CartProvider>
+              </LocationProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </LanguageProvider>
       </ErrorBoundary>
     </IconContext.Provider>
   );

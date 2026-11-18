@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { TbChevronLeft as ChevronLeft, TbPrinter as Printer, TbFileDownload as FileDown, TbCurrencyRupee as IndianRupee, TbBan as Ban, TbArrowBackUp as Undo2, TbReceipt as Receipt, TbAlertTriangle as AlertTriangle, TbTrash as Trash2 } from 'react-icons/tb';
+import { TbChevronLeft as ChevronLeft, TbPrinter as Printer, TbFileDownload as FileDown, TbCurrencyRupee as IndianRupee, TbBan as Ban, TbArrowBackUp as Undo2, TbReceipt as Receipt, TbAlertTriangle as AlertTriangle, TbTrash as Trash2, TbBrandWhatsapp as BrandWhatsapp } from 'react-icons/tb';
 import { billingService } from '@/services/billingService';
 import { newIdempotencyKey } from '@/services/inventoryService';
 import { apiErrorMessage } from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { PageHeader, Button, Input, Select, FormField, Modal, LoadingState, StatusBadge } from '@/components/ui';
 import { DeleteInvoiceModal } from '@/components/billing/DeleteInvoiceModal';
 import { money, qty, dateTime, date, PAYMENT_METHODS, PAYMENT_STATUS, methodLabel, MOVEMENT_LABEL } from '@/utils/format';
+import { amountToWords } from '@/utils/numberToWords';
+import { SupermarketReceipt } from '@/components/billing/SupermarketReceipt';
 import '@/components/inventory/inventory.scss';
 import './billing.scss';
+import './SupermarketReceipt.scss';
 
 const Status = ({ status }) => <StatusBadge text={PAYMENT_STATUS[status]?.label || status} type={PAYMENT_STATUS[status]?.type || 'neutral'} />;
 
@@ -77,6 +81,7 @@ const MoneyModal = ({ isOpen, title, max, onClose, onSubmit, submitText }) => {
 export const InvoiceDetailPage = () => {
   const { id } = useParams();
   const { can, role } = useAuth();
+  const { t, lang } = useLanguage();
   const toast = useToast();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState(null);
@@ -84,7 +89,6 @@ export const InvoiceDetailPage = () => {
   const [settings, setSettings] = useState(null);
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
-  const [paper, setPaper] = useState('a4');
   const [cancelForm, setCancelForm] = useState({ reason: '', refundMethod: 'CASH' });
   const [returnForm, setReturnForm] = useState({ reason: '', refundMethod: 'CASH', quantities: {} });
   const [actionKey, setActionKey] = useState(newIdempotencyKey());
@@ -129,10 +133,16 @@ export const InvoiceDetailPage = () => {
       setBusy(false);
     }
   };
-  const print = (kind) => {
-    setPaper(kind);
-    setTimeout(() => window.print(), 50);
+  const print = () => {
+    window.print();
   };
+  const shareWhatsApp = () => {
+    const text = `*PMart Bill - ${invoice.number}*\nCustomer: ${invoice.customerName || 'Walk-in'}\nTotal: ₹${invoice.netTotal}\nPaid: ₹${invoice.amountPaid}\nRemaining: ₹${invoice.outstanding}\nDate: ${new Date(invoice.date).toLocaleDateString('en-IN')}\nThank you for shopping with PMart!`;
+    const phone = invoice.customerPhone ? invoice.customerPhone.replace(/[^0-9]/g, '') : '';
+    const url = phone ? `https://wa.me/91${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   const billing = settings || {};
   const seller = billing.businessName || invoice.shop?.name || 'PMart';
   const taxed = invoice.taxMode !== 'NONE';
@@ -143,53 +153,53 @@ export const InvoiceDetailPage = () => {
       <div className="no-print">
         <Link to="/admin/billing/invoices" className="flex items-center gap-1 text-sm mb-3">
           <ChevronLeft size={16} />
-          <span>All invoices</span>
+          <span>{lang === 'hi' ? 'सभी बिल' : 'All invoices'}</span>
         </Link>
         <PageHeader
-          title={`Invoice ${invoice.number}`}
-          subtitle={`${dateTime(invoice.date)} · created by ${invoice.createdBy?.name || '—'}`}
+          title={`${lang === 'hi' ? 'बिल' : 'Invoice'} ${invoice.number}`}
+          subtitle={`${dateTime(invoice.date)} · ${lang === 'hi' ? 'निर्माता' : 'created by'} ${invoice.createdBy?.name || '—'}`}
           action={<Status status={cancelled ? 'CANCELLED' : invoice.displayStatus} />}
         />
         <div className="actions-row mb-4">
           {!cancelled && invoice.outstanding > 0 && can('payments.record') && (
             <Button variant="primary" onClick={() => open('pay')}>
               <IndianRupee size={16} style={{ marginRight: 6 }} />
-              Record payment
+              {lang === 'hi' ? 'पैसे जमा करें' : 'Record payment'}
             </Button>
           )}
-          <Button variant="secondary" onClick={() => print('a4')}>
-            <Printer size={16} style={{ marginRight: 6 }} />
-            Print invoice
-          </Button>
-          <Button variant="secondary" onClick={() => print('receipt')}>
+          <Button variant="primary" onClick={print}>
             <Receipt size={16} style={{ marginRight: 6 }} />
-            Print receipt
+            {lang === 'hi' ? 'थर्मल रसीद प्रिंट' : 'Print Thermal Receipt'}
+          </Button>
+          <Button variant="secondary" onClick={shareWhatsApp} style={{ color: '#16a34a', borderColor: '#86efac' }}>
+            <BrandWhatsapp size={16} style={{ marginRight: 6 }} />
+            WhatsApp
           </Button>
           <Button variant="secondary" onClick={() => billingService.downloadPdf(invoice._id, invoice.number).catch((err) => toast.error(apiErrorMessage(err)))}>
             <FileDown size={16} style={{ marginRight: 6 }} />
-            Download PDF
+            PDF
           </Button>
           {!cancelled && can('invoices.cancel') && returnable.length > 0 && (
             <Button variant="secondary" onClick={() => { setReturnForm({ reason: '', refundMethod: 'CASH', quantities: {} }); open('return'); }}>
               <Undo2 size={16} style={{ marginRight: 6 }} />
-              Return items
+              {lang === 'hi' ? 'सामान वापसी (Return)' : 'Return items'}
             </Button>
           )}
           {invoice.refundDue > 0 && can('invoices.cancel') && (
             <Button variant="secondary" onClick={() => open('refund')}>
-              Refund {money(invoice.refundDue)}
+              {lang === 'hi' ? `रिफंड ${money(invoice.refundDue)}` : `Refund ${money(invoice.refundDue)}`}
             </Button>
           )}
           {!cancelled && can('invoices.cancel') && (
             <Button variant="secondary" onClick={() => { setCancelForm({ reason: '', refundMethod: 'CASH' }); open('cancel'); }}>
               <Ban size={16} style={{ marginRight: 6 }} />
-              Cancel invoice
+              {lang === 'hi' ? 'बिल रद्द करें' : 'Cancel invoice'}
             </Button>
           )}
           {role === 'ADMIN' && (
             <Button variant="secondary" className="invoice-delete-btn" onClick={() => setModal('delete')}>
               <Trash2 size={16} style={{ marginRight: 6 }} />
-              Delete invoice
+              {lang === 'hi' ? 'बिल हटाएं' : 'Delete invoice'}
             </Button>
           )}
         </div>
@@ -215,133 +225,12 @@ export const InvoiceDetailPage = () => {
             </span>
           </div>
         )}
+
       </div>
 
-      {/* Printable document */}
-      <div className={`invoice-paper invoice-paper--${paper}`}>
-        <div className="invoice-head">
-          <div>
-            <div className="invoice-seller">{seller}</div>
-            {billing.businessAddress && <div>{billing.businessAddress}</div>}
-            {billing.businessPhone && <div>Phone: {billing.businessPhone}</div>}
-            {billing.gstin && <div>GSTIN: {billing.gstin}</div>}
-          </div>
-          <div className="invoice-meta">
-            <div className="invoice-title">{taxed ? 'TAX INVOICE' : 'INVOICE'}</div>
-            <div>No. {invoice.number}</div>
-            <div>{dateTime(invoice.date)}</div>
-            {cancelled && <div className="text-error font-bold">CANCELLED</div>}
-          </div>
-        </div>
-        <div className="invoice-billto">
-          <strong>Bill to:</strong> {invoice.customerName || 'Walk-in customer'} {invoice.customerPhone && `· ${invoice.customerPhone}`} {invoice.customerGstin && `· GSTIN ${invoice.customerGstin}`}
-        </div>
-        <table className="invoice-lines">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Item</th>
-              <th className="num">Qty</th>
-              <th className="num hide-receipt">MRP</th>
-              <th className="num">Rate</th>
-              <th className="num hide-receipt">Disc</th>
-              {taxed && <th className="num hide-receipt">Tax</th>}
-              <th className="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoice.items.map((l) => (
-              <tr key={l.lineNo}>
-                <td>{l.lineNo}</td>
-                <td>
-                  {l.name} {l.unit && <span className="cell-sub">({l.unit})</span>}
-                  <span className="cell-sub mono hide-receipt">
-                    {l.code} {l.barcode && `· ${l.barcode}`}
-                  </span>
-                  {l.returnedQuantity > 0 && <span className="cell-sub text-error">Returned {qty(l.returnedQuantity)}</span>}
-                </td>
-                <td className="num">{qty(l.quantity)}</td>
-                <td className="num hide-receipt">{money(l.mrp)}</td>
-                <td className="num">{money(l.unitPrice)}</td>
-                <td className="num hide-receipt">{l.discount + l.invoiceDiscountShare ? money(l.discount + l.invoiceDiscountShare) : '—'}</td>
-                {taxed && <td className="num hide-receipt">{`${l.taxRate}% · ${money(l.taxAmount)}`}</td>}
-                <td className="num">{money(l.lineTotal)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="invoice-totals summary-lines">
-          <div>
-            <span>Subtotal</span>
-            <span className="num">{money(invoice.subtotal)}</span>
-          </div>
-          {invoice.itemDiscountTotal + invoice.invoiceDiscount > 0 && (
-            <div>
-              <span>Discounts</span>
-              <span className="num">−{money(invoice.itemDiscountTotal + invoice.invoiceDiscount)}</span>
-            </div>
-          )}
-          {taxed &&
-            (invoice.gstSplit === 'CGST_SGST' ? (
-              <>
-                <div>
-                  <span>C{invoice.taxLabel}</span>
-                  <span className="num">{money(invoice.taxTotal / 2)}</span>
-                </div>
-                <div>
-                  <span>S{invoice.taxLabel}</span>
-                  <span className="num">{money(invoice.taxTotal / 2)}</span>
-                </div>
-              </>
-            ) : (
-              <div>
-                <span>{invoice.gstSplit === 'IGST' ? `I${invoice.taxLabel}` : invoice.taxLabel}</span>
-                <span className="num">{money(invoice.taxTotal)}</span>
-              </div>
-            ))}
-          {invoice.roundOff !== 0 && (
-            <div>
-              <span>Round off</span>
-              <span className="num">{money(invoice.roundOff)}</span>
-            </div>
-          )}
-          <div className="is-total">
-            <span>Grand total</span>
-            <span className="num">{money(invoice.grandTotal)}</span>
-          </div>
-          {invoice.returnedTotal > 0 && (
-            <div>
-              <span>Returned goods</span>
-              <span className="num">−{money(invoice.returnedTotal)}</span>
-            </div>
-          )}
-          <div>
-            <span>Paid</span>
-            <span className="num">{money(invoice.amountPaid)}</span>
-          </div>
-          <div className="font-semibold">
-            <span>{invoice.refundDue > 0 ? 'Refund due' : 'Outstanding'}</span>
-            <span className="num">{money(invoice.refundDue > 0 ? invoice.refundDue : invoice.outstanding)}</span>
-          </div>
-        </div>
-        {invoice.payments.length > 0 && (
-          <div className="invoice-payments">
-            <strong>Payments</strong>
-            {invoice.payments.map((p) => (
-              <div key={p._id} className="flex justify-between gap-2">
-                <span>
-                  {dateTime(p.receivedAt)} · {p.kind === 'REFUND' ? 'Refund' : 'Payment'} · {methodLabel(p.method)} {p.reference && `(${p.reference})`}
-                </span>
-                <span className="num">
-                  {p.kind === 'REFUND' ? '−' : ''}
-                  {money(p.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-        {invoice.notes && <div className="invoice-note">Note: {invoice.notes}</div>}
-        {billing.invoiceFooter && <div className="invoice-footer">{billing.invoiceFooter}</div>}
+      {/* Printable document - Thermal Supermarket Receipt Only */}
+      <div className="invoice-paper invoice-paper--receipt">
+        <SupermarketReceipt invoice={invoice} settings={billing} lang={lang} />
       </div>
 
       <div className="no-print mt-4">

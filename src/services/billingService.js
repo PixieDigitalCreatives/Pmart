@@ -7,7 +7,12 @@ const page = (res) => ({ rows: res.data.data, pagination: res.data.pagination, .
 export const billingService = {
   dashboard: async () => data(await api.get('/billing/dashboard')),
   settings: async () => data(await api.get('/billing/settings')),
-  customers: async (search) => data(await api.get('/billing/customers', { params: { search } })),
+  customers: async (search, all = false) => data(await api.get('/billing/customers', { params: { search, all: all ? 1 : undefined } })),
+  createCustomer: async (body) => data(await api.post('/billing/customers', body)),
+  getCustomer: async (id) => data(await api.get(`/billing/customers/${id}`)),
+  updateCustomer: async (id, body) => data(await api.put(`/billing/customers/${id}`, body)),
+  getCustomerStatement: async (id) => data(await api.get(`/billing/customers/${id}/statement`)),
+  listOutstandings: async (params) => page(await api.get('/billing/outstandings', { params })),
 
   createInvoice: async (body) => {
     const res = await api.post('/billing/invoices', body, { timeout: 30000 });

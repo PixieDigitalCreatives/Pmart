@@ -13,6 +13,11 @@ router.use(protect, authorize(UserRole.ADMIN, UserRole.EMPLOYEE));
 router.get('/dashboard', any('invoices.read', 'payments.read'), C.dashboard);
 router.get('/settings', any('invoices.create', 'invoices.read'), C.settings);
 router.get('/customers', any('invoices.create', 'invoices.read'), C.customers);
+router.post('/customers', any('invoices.create', 'invoices.read'), C.createCustomer);
+router.get('/customers/:id', any('invoices.create', 'invoices.read'), C.getCustomer);
+router.put('/customers/:id', any('invoices.create', 'invoices.read'), C.updateCustomer);
+router.get('/customers/:id/statement', any('invoices.create', 'invoices.read'), C.getCustomerStatement);
+router.get('/outstandings', any('invoices.read', 'payments.read'), C.listOutstandings);
 
 router.post('/invoices', can('invoices.create'), C.createInvoice);
 router.get('/invoices', can('invoices.read'), C.listInvoices);

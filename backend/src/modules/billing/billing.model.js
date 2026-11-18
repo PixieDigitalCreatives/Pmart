@@ -38,6 +38,9 @@ const CustomerSchema = new Schema(
     phone: { type: String, trim: true, maxlength: 20 },
     email: { type: String, trim: true, lowercase: true, maxlength: 254 },
     address: { type: String, trim: true, maxlength: 300 },
+    shippingAddress: { type: String, trim: true, maxlength: 300 },
+    customerType: { type: String, enum: ['RETAIL', 'WHOLESALE'], default: 'RETAIL' },
+    creditLimit: { type: Number, default: 0, min: 0 },
     gstin: { type: String, trim: true, uppercase: true, maxlength: 15 }
   },
   { timestamps: true }

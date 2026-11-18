@@ -1,0 +1,224 @@
+// DMart-Inspired 80mm Supermarket Thermal Receipt Styling
+
+.supermarket-receipt {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 16px 12px;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  border: 1px dashed #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  * {
+    color: #000000;
+  }
+
+  .text-center { text-align: center; }
+  .text-right { text-align: right; }
+  .font-bold { font-weight: 700; }
+  .mt-1 { margin-top: 4px; }
+  .my-1 { margin-top: 4px; margin-bottom: 4px; }
+
+  // 1. Brand Logo
+  .receipt-logo {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+    font-family: 'Arial Black', Impact, sans-serif;
+    color: #000000;
+  }
+
+  .receipt-company {
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .receipt-meta-small {
+    font-size: 10px;
+    line-height: 1.25;
+    margin-top: 2px;
+  }
+
+  .receipt-store-title {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .receipt-store-address {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  // Dividers
+  .receipt-divider-dashed {
+    border-top: 1px dashed #000000;
+    margin: 6px 0;
+  }
+
+  .receipt-divider-solid {
+    border-top: 1px solid #000000;
+    margin: 6px 0;
+  }
+
+  .receipt-divider-dotted {
+    border-top: 1px dotted #000000;
+    margin: 4px 0;
+  }
+
+  // 2. Invoice Meta Grid
+  .receipt-doc-title {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    margin: 2px 0 4px;
+  }
+
+  .receipt-meta-grid {
+    font-size: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .receipt-meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+  }
+
+  // 3. Items Table
+  .receipt-items-head {
+    display: flex;
+    font-size: 10px;
+    font-weight: 700;
+    border-bottom: 1px dashed #000000;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+
+    .col-hsn { width: 50px; }
+    .col-part { flex: 1; padding: 0 4px; }
+    .col-qty { width: 44px; }
+    .col-rate { width: 48px; }
+    .col-val { width: 52px; }
+  }
+
+  .receipt-items-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .receipt-slab-group {
+      .receipt-slab-header {
+        font-size: 10px;
+        margin: 3px 0 2px;
+      }
+    }
+
+    .receipt-item-row {
+      display: flex;
+      align-items: flex-start;
+      font-size: 10.5px;
+      line-height: 1.25;
+      margin-bottom: 2px;
+
+      .col-hsn {
+        width: 50px;
+        font-size: 9.5px;
+        overflow: hidden;
+      }
+      .col-part {
+        flex: 1;
+        padding: 0 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .col-qty { width: 44px; }
+      .col-rate { width: 48px; }
+      .col-val { width: 52px; font-weight: 700; }
+    }
+  }
+
+  // 4. Summary Line
+  .receipt-summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 2px 0;
+  }
+
+  // 5. GST Breakup Box
+  .receipt-gst-box {
+    font-size: 10px;
+
+    .receipt-gst-table-head,
+    .receipt-gst-row {
+      display: grid;
+      grid-template-columns: 24px 1fr 1fr 1fr 1fr;
+      gap: 4px;
+      font-size: 10px;
+    }
+  }
+
+  // 6. Payment Box
+  .receipt-payment-box {
+    font-size: 10px;
+
+    .receipt-tender-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 0 8px;
+    }
+  }
+
+  // 7. Savings Banner
+  .receipt-savings-banner {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 6px 0;
+    margin: 4px 0;
+    background: #f1f5f9;
+    border: 1px dashed #000000;
+  }
+
+  // 8. Barcode Box
+  .receipt-barcode-box {
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .receipt-small-note {
+      font-size: 9px;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .receipt-footer-msg {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+}
+
+// Thermal printing print media rules
+@media print {
+  .invoice-paper--receipt {
+    .supermarket-receipt {
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      width: 78mm !important;
+      max-width: 78mm !important;
+      margin: 0 !important;
+    }
+  }
+}
+

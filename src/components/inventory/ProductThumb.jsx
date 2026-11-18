@@ -32,13 +32,21 @@ export const ImageStatusBadge = ({ status = 'NOT_AVAILABLE' }) => {
 };
 
 /** Colour-coded stock figure: red at or below zero, amber when low. */
-export const StockBadge = ({ stock, threshold = 10, unit }) => {
+export const StockBadge = ({ stock, threshold = 10, unit, showText = false, lang = 'hi' }) => {
   const n = Number(stock || 0);
   const type = n <= 0 ? 'badge-error' : n <= threshold ? 'badge-warning' : 'badge-success';
+  const label =
+    n <= 0
+      ? (lang === 'hi' ? 'सामान खत्म है' : 'Out of Stock')
+      : n <= threshold
+      ? (lang === 'hi' ? 'सामान कम है' : 'Low Stock')
+      : (lang === 'hi' ? 'पर्याप्त सामान' : 'Sufficient');
+
   return (
-    <span className={`badge ${type}`}>
+    <span className={`badge ${type}`} title={label}>
       {n.toLocaleString('en-IN', { maximumFractionDigits: 3 })}
       {unit ? ` ${unit}` : ''}
+      {showText && ` · ${label}`}
     </span>
   );
 };

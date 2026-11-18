@@ -68,6 +68,8 @@ import { CreateInvoicePage } from '@/pages/billing/CreateInvoicePage';
 import { InvoicesPage } from '@/pages/billing/InvoicesPage';
 import { InvoiceDetailPage } from '@/pages/billing/InvoiceDetailPage';
 import { BillingPaymentsPage } from '@/pages/billing/BillingPaymentsPage';
+import { CustomersPage } from '@/pages/billing/CustomersPage';
+import { OutstandingsPage } from '@/pages/billing/OutstandingsPage';
 
 const STAFF = ['ADMIN', 'EMPLOYEE'];
 
@@ -160,6 +162,8 @@ export const AppRoutes = () => (
     <Route path="/admin/billing/invoices" element={staff(<InvoicesPage />, 'invoices.read')} />
     <Route path="/admin/billing/invoices/:id" element={staff(<InvoiceDetailPage />, 'invoices.read')} />
     <Route path="/admin/billing/payments" element={staff(<BillingPaymentsPage />, 'payments.read')} />
+    <Route path="/admin/billing/outstandings" element={staff(<OutstandingsPage />, ['invoices.read', 'payments.read'])} />
+    <Route path="/admin/customers" element={staff(<CustomersPage />, ['invoices.create', 'invoices.read', 'customers.read'])} />
     <Route path="/admin/categories" element={staff(<ShopCategoriesPage />, 'catalog.manage')} />
     <Route path="/admin/payments" element={staff(<AdminPaymentsPage />, 'reports.read')} />
     <Route path="/admin/reports" element={staff(<AdminReportsPage />, 'reports.read')} />
@@ -168,7 +172,6 @@ export const AppRoutes = () => (
     {/* Old links */}
     <Route path="/rider/enroll" element={<Navigate to="/activate" replace />} />
     <Route path="/set-password" element={<Navigate to="/account/change-password" replace />} />
-    <Route path="/admin/customers" element={<Navigate to="/admin/users" replace />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

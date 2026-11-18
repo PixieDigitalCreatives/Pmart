@@ -248,13 +248,198 @@ class BillingController {
       const rx = { $regex: escapeRegExp(search), $options: 'i' };
       filter.$or = [{ name: rx }, { phone: rx }];
     }
-    const customers = await Customer.find(filter).sort({ updatedAt: -1 }).limit(15).lean();
+    const customers = await Customer.find(filter).sort({ updatedAt: -1 }).limit(req.query.all ? 100 : 25).lean();
     const balances = await Invoice.aggregate([
       { $match: { customer: { $in: customers.map((c) => c._id) }, status: InvoiceStatus.FINALIZED } },
-      { $group: { _id: '$customer', outstanding: { $sum: '$outstanding' }, invoices: { $sum: 1 } } }
+      { $group: { _id: '$customer', outstanding: { $sum: '$outstanding' }, invoices: { $sum: 1 }, totalPurchases: { $sum: '$netTotal' } } }
     ]);
     const byId = new Map(balances.map((b) => [String(b._id), b]));
-    res.json({ success: true, data: customers.map((c) => ({ ...c, outstanding: byId.get(String(c._id))?.outstanding || 0, invoices: byId.get(String(c._id))?.invoices || 0 })) });
+    res.json({
+      success: true,
+      data: customers.map((c) => ({
+        ...c,
+        outstanding: byId.get(String(c._id))?.outstanding || 0,
+        invoices: byId.get(String(c._id))?.invoices || 0,
+        totalPurchases: byId.get(String(c._id))?.totalPurchases || 0
+      }))
+    });
+  }
+
+  static async createCustomer(req, res) {
+    const data = z
+      .object({
+        name: z.string().trim().min(1, 'Name is required').max(120),
+        phone: z.string().trim().min(5, 'Valid phone required').max(20),
+        email: z.string().trim().email().optional().or(z.literal('')),
+        address: z.string().trim().max(300).optional().or(z.literal('')),
+        shippingAddress: z.string().trim().max(300).optional().or(z.literal('')),
+        customerType: z.enum(['RETAIL', 'WHOLESALE']).optional().default('RETAIL'),
+        creditLimit: z.number().min(0).optional().default(0),
+        gstin: z.string().trim().uppercase().max(15).optional().or(z.literal(''))
+      })
+      .parse(req.body);
+
+    const { Shop } = require('../shop/shop.model');
+    const defaultShop = await Shop.findOne().select('_id').lean();
+    const shopId = req.user?.shop || defaultShop?._id;
+    if (!shopId) throw badRequest('No store found to associate customer');
+
+    let customer = await Customer.findOne({ shop: shopId, phone: data.phone });
+    if (customer) {
+      Object.assign(customer, data);
+      await customer.save();
+    } else {
+      customer = await Customer.create({ ...data, shop: shopId });
+    }
+    res.status(201).json({ success: true, data: customer });
+  }
+
+  static async getCustomer(req, res) {
+    assertObjectId(req.params.id, 'customer id');
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) throw notFound('Customer not found');
+
+    const [invoices, payments, stats] = await Promise.all([
+      Invoice.find({ customer: customer._id, status: InvoiceStatus.FINALIZED }).sort({ date: -1 }).limit(50).lean(),
+      Payment.find({ customer: customer._id }).sort({ receivedAt: -1 }).limit(50).lean(),
+      Invoice.aggregate([
+        { $match: { customer: customer._id, status: InvoiceStatus.FINALIZED } },
+        { $group: { _id: null, totalPurchases: { $sum: '$netTotal' }, outstanding: { $sum: '$outstanding' }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const stat = stats[0] || { totalPurchases: 0, outstanding: 0, count: 0 };
+    res.json({
+      success: true,
+      data: {
+        ...customer,
+        totalPurchases: stat.totalPurchases,
+        outstanding: stat.outstanding,
+        invoicesCount: stat.count,
+        invoices,
+        payments
+      }
+    });
+  }
+
+  static async updateCustomer(req, res) {
+    assertObjectId(req.params.id, 'customer id');
+    const data = z
+      .object({
+        name: z.string().trim().min(1).max(120).optional(),
+        phone: z.string().trim().min(5).max(20).optional(),
+        email: z.string().trim().email().optional().or(z.literal('')),
+        address: z.string().trim().max(300).optional().or(z.literal('')),
+        shippingAddress: z.string().trim().max(300).optional().or(z.literal('')),
+        customerType: z.enum(['RETAIL', 'WHOLESALE']).optional(),
+        creditLimit: z.number().min(0).optional(),
+        gstin: z.string().trim().uppercase().max(15).optional().or(z.literal(''))
+      })
+      .parse(req.body);
+
+    const customer = await Customer.findByIdAndUpdate(req.params.id, { $set: data }, { new: true });
+    if (!customer) throw notFound('Customer not found');
+    res.json({ success: true, data: customer });
+  }
+
+  static async getCustomerStatement(req, res) {
+    assertObjectId(req.params.id, 'customer id');
+    const customer = await Customer.findById(req.params.id).lean();
+    if (!customer) throw notFound('Customer not found');
+
+    const [invoices, payments] = await Promise.all([
+      Invoice.find({ customer: customer._id, status: InvoiceStatus.FINALIZED }).sort({ date: 1 }).lean(),
+      Payment.find({ customer: customer._id }).sort({ receivedAt: 1 }).lean()
+    ]);
+
+    const entries = [];
+    for (const inv of invoices) {
+      entries.push({
+        date: inv.date,
+        type: 'INVOICE',
+        ref: inv.number,
+        description: `Invoice ${inv.number}`,
+        debit: inv.netTotal,
+        credit: 0
+      });
+      if (inv.returns && inv.returns.length > 0) {
+        for (const ret of inv.returns) {
+          entries.push({
+            date: ret.date,
+            type: 'RETURN',
+            ref: ret.number || inv.number,
+            description: `Sales Return (${ret.reason || 'Returned'})`,
+            debit: 0,
+            credit: ret.amount
+          });
+        }
+      }
+    }
+    for (const p of payments) {
+      entries.push({
+        date: p.receivedAt,
+        type: p.kind === 'REFUND' ? 'REFUND' : 'PAYMENT',
+        ref: p.invoiceNumber,
+        description: `${p.kind === 'REFUND' ? 'Refund' : 'Payment'} (${p.method})`,
+        debit: p.kind === 'REFUND' ? p.amount : 0,
+        credit: p.kind === 'PAYMENT' ? p.amount : 0
+      });
+    }
+
+    entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+    let balance = 0;
+    const ledger = entries.map((e) => {
+      balance = Math.round((balance + (e.debit || 0) - (e.credit || 0)) * 100) / 100;
+      return { ...e, balance };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        customer,
+        currentBalance: balance,
+        statementDate: new Date(),
+        ledger
+      }
+    });
+  }
+
+  static async listOutstandings(req, res) {
+    const { page, limit, skip } = parsePagination(req.query, { defaultLimit: 25 });
+    const search = parseSearch(req.query.search);
+
+    const match = { status: InvoiceStatus.FINALIZED, outstanding: { $gt: 0.005 } };
+    if (search) {
+      const rx = { $regex: escapeRegExp(search), $options: 'i' };
+      match.$or = [{ customerName: rx }, { customerPhone: rx }, { number: rx }];
+    }
+
+    const [rows, total, summary] = await Promise.all([
+      Invoice.find(match)
+        .populate('customer', 'name phone address creditLimit customerType')
+        .sort({ dueDate: 1, date: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Invoice.countDocuments(match),
+      Invoice.aggregate([
+        { $match: { status: InvoiceStatus.FINALIZED, outstanding: { $gt: 0.005 } } },
+        { $group: { _id: null, totalOutstanding: { $sum: '$outstanding' }, totalInvoices: { $sum: 1 } } }
+      ])
+    ]);
+
+    const now = new Date();
+    const decorated = rows.map((inv) => ({
+      ...inv,
+      isOverdue: Boolean(inv.dueDate && new Date(inv.dueDate) < now)
+    }));
+
+    res.json({
+      success: true,
+      data: decorated,
+      summary: summary[0] || { totalOutstanding: 0, totalInvoices: 0 },
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+    });
   }
 
   /** Billing overview: sales, collections, outstanding balances, best sellers and low stock. */
@@ -265,7 +450,7 @@ class BillingController {
     const live = { status: InvoiceStatus.FINALIZED };
     const settings = await Settings.getSingleton();
 
-    const [sales, todaySales, byStatus, overdue, collected, onlineOrders, recentPayments, recentInvoices, topProducts, lowStock] = await Promise.all([
+    const [sales, todaySales, byStatus, overdue, collected, todayCollected, onlineOrders, recentPayments, recentInvoices, topProducts, lowStock] = await Promise.all([
       Invoice.aggregate([{ $match: live }, { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$netTotal' }, outstanding: { $sum: '$outstanding' } } }]),
       Invoice.aggregate([{ $match: { ...live, date: { $gte: today } } }, { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$netTotal' } } }]),
       Invoice.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 }, outstanding: { $sum: '$outstanding' } } }]),
@@ -274,6 +459,7 @@ class BillingController {
         { $group: { _id: null, count: { $sum: 1 }, outstanding: { $sum: '$outstanding' } } }
       ]),
       Payment.aggregate([{ $group: { _id: '$kind', amount: { $sum: '$amount' } } }]),
+      Payment.aggregate([{ $match: { receivedAt: { $gte: today } } }, { $group: { _id: '$kind', amount: { $sum: '$amount' } } }]),
       Order.countDocuments({ status: { $nin: [OrderStatus.CANCELLED, OrderStatus.REJECTED] } }),
       Payment.find().sort({ receivedAt: -1 }).limit(8).select('invoice invoiceNumber customerName kind amount method receivedAt').lean(),
       Invoice.find().sort({ date: -1 }).limit(8).select('number date customerName grandTotal netTotal outstanding paymentStatus status dueDate').lean(),
@@ -288,8 +474,10 @@ class BillingController {
     ]);
 
     const statusMap = Object.fromEntries(byStatus.map((s) => [s._id, s]));
-    const paidIn = collected.find((c) => c._id === 'PAYMENT')?.amount || 0;
-    const refunded = collected.find((c) => c._id === 'REFUND')?.amount || 0;
+    const totalPaidIn = collected.find((c) => c._id === 'PAYMENT')?.amount || 0;
+    const totalRefunded = collected.find((c) => c._id === 'REFUND')?.amount || 0;
+    const todayPaidIn = todayCollected.find((c) => c._id === 'PAYMENT')?.amount || 0;
+    const todayRefunded = todayCollected.find((c) => c._id === 'REFUND')?.amount || 0;
     const [lowStockCount, outOfStockCount] = await Promise.all([
       Product.countDocuments({ stockCount: { $gt: 0, $lte: settings.lowStockThreshold } }),
       Product.countDocuments({ stockCount: { $lte: 0 } })
@@ -304,8 +492,10 @@ class BillingController {
         totalSales: sales[0]?.total || 0,
         todaySales: todaySales[0]?.total || 0,
         todayInvoices: todaySales[0]?.count || 0,
-        collected: Math.round((paidIn - refunded) * 100) / 100,
-        refunded,
+        todayCollected: Math.round((todayPaidIn - todayRefunded) * 100) / 100,
+        collected: Math.round((todayPaidIn - todayRefunded) * 100) / 100,
+        totalCollected: Math.round((totalPaidIn - totalRefunded) * 100) / 100,
+        refunded: totalRefunded,
         outstanding: sales[0]?.outstanding || 0,
         paidCount: statusMap.PAID?.count || 0,
         partiallyPaid: { count: statusMap.PARTIALLY_PAID?.count || 0, outstanding: statusMap.PARTIALLY_PAID?.outstanding || 0 },
