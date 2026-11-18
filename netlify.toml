@@ -5,6 +5,13 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Forward all /api calls to Render backend (keeps cookies same-site and avoids CORS)
+[[redirects]]
+  from = "/api/*"
+  to = "https://pmart-66mp.onrender.com/api/:splat"
+  status = 200
+  force = true
+
 # SPA Fallback: Required for React Router 7 client-side routing
 [[redirects]]
   from = "/*"
