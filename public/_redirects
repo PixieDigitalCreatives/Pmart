@@ -1,1 +1,5 @@
-/*    /index.html   200
+# Forward API requests to Render backend
+/api/*  https://api.thepmart.in/api/:splat  200!
+
+# SPA client-side routing fallback
+/*      /index.html                         200
