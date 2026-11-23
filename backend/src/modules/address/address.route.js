@@ -2,19 +2,18 @@
 
 const { Router } = require('express');
 const { AddressController } = require('./address.controller');
-const { protect, authorize } = require('../../middleware/auth.middleware');
+const { protect, optionalProtect, authorize } = require('../../middleware/auth.middleware');
 const { UserRole } = require('../auth/auth.model');
 
 const router = Router();
 
+// Public / visitor endpoints (optional user context for serviceability & geocoding)
+router.get('/autocomplete', optionalProtect, AddressController.autocomplete);
+router.post('/reverse-geocode', optionalProtect, AddressController.reverseGeocode);
+router.post('/serviceability', optionalProtect, AddressController.checkServiceability);
+
+// The address book strictly belongs to authenticated customers.
 router.use(protect);
-
-// Any signed-in user may look up an address or check delivery coverage.
-router.get('/autocomplete', AddressController.autocomplete);
-router.post('/reverse-geocode', AddressController.reverseGeocode);
-router.post('/serviceability', AddressController.checkServiceability);
-
-// The address book belongs to customers.
 router.use(authorize(UserRole.CUSTOMER));
 router.get('/', AddressController.getAddresses);
 router.post('/', AddressController.createAddress);

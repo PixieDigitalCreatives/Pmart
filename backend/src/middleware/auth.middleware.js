@@ -73,6 +73,29 @@ const authorizePermission = (permission) => (req, res, next) => {
   next();
 };
 
+/** Attaches req.user if a valid token is present; does not block unauthenticated requests. */
+const optionalProtect = async (req, res, next) => {
+  const header = req.headers.authorization || '';
+  const bearerToken = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  const cookieToken = req.cookies && req.cookies.accessToken;
+  const token = bearerToken || cookieToken;
+
+  if (!token) return next();
+
+  try {
+    const decoded = verifyAccessToken(token);
+    const user = await User.findById(decoded.id);
+    if (user && user.isActive) {
+      if (decoded.ver === undefined || user.tokenVersion === undefined || decoded.ver >= user.tokenVersion) {
+        req.user = user;
+      }
+    }
+  } catch {
+    // Ignore invalid tokens for optional auth
+  }
+  next();
+};
+
 /** Allows ADMIN, or an EMPLOYEE that holds at least one of the given permissions. */
 const authorizeAny = (...permissions) => (req, res, next) => {
   if (!permissions.some((p) => hasPermission(req.user, p))) {
@@ -81,4 +104,4 @@ const authorizeAny = (...permissions) => (req, res, next) => {
   next();
 };
 
-module.exports = { protect, authorize, authorizePermission, authorizeAny, hasPermission };
+module.exports = { protect, optionalProtect, authorize, authorizePermission, authorizeAny, hasPermission };
