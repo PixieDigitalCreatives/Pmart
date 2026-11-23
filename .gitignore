@@ -23,16 +23,49 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
-.env.*
+.env.*
 !.env.example
+*_ENV.txt
+*ENV*.txt
 
-# Firebase Service Account Credentials
+# Firebase Service Account Credentials & Local Storage
 *service-account*.json
 *firebase-admin*.json
 *-firebase-adminsdk-*.json
-scratch/mongo_data/
+scratch/
+graphify-out/
 
-# Local database backups (contain password hashes and personal data)
+# Local database backups
 backups/
+
+# Documentation & Specifications (local reference, excluded from production repo)
+docs/
+*.docx
+PMart_SECURITY_AUDIT.md
+REMAINING_WORK.md
+DECISIONS.md
+GSD-STYLE.md
+PROJECT_RULES.md
+
+# Agent & Dev Tooling directories
+.agent/
+.agents/
+.claude/
+.gsd/
+adapters/
+scripts/
+
+# Test artifacts & temporary scripts
+test-results/
+ui-scanner.cjs
+start
+convert.js
+extract-mammoth.js
+extract.cjs
+get-inputs.cjs
+inventory.cjs
+migrate-btn-select.cjs
+migrate.cjs
+search-terms.cjs
