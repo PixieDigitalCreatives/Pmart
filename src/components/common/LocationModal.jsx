@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/context/LocationContext';
-import { TbX as X, TbSearch as Search, TbNavigation as Navigation, TbHome as Home, TbBriefcase as Briefcase, TbMapPin as MapPin, TbCheck as Check, TbLoader2 as Loader2, TbAlertCircle as AlertCircle } from 'react-icons/tb';
+import { TbX as X, TbSearch as Search, TbHome as Home, TbBriefcase as Briefcase, TbMapPin as MapPin, TbCheck as Check, TbAlertCircle as AlertCircle } from 'react-icons/tb';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AddressFormModal } from './AddressFormModal';
 import './LocationModal.scss';
@@ -13,7 +13,6 @@ export const LocationModal = () => {
     selectedAddressId,
     savedLocations,
     selectLocation,
-    useCurrentLocation,
     addLocation,
     updateLocation,
     deleteLocation,
@@ -21,19 +20,12 @@ export const LocationModal = () => {
     addressError
   } = useLocation();
 
-  const [isDetecting, setIsDetecting] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [autoDetect, setAutoDetect] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isLocationModalOpen) return null;
-
-  const handleUseCurrentLocation = async () => {
-    setIsDetecting(true);
-    await useCurrentLocation();
-    setIsDetecting(false);
-  };
 
   const openAddForm = () => {
     setEditingAddress(null);
@@ -123,23 +115,6 @@ export const LocationModal = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
-            {/* GPS Detection */}
-            <Button
-              className="current-location-btn"
-              onClick={handleUseCurrentLocation}
-              disabled={isDetecting}
-            >
-              <div className="gps-icon-wrapper">
-                {isDetecting ? <Loader2 size={18} className="spinning" /> : <Navigation size={18} />}
-              </div>
-              <div className="gps-text">
-                <span className="gps-title">
-                  {isDetecting ? 'Detecting GPS Location...' : 'Use Current Location'}
-                </span>
-                <span className="gps-desc">Using device GPS for precise doorstep delivery</span>
-              </div>
-            </Button>
 
             {/* Saved Locations */}
             <div className="saved-locations-section">
