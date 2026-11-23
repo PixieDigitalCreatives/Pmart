@@ -40,6 +40,8 @@ const envSchema = z.object({
   FIREBASE_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
   MAPTILER_API_KEY: z.string().optional(),
+  LOCATION_V2_ENABLED: z.string().default('false').transform((v) => v === 'true'),
+  GEOAPIFY_API_KEY: z.string().optional(),
   MARG_INTEGRATION_ENABLED: z.string().default('false').transform((v) => v === 'true'),
   OSRM_CACHE_TTL: z.string().default('3600').transform(Number),
   // Barcode lookups in Open Food/Beauty/Products Facts for product details and candidate photos.

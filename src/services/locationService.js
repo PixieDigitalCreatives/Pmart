@@ -1,4 +1,5 @@
 import * as maptilersdk from '@maptiler/sdk';
+import apiClient from './apiClient';
 
 // Configure MapTiler API Key from env
 if (import.meta.env.VITE_MAPTILER_API_KEY) {
@@ -60,6 +61,35 @@ export const locationService = {
     if (lat < -90 || lat > 90) return false;
     if (lng < -180 || lng > 180) return false;
     return true;
+  },
+
+  /**
+   * Autocomplete address search via backend provider
+   * @param {string} query
+   * @param {[number, number]} [biasCoords] - [lng, lat]
+   * @returns {Promise<Array<{id: string, text: string, place_name: string, center: [number, number]}>>}
+   */
+  autocomplete: async (query, biasCoords) => {
+    if (!query || query.trim().length < 2) return [];
+    try {
+      const params = new URLSearchParams({ q: query.trim() });
+      if (biasCoords && Array.isArray(biasCoords) && biasCoords.length === 2) {
+        params.append('lng', biasCoords[0]);
+        params.append('lat', biasCoords[1]);
+      }
+      const res = await apiClient.get(`/addresses/autocomplete?${params.toString()}`);
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        return res.data.data.map((item) => ({
+          id: item.id,
+          text: item.primary,
+          place_name: item.secondary || item.label,
+          center: item.coordinates
+        }));
+      }
+    } catch {
+      // Fallback to client geocoder if backend autocomplete is unavailable
+    }
+    return [];
   },
 
   /**

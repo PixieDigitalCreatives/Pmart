@@ -10,6 +10,18 @@ import './AddressFormModal.scss';
 import { Input, Button } from '@/components/ui';
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY;
+const GEOAPIFY_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY;
+const IS_LOCATION_V2 = import.meta.env.VITE_LOCATION_V2_ENABLED === 'true';
+
+const hasMapConfig = Boolean(MAPTILER_KEY || (IS_LOCATION_V2 && GEOAPIFY_KEY));
+
+const getMapStyle = () => {
+  if (IS_LOCATION_V2 && GEOAPIFY_KEY) {
+    return `https://maps.geoapify.com/v1/styles/osm-carto/style.json?apiKey=${GEOAPIFY_KEY}`;
+  }
+  return `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
+};
+
 // Initial map view default to Sasaram (P-Mart operational hub)
 const DEFAULT_VIEW = { center: [84.0156, 24.9589], zoom: 14 };
 
@@ -96,11 +108,11 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
   }, [isOpen, initialData, user, autoDetect]);
 
   useEffect(() => {
-    if (isOpen && step === 1 && mapContainer.current && !map.current && MAPTILER_KEY) {
+    if (isOpen && step === 1 && mapContainer.current && !map.current && hasMapConfig) {
       const start = formData.location?.coordinates;
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
+        style: getMapStyle(),
         center: start || DEFAULT_VIEW.center,
         zoom: start ? 15 : DEFAULT_VIEW.zoom
       });
@@ -145,13 +157,13 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
   const applyGeocode = (data) =>
     setFormData((prev) => ({
       ...prev,
-      formattedAddress: data.formattedAddress || prev.formattedAddress,
-      street: data.street || prev.street,
-      area: data.area || prev.area,
-      city: data.city || prev.city,
-      district: data.district || prev.district,
-      state: data.state || prev.state,
-      pincode: String(data.pincode || '').replace(/\D/g, '') || prev.pincode,
+      formattedAddress: data.formattedAddress || [data.street, data.area, data.city, data.state, data.pincode].filter(Boolean).join(', '),
+      street: data.street || '',
+      area: data.area || '',
+      city: data.city || '',
+      district: data.district || '',
+      state: data.state || '',
+      pincode: String(data.pincode || '').replace(/\D/g, ''),
       country: data.country || 'India'
     }));
 
@@ -231,7 +243,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
     }
   };
 
-  // MapTiler Geocoding Search
+  // Address Autocomplete Search (Geoapify / MapTiler via LocationService with direct fallback)
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -246,22 +258,36 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
     searchTimeout.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const res = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&country=in&limit=5`);
-        const data = await res.json();
-        setSearchResults(data.features || []);
+        let results = [];
+        const center = marker.current ? [marker.current.getLngLat().lng, marker.current.getLngLat().lat] : DEFAULT_VIEW.center;
+        results = await locationService.autocomplete(query, center);
+
+        if ((!results || results.length === 0) && MAPTILER_KEY) {
+          const res = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${MAPTILER_KEY}&country=in&limit=5`);
+          const data = await res.json();
+          results = (data.features || []).map((f) => ({
+            id: f.id,
+            text: f.text,
+            place_name: f.place_name,
+            center: f.center
+          }));
+        }
+        setSearchResults(results);
       } catch (err) {
         console.error('Search error:', err);
       } finally {
         setSearchLoading(false);
       }
-    }, 300);
+    }, 350);
   };
 
   const handleSelectSearchResult = (feature) => {
     setSearchQuery('');
     setSearchResults([]);
     
-    const [lng, lat] = feature.center;
+    const coords = feature.center || feature.coordinates;
+    if (!coords || !Array.isArray(coords)) return;
+    const [lng, lat] = coords;
     
     if (map.current) {
        map.current.flyTo({ center: [lng, lat], zoom: 16 });
@@ -270,7 +296,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
        marker.current.setLngLat([lng, lat]);
     }
     
-    // Instead of duplicating logic, run reverse geocode for authoritative data
+    // Instead of duplicating logic, run reverse geocode for authoritative data while preserving chosen coordinates
     handleMapMove(lng, lat);
   };
 
@@ -369,8 +395,8 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                         >
                           <MapPin size={16} className="pin-icon" />
                           <div className="result-text">
-                            <strong>{result.text}</strong>
-                            <p>{result.place_name}</p>
+                            <strong>{result.text || result.primary}</strong>
+                            <p>{result.place_name || result.secondary}</p>
                           </div>
                         </div>
                       ))}
@@ -382,7 +408,7 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                   {loading ? <Loader2 className="spinning" size={18} /> : <Navigation size={18} />}
                   Use Current Location
                 </Button>
-                {MAPTILER_KEY ? (
+                {hasMapConfig ? (
                   <div className="map-container" ref={mapContainer}></div>
                 ) : (
                   <div className="alert alert-warning">The map is not configured. Use "Use Current Location" to place your address.</div>
@@ -390,12 +416,17 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                 {geocodeNotice && <div className="alert alert-info mt-2">{geocodeNotice}</div>}
                 <div className="map-address-preview">
                   <p className="preview-label">{formData.location ? 'Pinned location' : 'Tap the map or search to place the pin'}</p>
-                  {formData.formattedAddress ? (
+                  {formData.formattedAddress || formData.city || formData.street ? (
                     <div className="location-summary">
-                      {formData.street && <strong>{formData.street}</strong>}
-                      {(formData.area || formData.city) && <p>{[formData.area, formData.city].filter(Boolean).join(', ')}</p>}
+                      <strong>{formData.street || formData.area || formData.city || 'Pinned Location'}</strong>
+                      {formData.street && (formData.area || formData.city) && (
+                        <p>{[formData.area, formData.city].filter(Boolean).join(', ')}</p>
+                      )}
+                      {!formData.street && formData.area && formData.city && (
+                        <p>{formData.city}</p>
+                      )}
                       {formData.district && <p>{formData.district}</p>}
-                      <p>{formData.state} - {formData.pincode}</p>
+                      <p>{[formData.state, formData.pincode].filter(Boolean).join(' - ')}</p>
                       <p>{formData.country}</p>
                     </div>
                   ) : (

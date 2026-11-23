@@ -2,6 +2,7 @@
 
 const { Address, AddressLabel } = require('./address.model');
 const { findServingShops } = require('../shop/shop.service');
+const { getGeocoderProvider } = require('./geocoder.provider');
 const { env } = require('../../config/env');
 const { z, phone, assertObjectId } = require('../../utils/validation');
 const { parseLatLng } = require('../../utils/geo');
@@ -123,58 +124,28 @@ class AddressController {
 
   static async reverseGeocode(req, res) {
     const { lat, lng } = parseLatLng(req.body.lat, req.body.lng);
-    if (!env.MAPTILER_API_KEY) {
-      throw new HttpError(503, 'Address lookup is not configured on this server', 'GEOCODING_NOT_CONFIGURED');
+    const provider = getGeocoderProvider();
+    const result = await provider.reverseGeocode({ lat, lng });
+    return res.json(result);
+  }
+
+  static async autocomplete(req, res) {
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!query || query.length < 2) {
+      return res.json({ success: true, data: [] });
     }
-
-    const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${encodeURIComponent(env.MAPTILER_API_KEY)}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-    let payload;
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) throw new Error(`status ${response.status}`);
-      payload = await response.json();
-    } catch {
-      throw new HttpError(502, 'Address lookup failed. Please enter the address manually.', 'GEOCODING_FAILED');
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    const feature = payload && payload.features && payload.features[0];
-    if (!feature) return res.json({ success: false, message: 'No address found for this location' });
-
-    const context = feature.context || [];
-    const fromContext = (prefix) => {
-      const item = context.find((c) => c.id && c.id.startsWith(prefix));
-      return item ? item.text || '' : '';
-    };
-
-    const rawPincode = fromContext('postal_code').replace(/\s+/g, '');
-    const pincode = /^\d{6}$/.test(rawPincode) ? rawPincode : '';
-    const locality = fromContext('place');
-    const city = fromContext('municipality');
-    const district = fromContext('subregion');
-    const state = fromContext('region');
-    const area = locality && locality !== city ? locality : '';
-    const street = feature.text || '';
-    const country = fromContext('country') || 'India';
-
-    res.json({
-      success: true,
-      data: {
-        street,
-        area,
-        city: city || locality || fromContext('county') || '',
-        district,
-        state,
-        pincode,
-        country,
-        formattedAddress: [street, area, city, district, state && pincode ? `${state} - ${pincode}` : state, country].filter(Boolean).join(', '),
-        addressFragment: feature.address || '',
-        location: { lat, lng }
+    let biasCoords = null;
+    if (req.query.lat && req.query.lng) {
+      try {
+        const parsed = parseLatLng(req.query.lat, req.query.lng);
+        biasCoords = [parsed.lng, parsed.lat];
+      } catch {
+        // Ignore invalid bias coords
       }
-    });
+    }
+    const provider = getGeocoderProvider();
+    const result = await provider.autocomplete({ query, biasCoords });
+    return res.json(result);
   }
 
   static async checkServiceability(req, res) {

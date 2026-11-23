@@ -98,8 +98,15 @@ describe('address book', () => {
   });
 
   it('reports reverse geocoding as unavailable without an API key', async () => {
-    const customer = await createUser('CUSTOMER');
-    const res = await api().post('/api/addresses/reverse-geocode').set(auth(customer)).send({ lat: 24.9, lng: 84.0 });
-    expect(res.status).toBe(503);
+    const { env } = require('../src/config/env');
+    const originalKey = env.MAPTILER_API_KEY;
+    delete env.MAPTILER_API_KEY;
+    try {
+      const customer = await createUser('CUSTOMER');
+      const res = await api().post('/api/addresses/reverse-geocode').set(auth(customer)).send({ lat: 24.9, lng: 84.0 });
+      expect(res.status).toBe(503);
+    } finally {
+      if (originalKey !== undefined) env.MAPTILER_API_KEY = originalKey;
+    }
   });
 });

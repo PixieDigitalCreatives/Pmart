@@ -10,6 +10,7 @@ const router = Router();
 router.use(protect);
 
 // Any signed-in user may look up an address or check delivery coverage.
+router.get('/autocomplete', AddressController.autocomplete);
 router.post('/reverse-geocode', AddressController.reverseGeocode);
 router.post('/serviceability', AddressController.checkServiceability);
 
