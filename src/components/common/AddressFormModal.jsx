@@ -10,8 +10,8 @@ import './AddressFormModal.scss';
 import { Input, Button } from '@/components/ui';
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_API_KEY;
-// Initial map view only (centre of India); an address is never saved without the user placing the pin.
-const DEFAULT_VIEW = { center: [78.9629, 22.5937], zoom: 4 };
+// Initial map view default to Sasaram (P-Mart operational hub)
+const DEFAULT_VIEW = { center: [84.0156, 24.9589], zoom: 14 };
 
 const toTenDigits = (phone = '') => {
   const digits = String(phone).replace(/\D/g, '');

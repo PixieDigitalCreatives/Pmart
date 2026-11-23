@@ -71,20 +71,27 @@
     .step-1-map {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
 
       .gps-btn {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 12px;
+        padding: 11px 16px;
         background: $error-bg;
         color: $pmart-red;
         border: 1px solid $pmart-red-light-border;
         border-radius: 8px;
         font-weight: 500;
+        font-size: 14px;
         cursor: pointer;
+        width: 100%;
+        transition: all $transition-fast;
+
+        &:hover:not(:disabled) {
+          background-color: color.adjust($pmart-red-light, $lightness: -3%);
+        }
       }
 
       .map-container {
@@ -257,10 +264,8 @@
 }
 
 .search-box-container {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
+  position: relative;
+  width: 100%;
   z-index: 10;
   
   .search-input-wrapper {
@@ -268,13 +273,21 @@
     display: flex;
     align-items: center;
     background: white;
+    border: 1px solid $border-color;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 10px 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 10px 14px;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus-within {
+      border-color: $pmart-red;
+      box-shadow: 0 0 0 2px rgba($pmart-red, 0.12);
+    }
     
     .search-icon {
       color: $text-muted;
       margin-right: 10px;
+      flex-shrink: 0;
     }
     
     .search-input {
@@ -283,24 +296,27 @@
       outline: none;
       font-size: 14px;
       width: 100%;
+      background: transparent;
     }
     
     .loading-icon {
       color: $text-light;
+      flex-shrink: 0;
     }
   }
 
   .search-results-dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
-    margin-top: 5px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    max-height: 250px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border: 1px solid $border-light;
+    max-height: 220px;
     overflow-y: auto;
+    z-index: 25;
     
     .search-result-item {
       display: flex;
@@ -339,13 +355,5 @@
       }
     }
   }
-}
-
-.step-1-map {
-  position: relative;
-}
-
-.gps-btn {
-  margin-top: 60px; /* Make space for search box */
 }
 
