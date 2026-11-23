@@ -57,11 +57,18 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
 
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [geocodeNotice, setGeocodeNotice] = useState('');
+  const [notDeliverableModal, setNotDeliverableModal] = useState({
+    isOpen: false,
+    message: ''
+  });
+  const [isServiceable, setIsServiceable] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       setError('');
       setGeocodeNotice('');
+      setIsServiceable(null);
+      setNotDeliverableModal({ isOpen: false, message: '' });
       if (initialData) {
         setFormData({
           ...EMPTY_FORM,
@@ -106,12 +113,14 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
       marker.current.on('dragend', () => {
         clearTimeout(dragTimeout);
         dragTimeout = setTimeout(() => {
+          setIsServiceable(null);
           const lngLat = marker.current.getLngLat();
           handleMapMove(lngLat.lng, lngLat.lat);
         }, 300);
       });
 
       map.current.on('click', (e) => {
+        setIsServiceable(null);
         marker.current.setLngLat([e.lngLat.lng, e.lngLat.lat]);
         handleMapMove(e.lngLat.lng, e.lngLat.lat);
       });
@@ -177,9 +186,11 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
 
   const handleUseCurrentLocation = () => {
     setLoading(true);
+    setError('');
+    setGeocodeNotice('');
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           if (map.current) {
             map.current.flyTo({ center: [longitude, latitude], zoom: 16 });
@@ -187,7 +198,26 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
           if (marker.current) {
             marker.current.setLngLat([longitude, latitude]);
           }
-          handleMapMove(longitude, latitude);
+          await handleMapMove(longitude, latitude);
+
+          // Check serviceability directly upon clicking "Use Current Location"
+          try {
+            const srvRes = await apiClient.post('/addresses/serviceability', { lat: latitude, lng: longitude });
+            const srvData = srvRes.data?.data;
+            if (srvData && !srvData.serviceable) {
+              setIsServiceable(false);
+              setNotDeliverableModal({
+                isOpen: true,
+                message: srvData.message || 'We do not deliver to this location yet.'
+              });
+            } else {
+              setIsServiceable(true);
+            }
+          } catch (err) {
+            console.error('Serviceability check error:', err);
+          } finally {
+            setLoading(false);
+          }
         },
         () => {
           setError('Location permission was denied. Enable location access and try again.');
@@ -372,9 +402,15 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
                     <p className="preview-text">Move marker to select location</p>
                   )}
                 </div>
+                {isServiceable === false && (
+                  <div className="alert alert-danger mb-2 d-flex align-items-center gap-2">
+                    <AlertCircle size={16} />
+                    <span>Location is outside delivery area. Please select a location in Sasaram.</span>
+                  </div>
+                )}
                 <Button
                   className="w-100"
-                  disabled={loading || !formData.location}
+                  disabled={loading || !formData.location || isServiceable === false}
                   onClick={() => setStep(2)}
                 >
                   Enter Complete Address
@@ -481,6 +517,33 @@ export const AddressFormModal = ({ isOpen, onClose, onSave, initialData, autoDet
               </div>
             )}
           </div>
+
+          {/* Location Not Deliverable Popup Modal */}
+          {notDeliverableModal.isOpen && (
+            <div
+              className="not-deliverable-modal-overlay"
+              onClick={() => setNotDeliverableModal({ isOpen: false, message: '' })}
+            >
+              <div className="not-deliverable-modal-card" onClick={(e) => e.stopPropagation()}>
+                <div className="not-deliverable-icon-wrapper">
+                  <AlertCircle size={36} />
+                </div>
+                <h4 className="not-deliverable-title">Location Not Deliverable</h4>
+                <p className="not-deliverable-message">
+                  {notDeliverableModal.message}
+                </p>
+                <div className="not-deliverable-note">
+                  P-Mart currently provides superfast doorstep delivery only within <strong>Sasaram, Bihar</strong>. Please pick or search an address in Sasaram.
+                </div>
+                <Button
+                  className="w-100"
+                  onClick={() => setNotDeliverableModal({ isOpen: false, message: '' })}
+                >
+                  Change Location
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>
